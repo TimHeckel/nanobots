@@ -1,0 +1,42 @@
+name: E2E Tests
+
+on:
+  # Run after Vercel deployment completes
+  deployment_status:
+  # Manual trigger for on-demand testing
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "URL to test against"
+        required: false
+        default: "https://nanobots.sh"
+
+jobs:
+  e2e:
+    name: Browser E2E Tests
+    # Only run on successful deployments or manual trigger
+    if: github.event_name == 'workflow_dispatch' || github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run E2E tests
+        env:
+          AGENT_BROWSER_PROVIDER: kernel
+          KERNEL_API_KEY: ${{ secrets.KERNEL_API_KEY }}
+          KERNEL_HEADLESS: "true"
+          KERNEL_TIMEOUT_SECONDS: "300"
+          E2E_BASE_URL: ${{ github.event.inputs.base_url || github.event.deployment_status.target_url || 'https://nanobots.sh' }}
+        run: npm run e2e:ci

@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0816;
+  --foreground: #e8e4f0;
+  --purple-hero: #1a1035;
+  --purple-mid: #2d1b69;
+  --purple-accent: #7c5bf0;
+  --green-neon: #39ff7f;
+  --green-dim: #1a3a28;
+  --indigo-deep: #110d25;
+  --dot-color: rgba(124, 91, 240, 0.15);
+  --amber-warn: #fbbf24;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-purple-hero: var(--purple-hero);
+  --color-purple-mid: var(--purple-mid);
+  --color-purple-accent: var(--purple-accent);
+  --color-green-neon: var(--green-neon);
+  --color-green-dim: var(--green-dim);
+  --color-indigo-deep: var(--indigo-deep);
+  --color-amber-warn: var(--amber-warn);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Dot grid pattern like kernel.sh */
+.dot-grid {
+  background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glow effects */
+.glow-green {
+  text-shadow: 0 0 20px rgba(57, 255, 127, 0.3), 0 0 40px rgba(57, 255, 127, 0.1);
+}
+
+.glow-purple {
+  text-shadow: 0 0 20px rgba(124, 91, 240, 0.4), 0 0 60px rgba(124, 91, 240, 0.15);
+}
+
+.glow-box-green {
+  box-shadow: 0 0 30px rgba(57, 255, 127, 0.08), inset 0 1px 0 rgba(57, 255, 127, 0.1);
+}
+
+.glow-box-purple {
+  box-shadow: 0 0 30px rgba(124, 91, 240, 0.1), inset 0 1px 0 rgba(124, 91, 240, 0.15);
+}
+
+/* Gradient fade for hero bottom */
+.hero-fade {
+  background: linear-gradient(to bottom, transparent 0%, var(--background) 100%);
+}
+
+/* Animated pulse for live indicators */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--purple-mid);
+  border-radius: 3px;
+}
+
+/* Nanobot card hover */
+.nanobot-card {
+  transition: all 0.2s ease;
+  border: 1px solid rgba(124, 91, 240, 0.1);
+}
+.nanobot-card:hover {
+  border-color: rgba(57, 255, 127, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(57, 255, 127, 0.06);
+}
+
+/* Pillar card styles */
+.pillar-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(124, 91, 240, 0.15);
+}
+.pillar-card:hover {
+  border-color: rgba(124, 91, 240, 0.3);
+  box-shadow: 0 12px 40px rgba(124, 91, 240, 0.08);
+}
+
+/* Comparison table */
+.comparison-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.comparison-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(124, 91, 240, 0.2);
+}
+.comparison-table td {
+  padding: 10px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(124, 91, 240, 0.07);
+}
+.comparison-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Scanning animation for watchtower */
+@keyframes scan-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+.scan-pulse {
+  animation: scan-pulse 3s ease-in-out infinite;
+}

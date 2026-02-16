@@ -1,0 +1,61 @@
+import { tool } from "ai";
+import { z } from "zod";
+import { upsertSystemPrompt } from "@/lib/db/queries/system-prompts";
+import type { BotMetadata } from "@/lib/db/schema";
+
+export function createBotToolDef(orgId: string, userId: string) {
+  return tool({
+    description:
+      "Create a new custom nanobot with a name, description, system prompt, and configuration. The bot starts in 'draft' status.",
+    inputSchema: z.object({
+      name: z
+        .string()
+        .describe("Kebab-case name for the bot (e.g. 'todo-finder')"),
+      description: z.string().describe("One-line description of what the bot does"),
+      category: z
+        .enum(["security", "quality", "docs"])
+        .describe("Bot category"),
+      systemPrompt: z
+        .string()
+        .describe("The system prompt the bot will use for analysis"),
+      fileExtensions: z
+        .array(z.string())
+        .optional()
+        .describe(
+          "File extensions to scan (e.g. [\".ts\", \".js\"]). Defaults to common source files.",
+        ),
+    }),
+    execute: async ({ name, description, category, systemPrompt, fileExtensions }) => {
+      const metadata: BotMetadata = {
+        config: {
+          fileExtensions: fileExtensions ?? [".ts", ".tsx", ".js", ".jsx"],
+          outputFormat: "findings",
+          maxFilesPerBatch: 15,
+          maxSteps: 5,
+        },
+        status: "draft",
+        source: "user",
+        category,
+      };
+
+      const prompt = await upsertSystemPrompt(
+        orgId,
+        name,
+        systemPrompt,
+        userId,
+      );
+
+      return {
+        success: true,
+        bot: {
+          name,
+          description,
+          category,
+          status: "draft",
+          promptId: prompt.id,
+        },
+        message: `Bot "${name}" created as draft. Test it with the testBot tool, then promote it.`,
+      };
+    },
+  });
+}
