@@ -11,6 +11,5 @@ export default defineConfig({
     // Limit concurrent workers to avoid Kernel browser API rate limits.
     // Each test file creates its own browser session.
     maxWorkers: 2,
-    minWorkers: 2,
   },
 });
