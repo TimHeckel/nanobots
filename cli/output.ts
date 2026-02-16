@@ -1,5 +1,5 @@
 import type { AnalyzerResult } from "./analyzer";
-import type { BotFinding } from "./bots/types";
+
 
 // ANSI color codes
 const RESET = "\x1b[0m";

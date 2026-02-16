@@ -1,4 +1,4 @@
-import { getInstallationOctokit, getFileContent, createFixPR, appendDashboardLink } from "../github";
+import { getInstallationOctokit, getFileContent, createFixPR } from "../github";
 import { indexDependencies } from "./dependency-index";
 import { matchAdvisories } from "./matcher";
 import { queryOSV } from "./sources/osv";

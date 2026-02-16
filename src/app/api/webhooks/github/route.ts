@@ -72,7 +72,6 @@ async function handleInstallation(payload: Record<string, unknown>) {
   const sender = payload.sender as Record<string, unknown>;
   const senderGithubId = sender?.id as number;
   const senderLogin = sender?.login as string;
-  const senderAvatarUrl = (sender?.avatar_url as string) ?? null;
 
   // Extract account (org or user) info
   const accountGithubId = account?.id as number;

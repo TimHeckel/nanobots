@@ -1,4 +1,4 @@
-import { getAllBots, getBotsByCategory } from "../bots/index";
+
 import { createRegistry } from "../../src/lib/nanobots/ai-bots/registry";
 import { loadLocalBots } from "../bots/local-store";
 import type { BotDefinition } from "../../src/lib/nanobots/ai-bots/types";
@@ -7,7 +7,7 @@ const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
 const DIM = "\x1b[2m";
 const CYAN = "\x1b[36m";
-const GREEN = "\x1b[32m";
+
 const YELLOW = "\x1b[33m";
 
 const CATEGORY_ICONS: Record<string, string> = {

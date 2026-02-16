@@ -1,6 +1,6 @@
 import { isLLMAvailable } from "../llm/client";
 import { batchAnalyzeFiles } from "../llm/analyzer";
-import type { NanobotContext, NanobotResult, RepoFile } from "./types";
+import type { RepoFile } from "./types";
 import type { LLMFinding } from "../llm/client";
 
 /**

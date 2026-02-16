@@ -28,11 +28,11 @@ describe("ai-bots/bot-creator", () => {
         },
       });
 
-      mockGenerateText.mockResolvedValueOnce({ text: llmResponse } as any);
+mockGenerateText.mockResolvedValueOnce({ text: llmResponse } as any);
 
       const bot = await createBotFromDescription(
         "Find TODO comments",
-        {} as any,
+    {} as any,
       );
 
       expect(bot.name).toBe("todo-finder");
@@ -47,9 +47,9 @@ describe("ai-bots/bot-creator", () => {
     it("should handle markdown-fenced JSON from LLM", async () => {
       const llmResponse = '```json\n{"name":"fenced-bot","description":"test","category":"security","systemPrompt":"Analyze."}\n```';
 
-      mockGenerateText.mockResolvedValueOnce({ text: llmResponse } as any);
+mockGenerateText.mockResolvedValueOnce({ text: llmResponse } as any);
 
-      const bot = await createBotFromDescription("test bot", {} as any);
+const bot = await createBotFromDescription("test bot", {} as any);
       expect(bot.name).toBe("fenced-bot");
     });
 
@@ -60,9 +60,9 @@ describe("ai-bots/bot-creator", () => {
         systemPrompt: "Analyze code.",
       });
 
-      mockGenerateText.mockResolvedValueOnce({ text: llmResponse } as any);
+mockGenerateText.mockResolvedValueOnce({ text: llmResponse } as any);
 
-      const bot = await createBotFromDescription("minimal", {} as any);
+const bot = await createBotFromDescription("minimal", {} as any);
       expect(bot.config.fileExtensions).toEqual([".ts", ".tsx", ".js", ".jsx"]);
       expect(bot.config.maxFilesPerBatch).toBe(15);
       expect(bot.config.maxSteps).toBe(5);

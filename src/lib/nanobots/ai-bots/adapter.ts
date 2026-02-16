@@ -1,5 +1,5 @@
 import type { BotDefinition, BotFinding } from "./types";
-import type { Nanobot, NanobotContext, NanobotResult, RepoFile } from "../types";
+import type { Nanobot, NanobotContext, NanobotResult } from "../types";
 import { executeBot, type RepoFile as EngineRepoFile } from "./engine";
 import { getModel } from "@/lib/llm/provider";
 
@@ -37,8 +37,6 @@ export function adaptToNanobot(bot: BotDefinition): Nanobot {
       const changedFiles = findings
         .filter((f) => f.fixedContent)
         .map((f) => ({ path: f.file, content: f.fixedContent! }));
-
-      const isDocBot = bot.config.outputFormat === "document";
 
       return {
         nanobot: bot.name,

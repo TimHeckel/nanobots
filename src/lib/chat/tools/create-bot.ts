@@ -2,8 +2,6 @@ import { tool } from "ai";
 import { z } from "zod";
 import { upsertSystemPrompt } from "@/lib/db/queries/system-prompts";
 import { upsertBotConfig } from "@/lib/db/queries/bot-configs";
-import type { BotMetadata } from "@/lib/db/schema";
-
 export function createBotToolDef(orgId: string, userId: string) {
   return tool({
     description:
@@ -26,19 +24,7 @@ export function createBotToolDef(orgId: string, userId: string) {
           "File extensions to scan (e.g. [\".ts\", \".js\"]). Defaults to common source files.",
         ),
     }),
-    execute: async ({ name, description, category, systemPrompt, fileExtensions }) => {
-      const metadata: BotMetadata = {
-        config: {
-          fileExtensions: fileExtensions ?? [".ts", ".tsx", ".js", ".jsx"],
-          outputFormat: "findings",
-          maxFilesPerBatch: 15,
-          maxSteps: 5,
-        },
-        status: "draft",
-        source: "user",
-        category,
-      };
-
+    execute: async ({ name, description, category, systemPrompt }) => {
       const prompt = await upsertSystemPrompt(
         orgId,
         name,

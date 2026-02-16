@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { createWebhookEndpoint } from "@/lib/db/queries/webhooks";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function configureWebhookToolDef(orgId: string, userId: string) {
   return tool({
     description:

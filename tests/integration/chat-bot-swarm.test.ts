@@ -36,7 +36,6 @@ import { configureWebhookToolDef } from "@/lib/chat/tools/configure-webhook";
 import { getSwarmByName } from "@/lib/db/queries/swarms";
 
 // Helper: call tool.execute with non-null assertion (execute is always defined for our tools)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function exec(tool: { execute?: (...args: any[]) => any }, input: Record<string, unknown>) {
   return tool.execute!(input, { toolCallId: "test", messages: [] });
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
 import { Logo } from "@/components/shared/logo";
 
 interface ChatHeaderProps {
@@ -23,22 +25,24 @@ export function ChatHeader({ user, org, onLogout }: ChatHeaderProps) {
     <header className="flex-shrink-0 h-14 flex items-center justify-between px-4 md:px-6 bg-background/80 backdrop-blur-md border-b border-purple-accent/10">
       {/* Left: Logo */}
       <div className="flex items-center gap-2">
-        <a href="/" className="flex items-center gap-2 font-mono font-bold text-lg tracking-tight">
+        <Link href="/" className="flex items-center gap-2 font-mono font-bold text-lg tracking-tight">
           <Logo size={24} />
           <span>
             <span className="text-green-neon">nano</span>
             <span className="text-foreground">bots</span>
             <span className="text-purple-accent">.sh</span>
           </span>
-        </a>
+        </Link>
       </div>
 
       {/* Center: Org + live indicator */}
       <div className="flex items-center gap-2">
         {org.avatarUrl && (
-          <img
+          <Image
             src={org.avatarUrl}
             alt={org.login}
+            width={20}
+            height={20}
             className="w-5 h-5 rounded-full"
           />
         )}
@@ -52,9 +56,11 @@ export function ChatHeader({ user, org, onLogout }: ChatHeaderProps) {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           {user.avatarUrl ? (
-            <img
+            <Image
               src={user.avatarUrl}
               alt={user.login}
+              width={24}
+              height={24}
               className="w-6 h-6 rounded-full"
             />
           ) : (

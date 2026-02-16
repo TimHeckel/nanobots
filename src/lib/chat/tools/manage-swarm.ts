@@ -7,6 +7,7 @@ import {
   deleteSwarm,
 } from "@/lib/db/queries/swarms";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function manageSwarmToolDef(orgId: string, userId: string) {
   return tool({
     description:

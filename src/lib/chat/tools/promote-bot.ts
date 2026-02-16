@@ -1,9 +1,9 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { getSystemPrompt, upsertSystemPrompt } from "@/lib/db/queries/system-prompts";
+import { getSystemPrompt } from "@/lib/db/queries/system-prompts";
 import { upsertBotConfig } from "@/lib/db/queries/bot-configs";
 import { logActivity } from "@/lib/db/queries/activity-log";
-import type { BotMetadata } from "@/lib/db/schema";
+
 
 const PROMOTION_ORDER = ["draft", "testing", "active"] as const;
 type BotStatus = (typeof PROMOTION_ORDER)[number];
@@ -21,14 +21,7 @@ export function promoteBotToolDef(orgId: string, userId: string) {
         return { error: `Bot "${botName}" not found.` };
       }
 
-      // Parse metadata to determine current status
-      let metadata: BotMetadata = {};
-      try {
-        // Metadata may be stored as JSON in the prompt_text suffix or separately
-        // For user-created bots, we track status via activity log history
-      } catch {
-        // ignore parse errors
-      }
+      // Determine current status from activity log history
 
       // Determine current status from recent activity
       const currentStatus = await getCurrentStatus(orgId, botName);

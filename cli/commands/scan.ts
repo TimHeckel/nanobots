@@ -3,7 +3,7 @@ import type { ParsedFlags } from "../flags";
 import { loadConfig } from "../config";
 import { walkFiles } from "../file-provider";
 import { defaultProviderConfig, type ProviderConfig } from "../provider";
-import { getAllBots, getBotByName, getBotsByCategory } from "../bots/index";
+
 import { createRegistry } from "../../src/lib/nanobots/ai-bots/registry";
 import { loadLocalBots } from "../bots/local-store";
 import { runAllBots } from "../analyzer";

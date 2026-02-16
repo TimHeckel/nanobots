@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 interface Member {
   login: string;
   name?: string;
