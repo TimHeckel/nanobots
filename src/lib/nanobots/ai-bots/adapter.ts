@@ -29,7 +29,7 @@ export function adaptToNanobot(bot: BotDefinition): Nanobot {
         content: f.content,
       }));
 
-      const findings = await executeBot(effectiveBot, files, model);
+      const findings = await executeBot(effectiveBot, files, model, ctx.onEvent);
 
       if (findings.length === 0) return null;
 

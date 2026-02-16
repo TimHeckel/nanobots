@@ -1,7 +1,10 @@
+import crypto from "crypto";
 import { getInstallationOctokit, getRepoTree, getFileContent, createFixPR, appendDashboardLink } from "../github";
 import { Nanobot, NanobotContext, RepoFile } from "./types";
 import { BUILT_IN_BOTS } from "./ai-bots/defaults";
 import { adaptAllToNanobots } from "./ai-bots/adapter";
+import type { BotEventCallback } from "./ai-bots/events";
+import { withScanId } from "./ai-bots/events";
 
 /** All registered nanobots — data-driven via defaults.ts + adapter */
 const ALL_NANOBOTS: Nanobot[] = adaptAllToNanobots(BUILT_IN_BOTS);
@@ -39,6 +42,8 @@ export interface RunOptions {
   orgLogin?: string;
   /** Per-bot system prompts for LLM-enhanced analysis */
   systemPrompts?: Record<string, string>;
+  /** Callback for scan lifecycle events */
+  onEvent?: BotEventCallback;
 }
 
 /**
@@ -65,6 +70,8 @@ export async function runAllNanobots(
 ): Promise<string[] | ScanRunResult> {
   console.log(`[orchestrator] Starting scan: ${owner}/${repo}`);
   const startTime = Date.now();
+  const scanId = crypto.randomUUID();
+  const emit = options?.onEvent ? withScanId(scanId, options.onEvent) : undefined;
 
   const octokit = await getInstallationOctokit(installationId);
 
@@ -116,6 +123,9 @@ export async function runAllNanobots(
     botsToRun = botsToRun.filter((b) => enabled.has(b.name));
   }
 
+  // Emit scan.started event
+  await emit?.({ type: "scan.started", timestamp: new Date().toISOString(), scanId: "", botCount: botsToRun.length, fileCount: files.length, repo: `${owner}/${repo}` });
+
   // 6. Run each nanobot
   const prUrls: string[] = [];
   const findings: Array<{ bot: string; findingCount: number; prUrl?: string }> = [];
@@ -136,6 +146,7 @@ export async function runAllNanobots(
         ...ctx,
         files: botFiles,
         systemPrompt: options?.systemPrompts?.[bot.name],
+        onEvent: emit,
       };
       const result = await bot.run(botCtx);
 
@@ -164,6 +175,7 @@ export async function runAllNanobots(
         console.log(`[orchestrator] ${bot.name}: issue created → ${issue.html_url}`);
         prUrls.push(issue.html_url);
         findings.push({ bot: bot.name, findingCount: result.findingCount, prUrl: issue.html_url });
+        await emit?.({ type: "pr.created", timestamp: new Date().toISOString(), scanId: "", botName: bot.name, prUrl: issue.html_url, repo: `${owner}/${repo}` });
         continue;
       }
 
@@ -180,6 +192,7 @@ export async function runAllNanobots(
       console.log(`[orchestrator] ${bot.name}: PR created → ${prUrl}`);
       prUrls.push(prUrl);
       findings.push({ bot: bot.name, findingCount: result.findingCount, prUrl });
+      await emit?.({ type: "pr.created", timestamp: new Date().toISOString(), scanId: "", botName: bot.name, prUrl, repo: `${owner}/${repo}` });
     } catch (err) {
       console.error(`[orchestrator] ${bot.name} failed:`, err);
       findings.push({ bot: bot.name, findingCount: 0 });
@@ -189,12 +202,15 @@ export async function runAllNanobots(
   const duration = Date.now() - startTime;
   console.log(`[orchestrator] Scan complete: ${owner}/${repo} in ${duration}ms, ${prUrls.length} PRs created`);
 
+  const totalFindings = findings.reduce((sum, f) => sum + f.findingCount, 0);
+  await emit?.({ type: "scan.completed", timestamp: new Date().toISOString(), scanId: "", totalFindings, durationMs: duration });
+
   if (options?.structured) {
     return {
       prUrls,
       botsRun,
       findings,
-      totalFindings: findings.reduce((sum, f) => sum + f.findingCount, 0),
+      totalFindings,
       totalPrs: prUrls.length,
       durationMs: duration,
     };

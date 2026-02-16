@@ -34,3 +34,18 @@ export async function getEnabledBots(orgId: string): Promise<string[]> {
   `;
   return rows.map((r) => r.bot_name);
 }
+
+export async function upsertBotConfig(
+  orgId: string,
+  botName: string,
+  enabled: boolean
+): Promise<BotConfig> {
+  const { rows } = await sql<BotConfig>`
+    INSERT INTO bot_configs (org_id, bot_name, enabled)
+    VALUES (${orgId}, ${botName}, ${enabled})
+    ON CONFLICT (org_id, bot_name)
+    DO UPDATE SET enabled = ${enabled}
+    RETURNING *
+  `;
+  return rows[0];
+}

@@ -18,6 +18,7 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "vitest run --config vitest.config.e2e.ts",
     "e2e:ci": "vitest run --config vitest.config.e2e.ts",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
     "test:agents": "vitest run --config vitest.config.agents.ts"
   },
   "dependencies": {

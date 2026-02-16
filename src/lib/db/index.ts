@@ -170,4 +170,57 @@ export async function migrate() {
       generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       metadata JSONB DEFAULT '{}'
     )`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      key_hash VARCHAR(64) NOT NULL,
+      label VARCHAR(255),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS webhook_endpoints (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      secret VARCHAR(255) NOT NULL,
+      events TEXT[] NOT NULL,
+      active BOOLEAN NOT NULL DEFAULT true,
+      description TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS webhook_deliveries (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      webhook_id UUID NOT NULL REFERENCES webhook_endpoints(id) ON DELETE CASCADE,
+      event_type VARCHAR(100) NOT NULL,
+      payload JSONB NOT NULL,
+      status_code INT,
+      error TEXT,
+      delivered_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS swarms (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      name VARCHAR(100) NOT NULL,
+      description TEXT,
+      created_by UUID REFERENCES users(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE(org_id, name)
+    )`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS swarm_bots (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      swarm_id UUID NOT NULL REFERENCES swarms(id) ON DELETE CASCADE,
+      bot_name VARCHAR(100) NOT NULL,
+      added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE(swarm_id, bot_name)
+    )`;
 }

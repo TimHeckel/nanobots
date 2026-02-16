@@ -10,6 +10,7 @@ import { authCommand } from "./commands/auth";
 import { createCommand } from "./commands/create";
 import { testBotCommand } from "./commands/test-bot";
 import { promoteCommand } from "./commands/promote";
+import { chatCommand } from "./commands/chat";
 import { loadConfig } from "./config";
 import { defaultProviderConfig } from "./provider";
 import { resolve } from "node:path";
@@ -30,6 +31,7 @@ ${BOLD}Usage:${RESET}
   nanobots create "<description>"  Create a new bot from description
   nanobots test <bot> [dir]        Test a bot against files
   nanobots promote <bot>           Promote bot to next lifecycle stage
+  nanobots chat                    Interactive AI assistant
   nanobots init                    Create .nanobots.toml config
   nanobots auth                    Set up OpenRouter API key
 
@@ -112,6 +114,9 @@ async function main(): Promise<void> {
     }
     case "promote":
       exitCode = await promoteCommand(flags.args[0] ?? "", flags.args[1] ?? ".");
+      break;
+    case "chat":
+      exitCode = await chatCommand(flags);
       break;
     case "init":
       exitCode = await initCommand(flags.args[0]);

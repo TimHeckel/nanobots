@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { upsertSystemPrompt } from "@/lib/db/queries/system-prompts";
+import { upsertBotConfig } from "@/lib/db/queries/bot-configs";
 import type { BotMetadata } from "@/lib/db/schema";
 
 export function createBotToolDef(orgId: string, userId: string) {
@@ -44,6 +45,9 @@ export function createBotToolDef(orgId: string, userId: string) {
         systemPrompt,
         userId,
       );
+
+      // Create bot_configs row so the bot appears in listBots (disabled by default as draft)
+      await upsertBotConfig(orgId, name, false);
 
       return {
         success: true,

@@ -182,3 +182,49 @@ export interface DocGeneration {
   generated_at: Date;
   metadata: Record<string, unknown> | null;
 }
+
+export interface ApiKey {
+  id: string;
+  org_id: string;
+  key_hash: string;
+  label: string | null;
+  created_at: Date;
+}
+
+export interface WebhookEndpoint {
+  id: string;
+  org_id: string;
+  url: string;
+  secret: string;
+  events: string[];
+  active: boolean;
+  description: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_id: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  status_code: number | null;
+  error: string | null;
+  delivered_at: Date;
+}
+
+export interface Swarm {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  created_by: string | null;
+  created_at: Date;
+}
+
+export interface SwarmBot {
+  id: string;
+  swarm_id: string;
+  bot_name: string;
+  added_at: Date;
+}

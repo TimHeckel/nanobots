@@ -65,6 +65,33 @@ export function buildSystemPrompt(org: Organization, context: OrgContext): strin
     );
   }
 
+  // Bot creation & lifecycle
+  sections.push(
+    `Bot creation: You can create custom bots through conversation. Guide users through what the bot should scan for, its category, and file types. Use createBot to save, testBot to validate against a real repo, and promoteBot to advance through draft → testing → active.`
+  );
+
+  // Swarm management
+  sections.push(
+    `Swarm management: Swarms are named collections of bots that run together as a group. Use createSwarm to create, listSwarms to view, manageSwarm to add/remove bots or delete, and runSwarm to run a swarm against a repository.`
+  );
+
+  // Swarms context
+  if (context.swarms && context.swarms.length > 0) {
+    const swarmLines = context.swarms.map(
+      (s) => `- ${s.name} (${s.botCount} bots): ${s.bots.join(", ")}`
+    );
+    sections.push(`Configured swarms:\n${swarmLines.join("\n")}`);
+  }
+
+  // Webhook configuration
+  sections.push(
+    `Webhook configuration: You can set up webhook endpoints for external dashboards (Slack, Grafana, custom HTTP). Events: scan.started, scan.completed, bot.started, bot.completed, bot.finding, pr.created. Use configureWebhook to create and listWebhooks to view.`
+  );
+
+  if (context.webhookCount && context.webhookCount > 0) {
+    sections.push(`Active webhooks: ${context.webhookCount} endpoint(s) configured.`);
+  }
+
   // Recent activity summary
   if (context.recentActivity.length > 0) {
     const activityLines = context.recentActivity.map(

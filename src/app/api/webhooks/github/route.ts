@@ -5,6 +5,7 @@ import { parseCommand } from "@/lib/nanobots/commands";
 import { handleCommand } from "@/lib/nanobots/agent";
 import { getInstallationOctokit } from "@/lib/github";
 import { createOrganization, getOrgByInstallationId } from "@/lib/db/queries/organizations";
+import { createWebhookHandler } from "@/lib/webhooks/dispatcher";
 import { addMember } from "@/lib/db/queries/org-members";
 import { upsertRepos } from "@/lib/db/queries/org-repos";
 import { createDefaultBotConfigs } from "@/lib/db/queries/bot-configs";
@@ -138,22 +139,23 @@ async function handleInstallation(payload: Record<string, unknown>) {
       },
       installerUser?.id
     );
+
+    // Run nanobots scans on all repos
+    const onEvent = createWebhookHandler(org.id);
+    for (const repo of repos) {
+      const fullName = repo.full_name as string;
+      const [owner, name] = fullName.split("/");
+
+      runAllNanobots(installationId, owner, name, { category: "security", onEvent }).then((prUrls) => {
+        if (prUrls.length > 0) {
+          console.log(`[install] ${fullName}: created ${prUrls.length} PRs`);
+        }
+      }).catch((err) => {
+        console.error(`[install] ${fullName} scan failed:`, err);
+      });
+    }
   } catch (err) {
     console.error(`[install] DB setup failed for installation ${installationId}:`, err);
-  }
-
-  // Run nanobots scans on all repos (existing behavior)
-  for (const repo of repos) {
-    const fullName = repo.full_name as string;
-    const [owner, name] = fullName.split("/");
-
-    runAllNanobots(installationId, owner, name, { category: "security" }).then((prUrls) => {
-      if (prUrls.length > 0) {
-        console.log(`[install] ${fullName}: created ${prUrls.length} PRs`);
-      }
-    }).catch((err) => {
-      console.error(`[install] ${fullName} scan failed:`, err);
-    });
   }
 }
 
@@ -199,7 +201,7 @@ async function handleInstallationRepositories(payload: Record<string, unknown>) 
   );
 }
 
-function handlePush(payload: Record<string, unknown>) {
+async function handlePush(payload: Record<string, unknown>) {
   const repoObj = payload.repository as Record<string, unknown>;
   const fullName = repoObj?.full_name as string;
   const ref = payload.ref as string;
@@ -248,8 +250,11 @@ function handlePush(payload: Record<string, unknown>) {
 
   console.log(`[push] ${fullName}: ${changedFiles.size} files changed, triggering scan`);
 
+  const org = await getOrgByInstallationId(installationId);
+  const onEvent = org ? createWebhookHandler(org.id) : undefined;
+
   const [owner, name] = fullName.split("/");
-  runAllNanobots(installationId, owner, name, { category: "security" }).then((prUrls) => {
+  runAllNanobots(installationId, owner, name, { category: "security", onEvent }).then((prUrls) => {
     if (prUrls.length > 0) {
       console.log(`[push] ${fullName}: created ${prUrls.length} PRs`);
     }

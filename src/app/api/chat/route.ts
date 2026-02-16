@@ -21,6 +21,15 @@ import {
   inviteMemberToolDef,
   generateDocsToolDef,
   docStatusToolDef,
+  createBotToolDef,
+  testBotToolDef,
+  promoteBotToolDef,
+  createSwarmToolDef,
+  listSwarmsToolDef,
+  manageSwarmToolDef,
+  runSwarmToolDef,
+  configureWebhookToolDef,
+  listWebhooksToolDef,
 } from "@/lib/chat/tools";
 
 export async function POST(req: NextRequest) {
@@ -55,6 +64,15 @@ export async function POST(req: NextRequest) {
     inviteMember: inviteMemberToolDef(orgId, userId, role),
     generateDocs: generateDocsToolDef(orgId, userId),
     docStatus: docStatusToolDef(orgId),
+    createBot: createBotToolDef(orgId, userId),
+    testBot: testBotToolDef(orgId),
+    promoteBot: promoteBotToolDef(orgId, userId),
+    createSwarm: createSwarmToolDef(orgId, userId),
+    listSwarms: listSwarmsToolDef(orgId),
+    manageSwarm: manageSwarmToolDef(orgId, userId),
+    runSwarm: runSwarmToolDef(orgId, userId),
+    configureWebhook: configureWebhookToolDef(orgId, userId),
+    listWebhooks: listWebhooksToolDef(orgId),
   };
 
   const result = streamText({

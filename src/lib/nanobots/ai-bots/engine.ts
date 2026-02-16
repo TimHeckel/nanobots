@@ -1,4 +1,5 @@
 import { generateText, stepCountIs, type LanguageModel } from "ai";
+import type { BotEventCallback } from "./events";
 import { instantiateTool } from "./tool-library";
 import type { BotDefinition, BotFinding } from "./types";
 
@@ -116,7 +117,9 @@ export async function executeBot(
   bot: BotDefinition,
   files: RepoFile[],
   model: LanguageModel,
+  onEvent?: BotEventCallback,
 ): Promise<BotFinding[]> {
+  const startTime = Date.now();
   const filtered = filterByExtensions(files, bot.config.fileExtensions);
 
   if (filtered.length === 0) return [];
@@ -131,7 +134,17 @@ export async function executeBot(
   const batches = batchFiles(filtered, bot.config.maxFilesPerBatch ?? 15);
   const allFindings: BotFinding[] = [];
 
-  for (const batch of batches) {
+  await onEvent?.({
+    type: "bot.started",
+    timestamp: new Date().toISOString(),
+    scanId: "",
+    botName: bot.name,
+    fileCount: filtered.length,
+    batchCount: batches.length,
+  });
+
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i];
     try {
       const hasTools = Object.keys(tools).length > 0;
       const { text } = await generateText({
@@ -144,13 +157,40 @@ export async function executeBot(
           : undefined,
       });
 
-      allFindings.push(...parseFindings(text));
+      const findings = parseFindings(text);
+      for (const finding of findings) {
+        await onEvent?.({
+          type: "bot.finding",
+          timestamp: new Date().toISOString(),
+          scanId: "",
+          botName: bot.name,
+          finding,
+        });
+      }
+      allFindings.push(...findings);
     } catch (error) {
+      await onEvent?.({
+        type: "bot.error",
+        timestamp: new Date().toISOString(),
+        scanId: "",
+        botName: bot.name,
+        error: String(error),
+        batchIndex: i,
+      });
       process.stderr.write(
         `  [${bot.name}] batch error: ${error}\n`,
       );
     }
   }
+
+  await onEvent?.({
+    type: "bot.completed",
+    timestamp: new Date().toISOString(),
+    scanId: "",
+    botName: bot.name,
+    findingCount: allFindings.length,
+    durationMs: Date.now() - startTime,
+  });
 
   return allFindings;
 }

@@ -1,16 +1,18 @@
 import type { LanguageModel } from "ai";
 import { executeBot, type RepoFile } from "./engine";
+import type { BotEventCallback } from "./events";
 import type { BotDefinition, BotStatus, TestResult, ShadowResult } from "./types";
 
 export async function testBot(
   bot: BotDefinition,
   files: RepoFile[],
   model: LanguageModel,
+  onEvent?: BotEventCallback,
 ): Promise<TestResult> {
   const start = Date.now();
 
   try {
-    const findings = await executeBot(bot, files, model);
+    const findings = await executeBot(bot, files, model, onEvent);
 
     return {
       bot: bot.name,
@@ -62,9 +64,10 @@ export async function shadowRun(
   bot: BotDefinition,
   files: RepoFile[],
   model: LanguageModel,
+  onEvent?: BotEventCallback,
 ): Promise<ShadowResult> {
   const start = Date.now();
-  const findings = await executeBot(bot, files, model);
+  const findings = await executeBot(bot, files, model, onEvent);
 
   return {
     bot: bot.name,

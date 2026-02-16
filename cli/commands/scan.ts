@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { ParsedFlags } from "../flags";
 import { loadConfig } from "../config";
 import { walkFiles } from "../file-provider";
@@ -9,7 +10,53 @@ import { runAllBots } from "../analyzer";
 import { formatTerminal, formatJSON, printScanHeader } from "../output";
 import type { BotDefinition } from "../../src/lib/nanobots/ai-bots/types";
 import { writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { resolve, basename } from "node:path";
+import type { BotEvent, BotEventCallback } from "../../src/lib/nanobots/ai-bots/events";
+import { withScanId } from "../../src/lib/nanobots/ai-bots/events";
+
+function stderrHandler(json: boolean): BotEventCallback {
+  return (event: BotEvent) => {
+    if (json) return;
+    switch (event.type) {
+      case "scan.started":
+        process.stderr.write(`\n  Scanning with ${event.botCount} bots across ${event.fileCount} files...\n\n`);
+        break;
+      case "bot.started":
+        process.stderr.write(`  [${event.botName}] analyzing ${event.fileCount} files...\n`);
+        break;
+      case "bot.completed":
+        process.stderr.write(`  [${event.botName}] done: ${event.findingCount} findings in ${event.durationMs}ms\n`);
+        break;
+      case "bot.error":
+        process.stderr.write(`  [${event.botName}] error: ${event.error}\n`);
+        break;
+      case "scan.completed":
+        process.stderr.write(`\n  Scan complete: ${event.totalFindings} findings in ${event.durationMs}ms\n`);
+        break;
+    }
+  };
+}
+
+function remoteHandler(nanobotsKey: string): BotEventCallback {
+  return (event: BotEvent) => {
+    fetch("https://nanobots.sh/api/events", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${nanobotsKey}`,
+      },
+      body: JSON.stringify(event),
+    }).catch(() => {});
+  };
+}
+
+function composeHandlers(...handlers: BotEventCallback[]): BotEventCallback {
+  return (event: BotEvent) => {
+    for (const handler of handlers) {
+      handler(event);
+    }
+  };
+}
 
 export async function scanCommand(flags: ParsedFlags): Promise<number> {
   const targetDir = resolve(flags.args[0] ?? ".");
@@ -81,8 +128,37 @@ export async function scanCommand(flags: ParsedFlags): Promise<number> {
     printScanHeader(provider.model, allPaths.length, files.length);
   }
 
+  // Build event handlers
+  const scanId = crypto.randomUUID();
+  const handlers: BotEventCallback[] = [stderrHandler(!!flags.json)];
+  if (config.nanobotsKey) {
+    handlers.push(remoteHandler(config.nanobotsKey));
+  }
+  const onEvent = withScanId(scanId, composeHandlers(...handlers));
+
+  // Emit scan.started
+  onEvent({
+    type: "scan.started",
+    timestamp: new Date().toISOString(),
+    scanId: "",
+    botCount: bots.length,
+    fileCount: files.length,
+    repo: basename(targetDir),
+  });
+
   // Run bots
-  const results = await runAllBots(bots, files, provider, flags.verbose);
+  const scanStart = Date.now();
+  const results = await runAllBots(bots, files, provider, flags.verbose, onEvent);
+
+  // Emit scan.completed
+  const totalFindings = results.reduce((sum, r) => sum + r.findings.length, 0);
+  onEvent({
+    type: "scan.completed",
+    timestamp: new Date().toISOString(),
+    scanId: "",
+    totalFindings,
+    durationMs: Date.now() - scanStart,
+  });
 
   // Output results
   if (flags.json) {
@@ -118,9 +194,5 @@ export async function scanCommand(flags: ParsedFlags): Promise<number> {
   }
 
   // Exit code: 1 if any findings (for CI)
-  const totalFindings = results.reduce(
-    (sum, r) => sum + r.findings.length,
-    0,
-  );
   return totalFindings > 0 ? 1 : 0;
 }

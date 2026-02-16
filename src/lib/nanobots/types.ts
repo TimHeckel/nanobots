@@ -1,4 +1,5 @@
 import { Octokit } from "@octokit/rest";
+import type { BotEventCallback } from "./ai-bots/events";
 
 export interface RepoFile {
   path: string;
@@ -36,6 +37,8 @@ export interface NanobotContext {
   allPaths: string[];
   /** Per-org system prompt for LLM-enhanced analysis (Tier 2) */
   systemPrompt?: string;
+  /** Callback for bot lifecycle events */
+  onEvent?: BotEventCallback;
 }
 
 /**

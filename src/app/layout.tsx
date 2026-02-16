@@ -13,22 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "nanobots.sh — The immune system for your codebase",
+  title: "nanobots.sh — Build AI bot swarms for your GitHub repos",
   description:
-    "AI agents that live in your GitHub repo and continuously maintain codebase health. Dead code, flaky tests, stale docs, dependency rot — fixed before you notice.",
+    "Describe a bot in plain English. Test it against your code. Deploy a swarm that scans, fixes, and ships PRs autonomously. Start with 6 built-in bots. Create your own in seconds.",
   openGraph: {
-    title: "nanobots.sh — The immune system for your codebase",
+    title: "nanobots.sh — Build AI bot swarms for your GitHub repos",
     description:
-      "AI agents that live in your GitHub repo and continuously maintain codebase health.",
+      "Describe a bot in plain English. Deploy a swarm that scans, fixes, and ships PRs autonomously.",
     url: "https://nanobots.sh",
     siteName: "nanobots.sh",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "nanobots.sh — The immune system for your codebase",
+    title: "nanobots.sh — Build AI bot swarms for your GitHub repos",
     description:
-      "AI agents that live in your GitHub repo and continuously maintain codebase health.",
+      "Describe a bot in plain English. Deploy a swarm that scans, fixes, and ships PRs autonomously.",
   },
 };
 

@@ -5,6 +5,7 @@ export interface NanobotsConfig {
   provider: string;
   model: string;
   apiKey: string;
+  nanobotsKey: string;
   disabledBots: string[];
   ignorePaths: string[];
 }
@@ -13,6 +14,7 @@ const DEFAULT_CONFIG: NanobotsConfig = {
   provider: "openrouter",
   model: "meta-llama/llama-4-maverick",
   apiKey: "",
+  nanobotsKey: "",
   disabledBots: [],
   ignorePaths: ["node_modules/", "dist/", ".next/", "*.min.js", "*.min.css"],
 };
@@ -77,6 +79,7 @@ export async function loadConfig(dir: string): Promise<NanobotsConfig> {
     if (typeof parsed.provider === "string") config.provider = parsed.provider;
     if (typeof parsed.model === "string") config.model = parsed.model;
     if (typeof parsed.api_key === "string") config.apiKey = parsed.api_key;
+    if (typeof parsed.nanobots_key === "string") config.nanobotsKey = parsed.nanobots_key;
     if (Array.isArray(parsed.disabled_bots))
       config.disabledBots = parsed.disabled_bots;
     if (Array.isArray(parsed.ignore_paths))
@@ -88,6 +91,9 @@ export async function loadConfig(dir: string): Promise<NanobotsConfig> {
   // Env var overrides
   if (process.env.OPENROUTER_API_KEY) {
     config.apiKey = process.env.OPENROUTER_API_KEY;
+  }
+  if (process.env.NANOBOTS_KEY) {
+    config.nanobotsKey = process.env.NANOBOTS_KEY;
   }
 
   return config;
@@ -101,6 +107,9 @@ export function generateDefaultConfig(): string {
 provider = "openrouter"              # openrouter | ollama (future)
 model = "meta-llama/llama-4-maverick"  # any OpenRouter model
 api_key = ""                          # or set OPENROUTER_API_KEY env var
+
+# Nanobots.sh connection (optional)
+# nanobots_key = ""                    # or set NANOBOTS_KEY env var
 
 # Bot configuration
 disabled_bots = []

@@ -2,6 +2,7 @@ import type { BotDefinition, BotFinding } from "../src/lib/nanobots/ai-bots/type
 import { executeBot, type RepoFile } from "../src/lib/nanobots/ai-bots/engine";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { ProviderConfig } from "./provider";
+import type { BotEventCallback } from "../src/lib/nanobots/ai-bots/events";
 
 export { type RepoFile } from "../src/lib/nanobots/ai-bots/engine";
 
@@ -17,6 +18,7 @@ export async function runBot(
   files: RepoFile[],
   provider: ProviderConfig,
   verbose: boolean = false,
+  onEvent?: BotEventCallback,
 ): Promise<AnalyzerResult> {
   const filtered = files.filter((f) => {
     if (!bot.config.fileExtensions || bot.config.fileExtensions.length === 0) return true;
@@ -42,7 +44,7 @@ export async function runBot(
   const model = openai(provider.model);
 
   try {
-    const findings = await executeBot(bot, filtered, model);
+    const findings = await executeBot(bot, filtered, model, onEvent);
 
     if (verbose) {
       process.stderr.write(
@@ -73,11 +75,12 @@ export async function runAllBots(
   files: RepoFile[],
   provider: ProviderConfig,
   verbose: boolean = false,
+  onEvent?: BotEventCallback,
 ): Promise<AnalyzerResult[]> {
   const results: AnalyzerResult[] = [];
 
   for (const bot of bots) {
-    const result = await runBot(bot, files, provider, verbose);
+    const result = await runBot(bot, files, provider, verbose, onEvent);
     results.push(result);
   }
 

@@ -134,3 +134,24 @@ body {
 .scan-pulse {
   animation: scan-pulse 3s ease-in-out infinite;
 }
+
+/* Swarm card hover */
+.swarm-card {
+  transition: all 0.2s ease;
+}
+.swarm-card:hover {
+  border-color: rgba(124, 91, 240, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(124, 91, 240, 0.08);
+}
+
+/* Lifecycle pipeline */
+.lifecycle-pipeline {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Split panel responsive */
+.split-panel > div {
+  min-height: 300px;
+}
