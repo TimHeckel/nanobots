@@ -11,7 +11,7 @@ const openrouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY ?? "",
 });
 
-const DEFAULT_MODEL = "anthropic/claude-sonnet-4-5-20250929";
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4.5";
 
 /**
  * Get the default model for SaaS operations.

@@ -33,55 +33,63 @@ import {
 } from "@/lib/chat/tools";
 
 export async function POST(req: NextRequest) {
-  const session = await getSession(await cookies());
+  try {
+    const session = await getSession(await cookies());
 
-  if (!session?.userId || !session?.orgId || !session?.role) {
-    return new Response("Unauthorized", { status: 401 });
+    if (!session?.userId || !session?.orgId || !session?.role) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    const { userId, orgId, role } = session;
+
+    const { messages } = await req.json();
+
+    // Build system prompt with org context
+    const context = await getOrgContext(orgId);
+    const systemPrompt = buildSystemPrompt(context.org, context);
+
+    // Assemble all tools with org/user context via closures
+    const tools = {
+      listBots: listBotsToolDef(orgId),
+      toggleBot: toggleBotToolDef(orgId, userId, role),
+      showActivity: showActivityToolDef(orgId),
+      completeOnboarding: completeOnboardingToolDef(orgId, userId),
+      runScan: runScanToolDef(orgId, userId),
+      showScanResults: showScanResultsToolDef(orgId),
+      showStats: showStatsToolDef(orgId),
+      listProposals: listProposalsToolDef(orgId),
+      reviewProposal: reviewProposalToolDef(),
+      approveProposal: approveProposalToolDef(orgId, userId, role),
+      rejectProposal: rejectProposalToolDef(orgId, userId, role),
+      editSystemPrompt: editSystemPromptToolDef(orgId, userId, role),
+      inviteMember: inviteMemberToolDef(orgId, userId, role),
+      generateDocs: generateDocsToolDef(orgId, userId),
+      docStatus: docStatusToolDef(orgId),
+      createBot: createBotToolDef(orgId, userId),
+      testBot: testBotToolDef(orgId),
+      promoteBot: promoteBotToolDef(orgId, userId),
+      createSwarm: createSwarmToolDef(orgId, userId),
+      listSwarms: listSwarmsToolDef(orgId),
+      manageSwarm: manageSwarmToolDef(orgId, userId),
+      runSwarm: runSwarmToolDef(orgId, userId),
+      configureWebhook: configureWebhookToolDef(orgId, userId),
+      listWebhooks: listWebhooksToolDef(orgId),
+    };
+
+    const result = streamText({
+      model: getModel(),
+      system: systemPrompt,
+      messages,
+      tools,
+      stopWhen: stepCountIs(5),
+    });
+
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("[chat/route] Error:", error);
+    return new Response(JSON.stringify({ error: String(error) }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
-
-  const { userId, orgId, role } = session;
-
-  const { messages } = await req.json();
-
-  // Build system prompt with org context
-  const context = await getOrgContext(orgId);
-  const systemPrompt = buildSystemPrompt(context.org, context);
-
-  // Assemble all tools with org/user context via closures
-  const tools = {
-    listBots: listBotsToolDef(orgId),
-    toggleBot: toggleBotToolDef(orgId, userId, role),
-    showActivity: showActivityToolDef(orgId),
-    completeOnboarding: completeOnboardingToolDef(orgId, userId),
-    runScan: runScanToolDef(orgId, userId),
-    showScanResults: showScanResultsToolDef(orgId),
-    showStats: showStatsToolDef(orgId),
-    listProposals: listProposalsToolDef(orgId),
-    reviewProposal: reviewProposalToolDef(),
-    approveProposal: approveProposalToolDef(orgId, userId, role),
-    rejectProposal: rejectProposalToolDef(orgId, userId, role),
-    editSystemPrompt: editSystemPromptToolDef(orgId, userId, role),
-    inviteMember: inviteMemberToolDef(orgId, userId, role),
-    generateDocs: generateDocsToolDef(orgId, userId),
-    docStatus: docStatusToolDef(orgId),
-    createBot: createBotToolDef(orgId, userId),
-    testBot: testBotToolDef(orgId),
-    promoteBot: promoteBotToolDef(orgId, userId),
-    createSwarm: createSwarmToolDef(orgId, userId),
-    listSwarms: listSwarmsToolDef(orgId),
-    manageSwarm: manageSwarmToolDef(orgId, userId),
-    runSwarm: runSwarmToolDef(orgId, userId),
-    configureWebhook: configureWebhookToolDef(orgId, userId),
-    listWebhooks: listWebhooksToolDef(orgId),
-  };
-
-  const result = streamText({
-    model: getModel(),
-    system: systemPrompt,
-    messages,
-    tools,
-    stopWhen: stepCountIs(5),
-  });
-
-  return result.toTextStreamResponse();
 }
