@@ -38,6 +38,6 @@ export async function GET(request: NextRequest) {
         }
       : null,
     role: session.role ?? null,
-    isPlatformAdmin: isPlatformAdmin(user.email),
+    isPlatformAdmin: isPlatformAdmin(user.email, user.github_login),
   });
 }

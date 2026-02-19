@@ -21,7 +21,7 @@ export async function GET(
   }
 
   const user = await getUserById(session.userId);
-  if (!user || !isPlatformAdmin(user.email)) {
+  if (!user || !isPlatformAdmin(user.email, user.github_login)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -55,7 +55,7 @@ export async function PUT(
   }
 
   const user = await getUserById(session.userId);
-  if (!user || !isPlatformAdmin(user.email)) {
+  if (!user || !isPlatformAdmin(user.email, user.github_login)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

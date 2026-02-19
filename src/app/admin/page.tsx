@@ -13,7 +13,7 @@ export default async function AdminPage() {
   }
 
   const user = await getUserById(session.userId);
-  if (!user || !isPlatformAdmin(user.email)) {
+  if (!user || !isPlatformAdmin(user.email, user.github_login)) {
     redirect("/chat");
   }
 

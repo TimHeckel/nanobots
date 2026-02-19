@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   const user = await getUserById(session.userId);
-  if (!user || !isPlatformAdmin(user.email)) {
+  if (!user || !isPlatformAdmin(user.email, user.github_login)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
