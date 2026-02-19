@@ -7,6 +7,7 @@ interface GitHubUser {
   login: string;
   name: string | null;
   avatar_url: string;
+  email: string | null;
 }
 
 interface GitHubOrg {
@@ -106,7 +107,35 @@ export async function fetchGitHubUser(token: string): Promise<GitHubUser> {
     login: data.login,
     name: data.name,
     avatar_url: data.avatar_url,
+    email: data.email,
   };
+}
+
+/**
+ * Fetch the authenticated user's primary verified email from GitHub.
+ */
+export async function fetchGitHubEmail(token: string): Promise<string | null> {
+  try {
+    const response = await fetch("https://api.github.com/user/emails", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const emails = (await response.json()) as Array<{
+      email: string;
+      primary: boolean;
+      verified: boolean;
+    }>;
+
+    const primary = emails.find((e) => e.primary && e.verified);
+    return primary?.email ?? emails.find((e) => e.verified)?.email ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**

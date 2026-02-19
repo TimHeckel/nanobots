@@ -2,6 +2,7 @@
 
 import type { UIMessage } from "ai";
 import { ToolResultRenderer } from "./tool-result-renderer";
+import { MarkdownContent } from "./markdown-content";
 
 interface MessageBubbleProps {
   message: UIMessage;
@@ -51,7 +52,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 : "bg-indigo-deep/80 text-foreground/80 rounded-bl-sm"
             }`}
           >
-            <div className="whitespace-pre-wrap break-words">{textContent}</div>
+            {isAssistant ? (
+              <MarkdownContent content={textContent} />
+            ) : (
+              <div className="whitespace-pre-wrap break-words">{textContent}</div>
+            )}
           </div>
         )}
 

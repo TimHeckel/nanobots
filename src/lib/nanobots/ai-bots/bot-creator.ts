@@ -1,7 +1,7 @@
 import { generateText, type LanguageModel } from "ai";
 import type { BotDefinition } from "./types";
 
-const BOT_DESIGNER_PROMPT = `You are an expert bot designer for nanobots, an AI-native code scanner.
+const BOT_DESIGNER_PROMPT_DEFAULT = `You are an expert bot designer for nanobots, an AI-native code scanner.
 You help create new scanning bots by generating complete bot definitions.
 
 A bot definition is a JSON object with:
@@ -20,13 +20,24 @@ The system prompt should instruct the bot to:
 Respond with a valid JSON bot definition.
 Respond ONLY with valid JSON. No markdown fences, no explanation outside the JSON.`;
 
+export async function getBotDesignerPrompt(): Promise<string> {
+  try {
+    const { getGlobalDefault } = await import("@/lib/db/queries/system-prompts");
+    const dbPrompt = await getGlobalDefault("bot-designer");
+    return dbPrompt?.prompt_text ?? BOT_DESIGNER_PROMPT_DEFAULT;
+  } catch {
+    return BOT_DESIGNER_PROMPT_DEFAULT;
+  }
+}
+
 export async function createBotFromDescription(
   description: string,
   model: LanguageModel,
 ): Promise<BotDefinition> {
+  const systemPrompt = await getBotDesignerPrompt();
   const { text } = await generateText({
     model,
-    system: BOT_DESIGNER_PROMPT,
+    system: systemPrompt,
     prompt: `Create a bot for the following purpose:\n\n${description}`,
   });
 

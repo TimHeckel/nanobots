@@ -1,11 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { ChatHeader } from "./chat-header";
 import { ChatInput } from "./chat-input";
 import { MessageBubble } from "./message-bubble";
 import { LoadingDots } from "@/components/shared/loading-dots";
+import { BotCard } from "./bot-card";
+import { SwarmCard } from "./swarm-card";
+
+interface BotInfo {
+  bot_name: string;
+  enabled: boolean;
+}
+
+interface SwarmInfo {
+  name: string;
+  description: string | null;
+  botCount: number;
+  bots: string[];
+}
 
 interface ChatInterfaceProps {
   user: {
@@ -27,6 +41,20 @@ export function ChatInterface({ user, org }: ChatInterfaceProps) {
 
   const isLoading = status === "submitted" || status === "streaming";
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [bots, setBots] = useState<BotInfo[]>([]);
+  const [swarms, setSwarms] = useState<SwarmInfo[]>([]);
+
+  useEffect(() => {
+    fetch("/api/chat/context")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setBots(data.bots ?? []);
+          setSwarms(data.swarms ?? []);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -65,15 +93,61 @@ export function ChatInterface({ user, org }: ChatInterfaceProps) {
                 <span className="text-foreground">bots</span>
                 <span className="text-purple-accent">.sh</span>
               </div>
-              <p className="text-foreground/30 text-sm max-w-md mb-8">
-                Your AI-powered security and documentation assistant. Try one of these to get started:
+              <p className="text-foreground/30 text-sm max-w-md mb-6">
+                Your AI-powered security and documentation assistant.
               </p>
+
+              {/* Bots section */}
+              <div className="w-full max-w-lg mb-4">
+                <h3 className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-2 font-mono text-left">
+                  Bots
+                </h3>
+                {bots.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {bots.map((bot) => (
+                      <BotCard
+                        key={bot.bot_name}
+                        name={bot.bot_name}
+                        enabled={bot.enabled}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-foreground/20 text-xs font-mono text-left">
+                    No custom bots yet — ask me to create one
+                  </p>
+                )}
+              </div>
+
+              {/* Swarms section */}
+              <div className="w-full max-w-lg mb-6">
+                <h3 className="text-xs font-semibold text-foreground/40 uppercase tracking-wider mb-2 font-mono text-left">
+                  Swarms
+                </h3>
+                {swarms.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {swarms.map((swarm) => (
+                      <SwarmCard
+                        key={swarm.name}
+                        name={swarm.name}
+                        description={swarm.description}
+                        botCount={swarm.botCount}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-foreground/20 text-xs font-mono text-left">
+                    No swarms configured
+                  </p>
+                )}
+              </div>
+
+              {/* Starter prompts */}
               <div className="flex flex-wrap justify-center gap-3 max-w-lg">
                 {[
-                  `Scan my repos for security issues`,
-                  `Generate documentation for my repo`,
-                  `Show me which bots are active`,
-                  `What can you do?`,
+                  "Run a security scan",
+                  "Create a bot",
+                  "Generate docs for my repo",
                 ].map((prompt) => (
                   <button
                     key={prompt}

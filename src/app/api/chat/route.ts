@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     // Build system prompt with org context
     const context = await getOrgContext(orgId);
-    const systemPrompt = buildSystemPrompt(context.org, context);
+    const systemPrompt = await buildSystemPrompt(context.org, context);
 
     // Assemble all tools with org/user context via closures
     const tools = {

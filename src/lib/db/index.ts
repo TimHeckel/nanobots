@@ -32,6 +32,8 @@ export async function migrate() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
 
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS organizations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

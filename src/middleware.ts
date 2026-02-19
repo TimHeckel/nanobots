@@ -4,8 +4,8 @@ import { jwtVerify } from "jose";
 /**
  * Routes that require authentication.
  */
-const PROTECTED_PAGE_ROUTES = ["/chat"];
-const PROTECTED_API_ROUTES = ["/api/chat", "/api/org"];
+const PROTECTED_PAGE_ROUTES = ["/chat", "/admin"];
+const PROTECTED_API_ROUTES = ["/api/chat", "/api/org", "/api/admin"];
 
 function isProtectedRoute(pathname: string): boolean {
   for (const route of PROTECTED_PAGE_ROUTES) {
@@ -70,9 +70,13 @@ export const config = {
   matcher: [
     "/chat",
     "/chat/:path*",
+    "/admin",
+    "/admin/:path*",
     "/api/chat",
     "/api/chat/:path*",
     "/api/org",
     "/api/org/:path*",
+    "/api/admin",
+    "/api/admin/:path*",
   ],
 };

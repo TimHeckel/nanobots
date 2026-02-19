@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exchangeCodeForToken, fetchGitHubUser, fetchUserOrgs } from "@/lib/auth/github-oauth";
+import { exchangeCodeForToken, fetchGitHubUser, fetchGitHubEmail, fetchUserOrgs } from "@/lib/auth/github-oauth";
 import { findInstallationForOrgs, getInstallationOctokit } from "@/lib/github";
 import { signJwt, setSessionCookie } from "@/lib/auth/session";
 import { upsertUser } from "@/lib/db/queries/users";
@@ -29,13 +29,17 @@ export async function GET(request: NextRequest) {
 
   try {
     const accessToken = await exchangeCodeForToken(code);
-    const ghUser = await fetchGitHubUser(accessToken);
+    const [ghUser, ghEmail] = await Promise.all([
+      fetchGitHubUser(accessToken),
+      fetchGitHubEmail(accessToken),
+    ]);
 
     const user = await upsertUser({
       github_id: ghUser.id,
       github_login: ghUser.login,
       name: ghUser.name,
       avatar_url: ghUser.avatar_url,
+      email: ghEmail,
     });
 
     // 1. Check existing org memberships in our DB

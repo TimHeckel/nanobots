@@ -69,6 +69,26 @@ Respond with JSON:
 
 Respond ONLY with valid JSON.`;
 
+export async function getRefinerPrompt(): Promise<string> {
+  try {
+    const { getGlobalDefault } = await import("@/lib/db/queries/system-prompts");
+    const dbPrompt = await getGlobalDefault("prompt-refiner");
+    return dbPrompt?.prompt_text ?? REFINER_SYSTEM_PROMPT;
+  } catch {
+    return REFINER_SYSTEM_PROMPT;
+  }
+}
+
+export async function getResearchPrompt(): Promise<string> {
+  try {
+    const { getGlobalDefault } = await import("@/lib/db/queries/system-prompts");
+    const dbPrompt = await getGlobalDefault("security-researcher");
+    return dbPrompt?.prompt_text ?? RESEARCH_PROMPT;
+  } catch {
+    return RESEARCH_PROMPT;
+  }
+}
+
 export class PromptRefiner {
   private state: RefinerState;
   private model: LanguageModel;
@@ -157,9 +177,10 @@ export class PromptRefiner {
     bot: BotDefinition,
   ): Promise<Record<string, string[]>> {
     try {
+      const researchPrompt = await getResearchPrompt();
       const { text } = await generateText({
         model: this.model,
-        system: RESEARCH_PROMPT,
+        system: researchPrompt,
         prompt: [
           `Bot: ${bot.name}`,
           `Category: ${bot.category}`,
@@ -201,9 +222,10 @@ export class PromptRefiner {
       .slice(0, 20);
 
     try {
+      const refinerPrompt = await getRefinerPrompt();
       const { text } = await generateText({
         model: this.model,
-        system: REFINER_SYSTEM_PROMPT,
+        system: refinerPrompt,
         prompt: [
           `# Bot: ${bot.name}`,
           `## Current System Prompt`,

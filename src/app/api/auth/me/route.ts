@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { getUserById } from "@/lib/db/queries/users";
 import { getOrgById } from "@/lib/db/queries/organizations";
+import { isPlatformAdmin } from "@/lib/auth/platform-admin";
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request.cookies);
@@ -37,5 +38,6 @@ export async function GET(request: NextRequest) {
         }
       : null,
     role: session.role ?? null,
+    isPlatformAdmin: isPlatformAdmin(user.email),
   });
 }

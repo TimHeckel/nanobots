@@ -1,39 +1,27 @@
 import type { Organization } from "@/lib/db/schema";
 import type { OrgContext } from "./context";
+import { getSystemPrompt, HARDCODED_DEFAULTS } from "@/lib/db/queries/system-prompts";
 
-const ONBOARDING_PREAMBLE = `Welcome to nanobots.sh! I'm your AI security assistant and I'm here to help you get started.
+const ONBOARDING_PREAMBLE = HARDCODED_DEFAULTS["onboarding-preamble"];
 
-Here's what you should know:
-- You have 7 security bots that automatically scan your code and open fix PRs:
-  1. console-cleanup - Remove console.log/debug statements
-  2. unused-imports - Remove imports that aren't referenced
-  3. actions-updater - Update deprecated GitHub Actions
-  4. secret-scanner - Detect hardcoded secrets and API keys
-  5. actions-security - Pin GitHub Actions to SHA digests
-  6. dead-exports - Remove exports nothing imports
-  7. llm-security - OWASP LLM Top 10 vulnerability detection
-- You also have 3 documentation bots that generate living docs from your code:
-  8. readme-generator - Generate comprehensive README with install instructions
-  9. architecture-mapper - Generate architecture docs with Mermaid diagrams
-  10. api-doc-generator - Generate API docs with runnable curl/fetch examples
-- You can invite team members to collaborate on security management.
-- Ask me to run a scan on any of your connected repositories to see nanobots in action.
-- Ask me to generate documentation for any repository — I'll create a PR with README, architecture diagrams, and API docs.
-- I can help you enable/disable specific bots, review findings, and manage security proposals.
+const DEFAULT_PERSONALITY = HARDCODED_DEFAULTS["chat-personality"];
 
-`;
-
-export function buildSystemPrompt(org: Organization, context: OrgContext): string {
+export async function buildSystemPrompt(org: Organization, context: OrgContext): Promise<string> {
   const sections: string[] = [];
 
   // Onboarding preamble if not completed
   if (!org.onboarding_completed) {
-    sections.push(ONBOARDING_PREAMBLE);
+    const dbOnboarding = await getSystemPrompt(org.id, "onboarding-preamble");
+    sections.push(dbOnboarding?.prompt_text ?? ONBOARDING_PREAMBLE);
   }
 
-  // Base personality
+  // Base personality — read from DB, fall back to hardcoded
+  const dbPersonality = await getSystemPrompt(org.id, "chat-personality");
+  const personality = dbPersonality?.prompt_text ?? DEFAULT_PERSONALITY;
   sections.push(
-    `You are the nanobots.sh AI assistant for ${org.name}. You help manage nanobot configurations, review scan results, handle security proposals, generate documentation, and coordinate team security. Be concise and proactive about surfacing important security information. When users connect a new repository, proactively suggest running a scan and generating documentation.`
+    personality.includes(org.name)
+      ? personality
+      : `${personality}\n\nYou are currently assisting the organization: ${org.name}.`
   );
 
   // Connected repos
