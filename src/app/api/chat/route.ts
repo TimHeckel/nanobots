@@ -48,10 +48,20 @@ export async function POST(req: NextRequest) {
 
     // useChat() sends UIMessage format (with `parts`), but streamText() expects
     // ModelMessage format (with `content`). Detect and convert when needed.
-    const isUIFormat = rawMessages?.[0]?.parts !== undefined;
-    const messages = isUIFormat
-      ? await convertToModelMessages(rawMessages)
-      : rawMessages;
+    let messages;
+    try {
+      const isUIFormat = rawMessages?.[0]?.parts !== undefined;
+      messages = isUIFormat
+        ? await convertToModelMessages(rawMessages)
+        : rawMessages;
+      console.log(`[chat/route] converted ${rawMessages.length} messages (ui=${rawMessages?.[0]?.parts !== undefined})`);
+    } catch (convError) {
+      console.error("[chat/route] Message conversion failed:", convError);
+      return new Response(JSON.stringify({ error: "Message conversion failed" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // Build system prompt with org context
     const context = await getOrgContext(orgId);

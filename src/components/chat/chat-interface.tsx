@@ -38,7 +38,11 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ user, org, isPlatformAdmin }: ChatInterfaceProps) {
-  const { messages, sendMessage, status } = useChat();
+  const { messages, sendMessage, status, error, regenerate, clearError } = useChat({
+    onError: (err) => {
+      console.error("[chat] Stream error:", err);
+    },
+  });
 
   const isLoading = status === "submitted" || status === "streaming";
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -175,6 +179,27 @@ export function ChatInterface({ user, org, isPlatformAdmin }: ChatInterfaceProps
               </div>
               <div className="rounded-2xl rounded-bl-sm bg-indigo-deep/80 px-4 py-3">
                 <LoadingDots />
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="flex gap-3 justify-start">
+              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+                <span className="text-red-400 text-xs font-mono font-bold">
+                  !
+                </span>
+              </div>
+              <div className="rounded-2xl rounded-bl-sm bg-red-500/10 border border-red-500/20 px-4 py-3">
+                <p className="text-red-400 text-sm font-mono">
+                  Stream failed — {error.message || "connection lost"}
+                </p>
+                <button
+                  onClick={() => { clearError(); regenerate(); }}
+                  className="mt-2 text-xs text-red-400/70 hover:text-red-400 underline font-mono"
+                >
+                  Retry
+                </button>
               </div>
             </div>
           )}
