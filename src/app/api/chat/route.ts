@@ -85,12 +85,17 @@ export async function POST(req: NextRequest) {
       listWebhooks: listWebhooksToolDef(orgId),
     };
 
+    console.log(`[chat/route] streaming for org=${orgId}, messages=${messages.length}`);
+
     const result = streamText({
       model: getModel(),
       system: systemPrompt,
       messages,
       tools,
       stopWhen: stepCountIs(5),
+      onError: ({ error }) => {
+        console.error("[chat/route] Stream error:", error);
+      },
     });
 
     return result.toUIMessageStreamResponse();

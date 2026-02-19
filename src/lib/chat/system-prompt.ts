@@ -9,84 +9,62 @@ const DEFAULT_PERSONALITY = HARDCODED_DEFAULTS["chat-personality"];
 export async function buildSystemPrompt(org: Organization, context: OrgContext): Promise<string> {
   const sections: string[] = [];
 
+  // Base personality — read from DB, fall back to hardcoded
+  let personality: string;
+  try {
+    const dbPersonality = await getSystemPrompt(org.id, "chat-personality");
+    personality = dbPersonality?.prompt_text ?? DEFAULT_PERSONALITY;
+  } catch {
+    personality = DEFAULT_PERSONALITY;
+  }
+  sections.push(personality);
+
   // Onboarding preamble if not completed
   if (!org.onboarding_completed) {
-    const dbOnboarding = await getSystemPrompt(org.id, "onboarding-preamble");
-    sections.push(dbOnboarding?.prompt_text ?? ONBOARDING_PREAMBLE);
+    try {
+      const dbOnboarding = await getSystemPrompt(org.id, "onboarding-preamble");
+      sections.push(dbOnboarding?.prompt_text ?? ONBOARDING_PREAMBLE);
+    } catch {
+      sections.push(ONBOARDING_PREAMBLE);
+    }
   }
 
-  // Base personality — read from DB, fall back to hardcoded
-  const dbPersonality = await getSystemPrompt(org.id, "chat-personality");
-  const personality = dbPersonality?.prompt_text ?? DEFAULT_PERSONALITY;
-  sections.push(
-    personality.includes(org.name)
-      ? personality
-      : `${personality}\n\nYou are currently assisting the organization: ${org.name}.`
-  );
+  // Context
+  sections.push(`Org: ${org.name}`);
 
-  // Connected repos
   if (context.repos.length > 0) {
-    const repoNames = context.repos.map((r) => r.full_name).join(", ");
-    sections.push(`Connected repositories: ${repoNames}`);
-  } else {
-    sections.push("No repositories are connected yet.");
+    sections.push(`Repos: ${context.repos.map((r) => r.full_name).join(", ")}`);
   }
 
-  // Active bots
   const activeBots = context.botConfigs.filter((b) => b.enabled);
   const inactiveBots = context.botConfigs.filter((b) => !b.enabled);
   if (activeBots.length > 0) {
-    sections.push(
-      `Active bots (${activeBots.length}/${context.botConfigs.length}): ${activeBots.map((b) => b.bot_name).join(", ")}`
-    );
+    sections.push(`Active bots (${activeBots.length}): ${activeBots.map((b) => b.bot_name).join(", ")}`);
   }
   if (inactiveBots.length > 0) {
-    sections.push(
-      `Disabled bots: ${inactiveBots.map((b) => b.bot_name).join(", ")}`
-    );
+    sections.push(`Disabled: ${inactiveBots.map((b) => b.bot_name).join(", ")}`);
   }
 
-  // Pending proposals
   if (context.pendingProposalCount > 0) {
-    sections.push(
-      `There are ${context.pendingProposalCount} pending prompt update proposal(s) that need review. Proactively mention this to the user.`
-    );
+    sections.push(`${context.pendingProposalCount} pending prompt proposals — mention to user.`);
   }
 
-  // Bot creation & lifecycle
-  sections.push(
-    `Bot creation: You can create custom bots through conversation. Guide users through what the bot should scan for, its category, and file types. Use createBot to save, testBot to validate against a real repo, and promoteBot to advance through draft → testing → active.`
-  );
-
-  // Swarm management
-  sections.push(
-    `Swarm management: Swarms are named collections of bots that run together as a group. Use createSwarm to create, listSwarms to view, manageSwarm to add/remove bots or delete, and runSwarm to run a swarm against a repository.`
-  );
-
-  // Swarms context
   if (context.swarms && context.swarms.length > 0) {
-    const swarmLines = context.swarms.map(
-      (s) => `- ${s.name} (${s.botCount} bots): ${s.bots.join(", ")}`
-    );
-    sections.push(`Configured swarms:\n${swarmLines.join("\n")}`);
+    const swarmLines = context.swarms.map((s) => `${s.name} (${s.botCount} bots)`);
+    sections.push(`Swarms: ${swarmLines.join(", ")}`);
   }
-
-  // Webhook configuration
-  sections.push(
-    `Webhook configuration: You can set up webhook endpoints for external dashboards (Slack, Grafana, custom HTTP). Events: scan.started, scan.completed, bot.started, bot.completed, bot.finding, pr.created. Use configureWebhook to create and listWebhooks to view.`
-  );
 
   if (context.webhookCount && context.webhookCount > 0) {
-    sections.push(`Active webhooks: ${context.webhookCount} endpoint(s) configured.`);
+    sections.push(`Webhooks: ${context.webhookCount} active`);
   }
 
-  // Recent activity summary
   if (context.recentActivity.length > 0) {
-    const activityLines = context.recentActivity.map(
-      (a) => `- [${a.event_type}] ${a.summary}`
-    );
-    sections.push(`Recent activity:\n${activityLines.join("\n")}`);
+    const lines = context.recentActivity.map((a) => `[${a.event_type}] ${a.summary}`);
+    sections.push(`Recent:\n${lines.join("\n")}`);
   }
+
+  // Tool hints — terse
+  sections.push(`Tools: createBot, testBot, promoteBot for bot lifecycle. createSwarm, listSwarms, manageSwarm, runSwarm for swarms. configureWebhook, listWebhooks for webhooks. runScan, generateDocs for repo operations.`);
 
   return sections.join("\n\n");
 }
