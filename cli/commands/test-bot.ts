@@ -80,7 +80,7 @@ export async function testBotCommand(
     baseURL: provider.baseUrl,
     apiKey: provider.apiKey,
   });
-  const model = openai(provider.model);
+  const model = openai.chat(provider.model);
 
   const result = await testBot(bot, files, model);
 

@@ -37,7 +37,7 @@ export async function createCommand(
     baseURL: provider.baseUrl,
     apiKey: provider.apiKey,
   });
-  const model = openai(provider.model);
+  const model = openai.chat(provider.model);
 
   try {
     const bot = await createBotFromDescription(description, model);

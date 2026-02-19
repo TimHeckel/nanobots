@@ -40,7 +40,7 @@ export async function chatCommand(flags: ParsedFlags): Promise<number> {
     baseURL: provider.baseUrl,
     apiKey: provider.apiKey,
   });
-  const model = openai(provider.model);
+  const model = openai.chat(provider.model);
 
   // Load bots for system prompt context
   const userBots = await loadLocalBots(targetDir);

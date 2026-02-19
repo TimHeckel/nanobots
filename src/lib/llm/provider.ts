@@ -83,7 +83,7 @@ export const fixFinishReasonMiddleware: LanguageModelMiddleware = {
  */
 export function getModel(modelId: string = DEFAULT_MODEL) {
   return wrapLanguageModel({
-    model: openrouter(modelId),
+    model: openrouter.chat(modelId),
     middleware: fixFinishReasonMiddleware,
   });
 }
