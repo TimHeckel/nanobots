@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export async function POST() {
+function logoutResponse() {
   const response = NextResponse.redirect(new URL("/", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
 
   response.cookies.set("nb-session", "", {
@@ -12,4 +12,12 @@ export async function POST() {
   });
 
   return response;
+}
+
+export async function GET() {
+  return logoutResponse();
+}
+
+export async function POST() {
+  return logoutResponse();
 }

@@ -18,9 +18,10 @@ interface ChatHeaderProps {
     avatarUrl: string | null;
   };
   onLogout: () => void;
+  isPlatformAdmin?: boolean;
 }
 
-export function ChatHeader({ user, org, onLogout }: ChatHeaderProps) {
+export function ChatHeader({ user, org, onLogout, isPlatformAdmin }: ChatHeaderProps) {
   return (
     <header className="flex-shrink-0 h-14 flex items-center justify-between px-4 md:px-6 bg-background/80 backdrop-blur-md border-b border-purple-accent/10">
       {/* Left: Logo */}
@@ -72,6 +73,14 @@ export function ChatHeader({ user, org, onLogout }: ChatHeaderProps) {
             {user.name ?? user.login}
           </span>
         </div>
+        {isPlatformAdmin && (
+          <Link
+            href="/admin"
+            className="text-xs text-purple-accent/50 hover:text-purple-accent transition-colors font-mono"
+          >
+            admin
+          </Link>
+        )}
         <button
           onClick={onLogout}
           className="text-xs text-foreground/30 hover:text-foreground/60 transition-colors font-mono"

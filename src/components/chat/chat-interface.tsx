@@ -34,9 +34,10 @@ interface ChatInterfaceProps {
     login: string;
     avatarUrl: string | null;
   };
+  isPlatformAdmin?: boolean;
 }
 
-export function ChatInterface({ user, org }: ChatInterfaceProps) {
+export function ChatInterface({ user, org, isPlatformAdmin }: ChatInterfaceProps) {
   const { messages, sendMessage, status } = useChat();
 
   const isLoading = status === "submitted" || status === "streaming";
@@ -78,7 +79,7 @@ export function ChatInterface({ user, org }: ChatInterfaceProps) {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <ChatHeader user={user} org={org} onLogout={handleLogout} />
+      <ChatHeader user={user} org={org} onLogout={handleLogout} isPlatformAdmin={isPlatformAdmin} />
 
       {/* Messages area */}
       <div

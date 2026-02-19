@@ -30,11 +30,13 @@ interface AuthResponse {
     githubOrgLogin: string;
     avatarUrl: string | null;
   } | null;
+  isPlatformAdmin?: boolean;
 }
 
 export default function ChatPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [org, setOrg] = useState<OrgData | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +64,8 @@ export default function ChatPage() {
             avatarUrl: data.org.avatarUrl,
           });
         }
+
+        setIsAdmin(!!data.isPlatformAdmin);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -115,5 +119,5 @@ export default function ChatPage() {
     avatarUrl: user.avatarUrl,
   };
 
-  return <ChatInterface user={user} org={orgData} />;
+  return <ChatInterface user={user} org={orgData} isPlatformAdmin={isAdmin} />;
 }
