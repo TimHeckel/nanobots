@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Ensure email column exists (safe to run repeatedly)
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)`;
+
     const accessToken = await exchangeCodeForToken(code);
     const [ghUser, ghEmail] = await Promise.all([
       fetchGitHubUser(accessToken),
