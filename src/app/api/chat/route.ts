@@ -1,4 +1,4 @@
-import { streamText, stepCountIs } from "ai";
+import { streamText, stepCountIs, convertToModelMessages } from "ai";
 import { getModel } from "@/lib/llm/provider";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
@@ -42,7 +42,14 @@ export async function POST(req: NextRequest) {
 
     const { userId, orgId, role } = session;
 
-    const { messages } = await req.json();
+    const { messages: rawMessages } = await req.json();
+
+    // useChat() sends UIMessage format (with `parts`), but streamText() expects
+    // ModelMessage format (with `content`). Detect and convert when needed.
+    const isUIFormat = rawMessages?.[0]?.parts !== undefined;
+    const messages = isUIFormat
+      ? await convertToModelMessages(rawMessages)
+      : rawMessages;
 
     // Build system prompt with org context
     const context = await getOrgContext(orgId);

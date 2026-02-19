@@ -1,5 +1,7 @@
 import { BrowserManager } from "agent-browser/dist/browser.js";
 import type { EnhancedSnapshot } from "agent-browser/dist/snapshot.js";
+import { SignJWT } from "jose";
+import { neon } from "@neondatabase/serverless";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:6100";
 
@@ -80,4 +82,86 @@ export async function waitForSnapshot(
  */
 export function getBaseUrl(): string {
   return BASE_URL;
+}
+
+/**
+ * Generate a JWT for authenticated e2e tests (same signing as the app).
+ */
+export async function generateTestJwt(payload: {
+  userId: string;
+  orgId: string;
+  role: string;
+}): Promise<string> {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET required for chat e2e tests");
+  const key = new TextEncoder().encode(secret);
+  return new SignJWT(payload as Record<string, unknown>)
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(key);
+}
+
+/**
+ * Inject the nb-session cookie into the browser context so /chat is accessible.
+ */
+export async function injectSessionCookie(
+  browser: BrowserManager,
+  token: string,
+) {
+  const baseUrl = getBaseUrl();
+  const domain = new URL(baseUrl).hostname;
+  const page = browser.getPage();
+  await page.context().addCookies([
+    {
+      name: "nb-session",
+      value: token,
+      domain,
+      path: "/",
+      httpOnly: true,
+      secure: baseUrl.startsWith("https"),
+    },
+  ]);
+}
+
+/**
+ * Fetch a real user+org from the database for authenticated e2e tests.
+ */
+export async function getTestUserFromDb(): Promise<{
+  userId: string;
+  orgId: string;
+}> {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) throw new Error("DATABASE_URL required for chat e2e tests");
+  const sql = neon(dbUrl);
+  const rows = await sql`
+    SELECT u.id AS user_id, m.org_id
+    FROM users u
+    JOIN org_members m ON m.user_id = u.id
+    LIMIT 1
+  `;
+  if (!rows.length) throw new Error("No user with org membership found in DB");
+  return { userId: rows[0].user_id, orgId: rows[0].org_id };
+}
+
+/**
+ * Type a message in the chat textarea and send it via Enter.
+ * Waits for the textarea to be enabled (not loading) before typing.
+ */
+export async function sendChatMessage(browser: BrowserManager, text: string) {
+  const page = browser.getPage();
+  const textarea = page.getByPlaceholder("Ask nanobots anything...");
+  await textarea.waitFor({ state: "visible", timeout: 30000 });
+  // Wait until textarea is enabled (chat not loading)
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector(
+        'textarea[placeholder="Ask nanobots anything..."]',
+      ) as HTMLTextAreaElement | null;
+      return el && !el.disabled;
+    },
+    { timeout: 60000 },
+  );
+  await textarea.fill(text);
+  await textarea.press("Enter");
 }

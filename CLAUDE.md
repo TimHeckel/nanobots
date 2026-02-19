@@ -82,7 +82,14 @@ CLI: `nanobots create "desc"` -> `nanobots test bot-name .` -> `nanobots promote
 
 ## Environment Variables
 
-See `.env.example` for full list. Key ones:
+Production env vars live in Vercel. Pull them locally with:
+```bash
+npx vercel env pull .env.local --environment production
+```
+
+`.env` has GitHub App credentials only. `.env.local` (gitignored) has the full set after pulling from Vercel.
+
+Key vars:
 - `OPENROUTER_API_KEY`: Model access (both CLI and SaaS, via OpenRouter)
 - `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`: GitHub App auth
 - `DATABASE_URL`: Neon Postgres connection

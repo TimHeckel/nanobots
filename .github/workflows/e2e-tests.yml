@@ -39,4 +39,7 @@ jobs:
           KERNEL_HEADLESS: "true"
           KERNEL_TIMEOUT_SECONDS: "300"
           E2E_BASE_URL: ${{ github.event.inputs.base_url || github.event.deployment_status.target_url || 'https://nanobots.sh' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: npm run e2e:ci

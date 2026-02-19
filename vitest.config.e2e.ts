@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tests/e2e/browser-*.test.ts"],
-    testTimeout: 60000,
+    testTimeout: 120000,
     hookTimeout: 60000,
     globals: true,
     environment: "node",
