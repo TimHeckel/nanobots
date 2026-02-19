@@ -9,12 +9,6 @@
  *   - DATABASE_URL, JWT_SECRET, OPENROUTER_API_KEY set
  *   - For CI: AGENT_BROWSER_PROVIDER=kernel and KERNEL_API_KEY
  *   - For local: npm run dev + HEADED=1 for visible browser
- *
- * NOTE: Tool-based tests (createBot, createSwarm, listSwarms) are skipped
- * because OpenRouter returns finishReason "stop" instead of "tool_calls" for
- * tool use responses, preventing the AI SDK from executing tools server-side.
- * The streaming text response works fine. Once the OpenRouter/AI SDK tool
- * execution issue is resolved, remove the .skip annotations.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -103,10 +97,7 @@ describe("Chat — Bot Creation", () => {
     expect(responseText.length).toBeGreaterThan(5);
   });
 
-  // Skipped: OpenRouter returns finishReason "stop" for tool calls, preventing
-  // server-side tool execution. The createBot tool input streams correctly but
-  // the tool never runs. See: AI SDK + OpenRouter tool calling compatibility.
-  it.skip("creates a bot through conversation", async () => {
+  it("creates a bot through conversation", async () => {
     await sendChatMessage(
       browser,
       "Create a security bot called e2e-test-bot that finds hardcoded passwords in source files. Category: security.",
@@ -168,8 +159,7 @@ describe("Chat — Swarm Creation", () => {
     await browser?.close();
   });
 
-  // Skipped: Same OpenRouter tool calling issue as createBot above.
-  it.skip("creates a swarm through conversation", async () => {
+  it("creates a swarm through conversation", async () => {
     await sendChatMessage(
       browser,
       "Create a swarm called e2e-test-swarm with description 'E2E test swarm' and include console-cleanup and unused-imports bots",
@@ -191,8 +181,7 @@ describe("Chat — Swarm Creation", () => {
     expect(snap.tree).toMatch(/e2e-test-swarm/i);
   });
 
-  // Skipped: Depends on createSwarm working (same tool calling issue).
-  it.skip("lists swarms", async () => {
+  it("lists swarms", async () => {
     await sendChatMessage(browser, "Show me all swarms");
 
     const page = browser.getPage();
