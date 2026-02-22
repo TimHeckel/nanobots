@@ -23,7 +23,7 @@ export function StatsCard({ result }: StatsCardProps) {
       {/* Big numbers grid */}
       <div className="grid grid-cols-3 gap-4">
         <div className="text-center">
-          <div className="font-mono text-2xl font-bold text-green-neon">
+          <div className="font-mono text-2xl font-bold text-brand">
             {totalScans}
           </div>
           <div className="text-xs text-foreground/40 mt-1">Scans</div>
@@ -55,7 +55,7 @@ export function StatsCard({ result }: StatsCardProps) {
               </span>
               <div className="flex-1 h-2 bg-background/40 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-green-neon/60 rounded-full transition-all"
+                  className="h-full bg-brand/60 rounded-full transition-all"
                   style={{
                     width: maxFindings > 0 ? `${(count / maxFindings) * 100}%` : "0%",
                   }}

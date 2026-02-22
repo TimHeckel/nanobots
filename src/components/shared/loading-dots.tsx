@@ -4,15 +4,15 @@ export function LoadingDots() {
   return (
     <div className="flex items-center gap-1.5 px-2 py-1">
       <span
-        className="block w-2 h-2 rounded-full bg-green-neon animate-[loading-dot_1.4s_ease-in-out_infinite]"
+        className="block w-2 h-2 rounded-full bg-brand animate-[loading-dot_1.4s_ease-in-out_infinite]"
         style={{ animationDelay: "0ms" }}
       />
       <span
-        className="block w-2 h-2 rounded-full bg-green-neon animate-[loading-dot_1.4s_ease-in-out_infinite]"
+        className="block w-2 h-2 rounded-full bg-brand animate-[loading-dot_1.4s_ease-in-out_infinite]"
         style={{ animationDelay: "200ms" }}
       />
       <span
-        className="block w-2 h-2 rounded-full bg-green-neon animate-[loading-dot_1.4s_ease-in-out_infinite]"
+        className="block w-2 h-2 rounded-full bg-brand animate-[loading-dot_1.4s_ease-in-out_infinite]"
         style={{ animationDelay: "400ms" }}
       />
       <style>{`

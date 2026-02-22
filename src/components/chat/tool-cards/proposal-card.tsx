@@ -24,7 +24,7 @@ export function ProposalCard({ result }: ProposalCardProps) {
       {/* Header info */}
       <div className="flex items-center gap-3 flex-wrap">
         {data?.agent_name && (
-          <span className="font-mono text-sm text-green-neon">
+          <span className="font-mono text-sm text-brand">
             {data.agent_name}
           </span>
         )}

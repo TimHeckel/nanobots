@@ -14,7 +14,7 @@ export function BotCard({ name, enabled }: BotCardProps) {
       <span
         className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
           enabled
-            ? "bg-green-neon/10 text-green-neon/70"
+            ? "bg-brand/10 text-brand/70"
             : "bg-foreground/5 text-foreground/30"
         }`}
       >

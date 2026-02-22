@@ -55,7 +55,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
             disabled={isLoading}
             placeholder="Ask nanobots anything..."
             rows={1}
-            className="w-full resize-none bg-indigo-deep border border-purple-accent/20 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-1 focus:ring-green-neon/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full resize-none bg-indigo-deep border border-purple-accent/20 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:outline-none focus:ring-1 focus:ring-brand/50 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ lineHeight: "24px" }}
           />
         </div>
@@ -63,7 +63,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
           type="button"
           onClick={send}
           disabled={isLoading || !input.trim()}
-          className="flex-shrink-0 w-10 h-10 rounded-xl bg-green-neon text-background flex items-center justify-center hover:bg-green-neon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-shrink-0 w-10 h-10 rounded-xl bg-brand text-background flex items-center justify-center hover:bg-brand/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <svg
             width="18"

@@ -30,13 +30,13 @@ export function WebhookListCard({ result }: WebhookListCardProps) {
           className="rounded-lg bg-background/30 border border-purple-accent/10 p-3"
         >
           <div className="flex items-center justify-between mb-1">
-            <span className="font-mono text-sm text-green-neon truncate max-w-[70%]">
+            <span className="font-mono text-sm text-brand truncate max-w-[70%]">
               {wh.url}
             </span>
             <span
               className={`text-xs px-1.5 py-0.5 rounded ${
                 wh.active
-                  ? "bg-green-neon/15 text-green-neon"
+                  ? "bg-brand/15 text-brand"
                   : "bg-foreground/10 text-foreground/30"
               }`}
             >

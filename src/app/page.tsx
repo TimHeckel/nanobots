@@ -40,7 +40,7 @@ const SWARM_GALLERY = [
 const LIFECYCLE_STAGES = [
   { name: "draft", description: "Created from a description. Manual test only.", color: "text-foreground/50" },
   { name: "testing", description: "Shadow mode. Runs on scans, results visible to creator.", color: "text-purple-accent" },
-  { name: "active", description: "Live on every push. Creates real PRs.", color: "text-green-neon" },
+  { name: "active", description: "Live on every push. Creates real PRs.", color: "text-brand" },
   { name: "archived", description: "Deactivated. Historical data preserved.", color: "text-foreground/30" },
 ];
 
@@ -65,12 +65,12 @@ const COMPARISON = [
 
 function ComparisonCell({ value, isNanobots }: { value: boolean | string; isNanobots?: boolean }) {
   if (value === true) {
-    return <span className={isNanobots ? "text-green-neon font-bold" : "text-foreground/40"}>&#10003;</span>;
+    return <span className={isNanobots ? "text-brand font-bold" : "text-foreground/40"}>&#10003;</span>;
   }
   if (value === false) {
     return <span className="text-foreground/20">&mdash;</span>;
   }
-  return <span className={isNanobots ? "text-green-neon text-xs font-semibold" : "text-foreground/40 text-xs"}>{value}</span>;
+  return <span className={isNanobots ? "text-brand text-xs font-semibold" : "text-foreground/40 text-xs"}>{value}</span>;
 }
 
 function CopyIcon({ text }: { text: string }) {
@@ -103,7 +103,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}
-      className="group cursor-pointer bg-green-neon text-background font-mono font-bold px-8 py-3.5 rounded-lg text-base hover:bg-green-neon/90 transition-all hover:shadow-[0_0_30px_rgba(57,255,127,0.2)] inline-flex items-center gap-3"
+      className="group cursor-pointer bg-brand text-background font-mono font-bold px-8 py-3.5 rounded-lg text-base hover:bg-brand/90 transition-all hover:shadow-[0_0_30px_rgba(232,123,53,0.2)] inline-flex items-center gap-3"
     >
       <span className="text-background/60">$</span> {text}
       <span className="text-background/50 text-sm">{copied ? "copied!" : "click to copy"}</span>
@@ -132,7 +132,7 @@ function TerminalMock() {
             onClick={() => setActiveTab("create")}
             className={`px-5 py-2 font-mono text-xs transition-colors cursor-pointer ${
               activeTab === "create"
-                ? "text-green-neon border-b-2 border-green-neon bg-green-neon/5"
+                ? "text-brand border-b-2 border-brand bg-brand/5"
                 : "text-foreground/30 hover:text-foreground/50"
             }`}
           >
@@ -142,7 +142,7 @@ function TerminalMock() {
             onClick={() => setActiveTab("deploy")}
             className={`px-5 py-2 font-mono text-xs transition-colors cursor-pointer ${
               activeTab === "deploy"
-                ? "text-green-neon border-b-2 border-green-neon bg-green-neon/5"
+                ? "text-brand border-b-2 border-brand bg-brand/5"
                 : "text-foreground/30 hover:text-foreground/50"
             }`}
           >
@@ -157,12 +157,12 @@ function TerminalMock() {
                 $ nanobots create <span className="text-purple-accent">&quot;flag any React component that uses useEffect without a cleanup function&quot;</span>
               </div>
               <div className="mt-4 space-y-1">
-                <div><span className="text-green-neon">&#10003;</span> <span className="text-foreground/50">Analyzing description...</span></div>
-                <div><span className="text-green-neon">&#10003;</span> <span className="text-foreground/50">Generated system prompt (247 tokens)</span></div>
-                <div><span className="text-green-neon">&#10003;</span> <span className="text-foreground/50">Created bot:</span> <span className="text-green-neon">effect-cleanup-checker</span></div>
+                <div><span className="text-brand">&#10003;</span> <span className="text-foreground/50">Analyzing description...</span></div>
+                <div><span className="text-brand">&#10003;</span> <span className="text-foreground/50">Generated system prompt (247 tokens)</span></div>
+                <div><span className="text-brand">&#10003;</span> <span className="text-foreground/50">Created bot:</span> <span className="text-brand">effect-cleanup-checker</span></div>
                 <div><span className="text-foreground/30">  status:</span> <span className="text-purple-accent">draft</span></div>
                 <div className="mt-3 text-foreground/30">$ nanobots test <span className="text-foreground/50">effect-cleanup-checker</span> <span className="text-purple-accent">.</span></div>
-                <div className="mt-2"><span className="text-green-neon">&#10003;</span> <span className="text-foreground/50">Scanned 42 files, found 3 issues</span></div>
+                <div className="mt-2"><span className="text-brand">&#10003;</span> <span className="text-foreground/50">Scanned 42 files, found 3 issues</span></div>
                 <div><span className="text-foreground/30">  src/hooks/useAuth.tsx:14</span> <span className="text-foreground/50">— missing cleanup for subscription</span></div>
                 <div><span className="text-foreground/30">  src/components/Chat.tsx:87</span> <span className="text-foreground/50">— missing cleanup for WebSocket</span></div>
               </div>
@@ -175,10 +175,10 @@ function TerminalMock() {
               <div className="mt-4">
                 <div className="text-foreground/40 uppercase text-xs tracking-wider mb-2">Active Swarm &mdash; 8 bots</div>
                 <div className="space-y-1">
-                  <div><span className="text-green-neon">&#9679;</span> <span className="text-foreground/70">security-scanner</span> <span className="text-foreground/30">built-in</span></div>
-                  <div><span className="text-green-neon">&#9679;</span> <span className="text-foreground/70">code-quality</span> <span className="text-foreground/30">built-in</span></div>
-                  <div><span className="text-green-neon">&#9679;</span> <span className="text-foreground/70">actions-hardening</span> <span className="text-foreground/30">built-in</span></div>
-                  <div><span className="text-green-neon">&#9679;</span> <span className="text-foreground/70">readme-generator</span> <span className="text-foreground/30">built-in</span></div>
+                  <div><span className="text-brand">&#9679;</span> <span className="text-foreground/70">security-scanner</span> <span className="text-foreground/30">built-in</span></div>
+                  <div><span className="text-brand">&#9679;</span> <span className="text-foreground/70">code-quality</span> <span className="text-foreground/30">built-in</span></div>
+                  <div><span className="text-brand">&#9679;</span> <span className="text-foreground/70">actions-hardening</span> <span className="text-foreground/30">built-in</span></div>
+                  <div><span className="text-brand">&#9679;</span> <span className="text-foreground/70">readme-generator</span> <span className="text-foreground/30">built-in</span></div>
                   <div><span className="text-purple-accent">&#9679;</span> <span className="text-foreground/70">effect-cleanup-checker</span> <span className="text-foreground/30">custom</span></div>
                   <div><span className="text-purple-accent">&#9679;</span> <span className="text-foreground/70">license-header-bot</span> <span className="text-foreground/30">custom</span></div>
                 </div>
@@ -210,7 +210,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Logo size={28} />
             <span className="font-mono font-bold text-lg tracking-tight">
-              <span className="text-green-neon">nano</span>
+              <span className="text-brand">nano</span>
               <span className="text-foreground">bots</span>
               <span className="text-purple-accent">.sh</span>
             </span>
@@ -223,7 +223,7 @@ export default function Home() {
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
             <a
               href="/api/auth/github"
-              className="bg-green-neon text-background font-mono font-semibold px-4 py-1.5 rounded-md text-sm hover:bg-green-neon/90 transition-colors"
+              className="bg-brand text-background font-mono font-semibold px-4 py-1.5 rounded-md text-sm hover:bg-brand/90 transition-colors"
             >
               Get Started
             </a>
@@ -238,7 +238,7 @@ export default function Home() {
 
         <div className="relative max-w-4xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-purple-accent/20 bg-purple-accent/5 text-sm text-purple-accent mb-8">
-            <span className="w-2 h-2 rounded-full bg-green-neon pulse-dot" />
+            <span className="w-2 h-2 rounded-full bg-brand pulse-dot" />
             Now in public beta &mdash; free for open source
           </div>
 
@@ -274,7 +274,7 @@ export default function Home() {
           <div className="rounded-xl border border-purple-accent/20 bg-indigo-deep/80 backdrop-blur-sm p-8 text-center">
             <div className="inline-flex items-center gap-2 bg-background/60 rounded-lg border border-purple-accent/15 px-6 py-3 font-mono text-lg mb-6">
               <span className="text-foreground/40">$</span>
-              <span className="text-green-neon">npx nanobots scan .</span>
+              <span className="text-brand">npx nanobots scan .</span>
               <CopyIcon text="npx nanobots scan ." />
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -321,7 +321,7 @@ export default function Home() {
                   {swarm.bots.map((bot) => (
                     <span
                       key={bot}
-                      className="font-mono text-xs px-3 py-1 rounded-full border border-green-neon/20 bg-green-neon/5 text-green-neon"
+                      className="font-mono text-xs px-3 py-1 rounded-full border border-brand/20 bg-brand/5 text-brand"
                     >
                       {bot}
                     </span>
@@ -330,7 +330,7 @@ export default function Home() {
                 <div className="space-y-2">
                   {swarm.prs.map((pr) => (
                     <div key={pr} className="font-mono text-xs text-foreground/35 flex items-start gap-2">
-                      <span className="text-green-neon mt-0.5 shrink-0">&#10003;</span>
+                      <span className="text-brand mt-0.5 shrink-0">&#10003;</span>
                       {pr}
                     </div>
                   ))}
@@ -365,7 +365,7 @@ export default function Home() {
               <div className="space-y-6 font-mono text-sm">
                 <div>
                   <div className="text-foreground/40 mb-1">$ nanobots create <span className="text-purple-accent">&quot;detect React components over 300 lines&quot;</span></div>
-                  <div className="text-foreground/50 ml-2">&#10003; Created <span className="text-green-neon">large-component-detector</span> <span className="text-foreground/30">(draft)</span></div>
+                  <div className="text-foreground/50 ml-2">&#10003; Created <span className="text-brand">large-component-detector</span> <span className="text-foreground/30">(draft)</span></div>
                 </div>
                 <div>
                   <div className="text-foreground/40 mb-1">$ nanobots test <span className="text-foreground/50">large-component-detector</span> <span className="text-purple-accent">.</span></div>
@@ -379,7 +379,7 @@ export default function Home() {
                 </div>
                 <div>
                   <div className="text-foreground/40 mb-1">$ nanobots promote <span className="text-foreground/50">large-component-detector</span></div>
-                  <div className="text-foreground/50 ml-2">&#10003; Promoted to <span className="text-green-neon">active</span></div>
+                  <div className="text-foreground/50 ml-2">&#10003; Promoted to <span className="text-brand">active</span></div>
                 </div>
               </div>
             </div>
@@ -416,7 +416,7 @@ export default function Home() {
             <span className="text-foreground/20"> &rarr; </span>
             <span className="text-purple-accent">testing</span>
             <span className="text-foreground/20"> &rarr; </span>
-            <span className="text-green-neon">active</span>
+            <span className="text-brand">active</span>
             <span className="text-foreground/20"> &rarr; </span>
             <span className="text-foreground/30">archived</span>
           </h2>
@@ -430,7 +430,7 @@ export default function Home() {
                 <div className="flex flex-col items-center">
                   <div className={`lifecycle-dot w-10 h-10 rounded-full border-2 flex items-center justify-center font-mono text-xs font-bold ${
                     stage.name === "active"
-                      ? "border-green-neon text-green-neon bg-green-neon/10"
+                      ? "border-brand text-brand bg-brand/10"
                       : stage.name === "testing"
                       ? "border-purple-accent text-purple-accent bg-purple-accent/10"
                       : stage.name === "draft"
@@ -475,7 +475,7 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-mono font-semibold text-sm">{swarm.name}</h3>
                   {swarm.builtIn ? (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-green-neon/10 text-green-neon border border-green-neon/20">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/20">
                       built-in
                     </span>
                   ) : (
@@ -504,11 +504,11 @@ export default function Home() {
           <div className="split-panel grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* CLI */}
             <div className="rounded-xl border border-purple-accent/15 bg-indigo-deep/50 p-8">
-              <div className="font-mono text-green-neon text-sm font-bold uppercase tracking-wider mb-6">CLI</div>
+              <div className="font-mono text-brand text-sm font-bold uppercase tracking-wider mb-6">CLI</div>
               <div className="space-y-3">
                 {CLI_COMMANDS.map((c) => (
                   <div key={c.cmd} className="flex items-start gap-3">
-                    <span className="font-mono text-sm text-green-neon shrink-0 w-48 truncate">nanobots {c.cmd}</span>
+                    <span className="font-mono text-sm text-brand shrink-0 w-48 truncate">nanobots {c.cmd}</span>
                     <span className="text-xs text-foreground/35">{c.desc}</span>
                   </div>
                 ))}
@@ -526,11 +526,11 @@ export default function Home() {
                   <div className="text-xs text-foreground/30 mb-2">You</div>
                   <div className="font-mono text-sm text-foreground/60">Scan acme/payments-api for security issues and create a bot that checks for SQL injection patterns</div>
                 </div>
-                <div className="rounded-lg bg-background/40 p-4 border border-green-neon/10">
-                  <div className="text-xs text-green-neon/50 mb-2">nanobots</div>
+                <div className="rounded-lg bg-background/40 p-4 border border-brand/10">
+                  <div className="text-xs text-brand/50 mb-2">nanobots</div>
                   <div className="font-mono text-sm text-foreground/60">
                     Scanned 147 files. Found 2 security issues.
-                    <br />Created <span className="text-green-neon">sql-injection-checker</span> (draft).
+                    <br />Created <span className="text-brand">sql-injection-checker</span> (draft).
                     <br />Run <span className="text-foreground/40">promote sql-injection-checker</span> to activate.
                   </div>
                 </div>
@@ -562,7 +562,7 @@ export default function Home() {
                     <th className="text-foreground/40">Dependabot</th>
                     <th className="text-foreground/40">Snyk</th>
                     <th className="text-foreground/40">CodeRabbit</th>
-                    <th className="text-green-neon">nanobots</th>
+                    <th className="text-brand">nanobots</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -602,34 +602,34 @@ export default function Home() {
               <div className="font-mono text-4xl font-bold mb-1">$0</div>
               <div className="text-sm text-foreground/40 mb-8">forever free</div>
               <ul className="space-y-3 text-sm text-foreground/55">
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>All 6 built-in bots</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Unlimited custom bots</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Unlimited public repos</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Community support</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>All 6 built-in bots</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Unlimited custom bots</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Unlimited public repos</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Community support</li>
               </ul>
             </div>
 
             {/* Pro */}
-            <div className="rounded-xl border border-green-neon/30 bg-indigo-deep/60 p-8 relative glow-box-green">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-neon text-background text-xs font-mono font-bold px-3 py-1 rounded-full">
+            <div className="rounded-xl border border-brand/30 bg-indigo-deep/60 p-8 relative glow-box-brand">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand text-background text-xs font-mono font-bold px-3 py-1 rounded-full">
                 Popular
               </div>
-              <div className="font-mono text-sm text-green-neon uppercase tracking-wider mb-4">Pro</div>
+              <div className="font-mono text-sm text-brand uppercase tracking-wider mb-4">Pro</div>
               <div className="font-mono text-4xl font-bold mb-1">
                 $19<span className="text-lg text-foreground/40">/contributor</span>
               </div>
               <div className="text-sm text-foreground/40 mb-8">per month</div>
               <ul className="space-y-3 text-sm text-foreground/55">
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Everything in Open Source</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Unlimited custom bots</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Custom swarm definitions</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Private repos</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Slack &amp; email alerts</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Priority support</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Everything in Open Source</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Unlimited custom bots</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Custom swarm definitions</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Private repos</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Slack &amp; email alerts</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Priority support</li>
               </ul>
               <a
                 href="/api/auth/github"
-                className="block mt-8 text-center bg-green-neon text-background font-mono font-bold py-2.5 rounded-lg hover:bg-green-neon/90 transition-colors"
+                className="block mt-8 text-center bg-brand text-background font-mono font-bold py-2.5 rounded-lg hover:bg-brand/90 transition-colors"
               >
                 Start free trial
               </a>
@@ -641,12 +641,12 @@ export default function Home() {
               <div className="font-mono text-4xl font-bold mb-1">Custom</div>
               <div className="text-sm text-foreground/40 mb-8">let&apos;s talk</div>
               <ul className="space-y-3 text-sm text-foreground/55">
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Everything in Pro</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Unlimited custom bots</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Custom swarm definitions</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>SSO/SCIM integration</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>Audit logs</li>
-                <li className="flex items-start gap-2"><span className="text-green-neon mt-0.5">&#10003;</span>SLA &amp; dedicated support</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Everything in Pro</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Unlimited custom bots</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Custom swarm definitions</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>SSO/SCIM integration</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>Audit logs</li>
+                <li className="flex items-start gap-2"><span className="text-brand mt-0.5">&#10003;</span>SLA &amp; dedicated support</li>
               </ul>
               <a
                 href="mailto:hello@nanobots.sh"
@@ -688,7 +688,7 @@ export default function Home() {
           <div className="flex items-center gap-2 font-mono text-sm text-foreground/30">
             <Logo size={20} />
             <span>
-              <span className="text-green-neon">nano</span>
+              <span className="text-brand">nano</span>
               <span className="text-foreground/50">bots</span>
               <span className="text-purple-accent">.sh</span>
             </span>

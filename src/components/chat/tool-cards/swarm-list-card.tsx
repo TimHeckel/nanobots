@@ -29,7 +29,7 @@ export function SwarmListCard({ result }: SwarmListCardProps) {
           className="rounded-lg bg-background/30 border border-purple-accent/10 p-3"
         >
           <div className="flex items-center justify-between mb-2">
-            <span className="font-mono text-sm text-green-neon">
+            <span className="font-mono text-sm text-brand">
               {swarm.name}
             </span>
             <span className="text-xs text-foreground/30">

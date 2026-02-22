@@ -79,7 +79,7 @@ export function ToolResultRenderer({ toolName, result }: ToolResultRendererProps
                     {f.severity ?? "info"}
                   </span>
                   <span className="text-foreground/50">
-                    {f.file && <span className="text-green-neon">{f.file}</span>}
+                    {f.file && <span className="text-brand">{f.file}</span>}
                     {f.description && <span className="ml-1">{f.description}</span>}
                   </span>
                 </div>
@@ -104,7 +104,7 @@ export function ToolResultRenderer({ toolName, result }: ToolResultRendererProps
     return (
       <div className="rounded-xl bg-indigo-deep/60 border border-purple-accent/15 p-4">
         <div className="flex items-center gap-2">
-          <span className="text-green-neon">{"\u2713"}</span>
+          <span className="text-brand">{"\u2713"}</span>
           <span className="text-sm text-foreground/60">{message}</span>
         </div>
       </div>

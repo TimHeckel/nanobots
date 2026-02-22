@@ -56,7 +56,7 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
               );
             }
             return (
-              <code className="bg-green-neon/10 text-green-neon px-1.5 py-0.5 rounded text-xs font-mono">
+              <code className="bg-brand/10 text-brand px-1.5 py-0.5 rounded text-xs font-mono">
                 {children}
               </code>
             );

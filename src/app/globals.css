@@ -6,8 +6,8 @@
   --purple-hero: #1a1035;
   --purple-mid: #2d1b69;
   --purple-accent: #7c5bf0;
-  --green-neon: #39ff7f;
-  --green-dim: #1a3a28;
+  --brand: #e87b35;
+  --brand-dim: #3a2218;
   --indigo-deep: #110d25;
   --dot-color: rgba(124, 91, 240, 0.15);
   --amber-warn: #fbbf24;
@@ -19,8 +19,8 @@
   --color-purple-hero: var(--purple-hero);
   --color-purple-mid: var(--purple-mid);
   --color-purple-accent: var(--purple-accent);
-  --color-green-neon: var(--green-neon);
-  --color-green-dim: var(--green-dim);
+  --color-brand: var(--brand);
+  --color-brand-dim: var(--brand-dim);
   --color-indigo-deep: var(--indigo-deep);
   --color-amber-warn: var(--amber-warn);
   --font-sans: var(--font-geist-sans);
@@ -40,16 +40,16 @@ body {
 }
 
 /* Glow effects */
-.glow-green {
-  text-shadow: 0 0 20px rgba(57, 255, 127, 0.3), 0 0 40px rgba(57, 255, 127, 0.1);
+.glow-brand {
+  text-shadow: 0 0 20px rgba(232, 123, 53, 0.3), 0 0 40px rgba(232, 123, 53, 0.1);
 }
 
 .glow-purple {
   text-shadow: 0 0 20px rgba(124, 91, 240, 0.4), 0 0 60px rgba(124, 91, 240, 0.15);
 }
 
-.glow-box-green {
-  box-shadow: 0 0 30px rgba(57, 255, 127, 0.08), inset 0 1px 0 rgba(57, 255, 127, 0.1);
+.glow-box-brand {
+  box-shadow: 0 0 30px rgba(232, 123, 53, 0.08), inset 0 1px 0 rgba(232, 123, 53, 0.1);
 }
 
 .glow-box-purple {
@@ -89,9 +89,9 @@ body {
   border: 1px solid rgba(124, 91, 240, 0.1);
 }
 .nanobot-card:hover {
-  border-color: rgba(57, 255, 127, 0.3);
+  border-color: rgba(232, 123, 53, 0.3);
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(57, 255, 127, 0.06);
+  box-shadow: 0 8px 30px rgba(232, 123, 53, 0.06);
 }
 
 /* Pillar card styles */

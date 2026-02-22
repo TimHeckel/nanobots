@@ -21,11 +21,11 @@ export function SwarmCard({ result }: SwarmCardProps) {
       {swarm && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm text-green-neon">
+            <span className="font-mono text-sm text-brand">
               {swarm.name}
             </span>
             {data.success && (
-              <span className="text-green-neon text-xs">{"\u2713"}</span>
+              <span className="text-brand text-xs">{"\u2713"}</span>
             )}
           </div>
           {swarm.description && (

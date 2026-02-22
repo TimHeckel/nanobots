@@ -10,10 +10,10 @@ export function BotToggleCard({ result }: BotToggleCardProps) {
   return (
     <div className="rounded-xl bg-indigo-deep/60 border border-purple-accent/15 p-4">
       <div className="flex items-center gap-2">
-        <span className={`text-lg ${enabled ? "text-green-neon" : "text-amber-warn"}`}>
+        <span className={`text-lg ${enabled ? "text-brand" : "text-amber-warn"}`}>
           {enabled ? "\u2713" : "\u2717"}
         </span>
-        <span className={`font-mono text-sm ${enabled ? "text-green-neon" : "text-amber-warn"}`}>
+        <span className={`font-mono text-sm ${enabled ? "text-brand" : "text-amber-warn"}`}>
           {botName}
         </span>
         <span className="text-foreground/50 text-sm">

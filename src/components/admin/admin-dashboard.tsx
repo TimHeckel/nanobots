@@ -71,7 +71,7 @@ export function AdminDashboard() {
             &larr; chat
           </a>
           <div className="font-mono text-lg font-bold">
-            <span className="text-green-neon">nano</span>
+            <span className="text-brand">nano</span>
             <span className="text-foreground">bots</span>
             <span className="text-purple-accent">.admin</span>
           </div>
@@ -118,7 +118,7 @@ export function AdminDashboard() {
                         {p.description}
                       </div>
                       {p.isCustomized && (
-                        <span className="inline-block mt-1 text-[9px] text-green-neon/70 font-mono">
+                        <span className="inline-block mt-1 text-[9px] text-brand/70 font-mono">
                           customized
                         </span>
                       )}

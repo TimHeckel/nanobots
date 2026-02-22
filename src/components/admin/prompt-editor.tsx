@@ -101,7 +101,7 @@ export function PromptEditor({
             {category}
           </span>
           {isCustomized && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-green-neon/10 text-green-neon/70">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand/10 text-brand/70">
               customized
             </span>
           )}
@@ -145,7 +145,7 @@ export function PromptEditor({
           <span
             className={`text-xs font-mono ${
               feedback.type === "success"
-                ? "text-green-neon/70"
+                ? "text-brand/70"
                 : "text-red-400"
             }`}
           >

@@ -46,7 +46,7 @@ export default function OnboardingPage() {
       {/* Logo */}
       <div className="mb-12">
         <span className="font-mono font-bold text-3xl tracking-tight">
-          <span className="text-green-neon">nano</span>
+          <span className="text-brand">nano</span>
           <span className="text-foreground">bots</span>
           <span className="text-purple-accent">.sh</span>
         </span>
@@ -65,7 +65,7 @@ export default function OnboardingPage() {
 
         <a
           href="https://github.com/apps/nanobots-sh/installations/new"
-          className="inline-block bg-green-neon text-background font-mono font-bold px-8 py-3 rounded-lg text-base hover:bg-green-neon/90 transition-all hover:shadow-[0_0_30px_rgba(57,255,127,0.2)]"
+          className="inline-block bg-brand text-background font-mono font-bold px-8 py-3 rounded-lg text-base hover:bg-brand/90 transition-all hover:shadow-[0_0_30px_rgba(232,123,53,0.2)]"
         >
           Install GitHub App
         </a>

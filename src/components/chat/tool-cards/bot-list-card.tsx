@@ -30,11 +30,11 @@ export function BotListCard({ result }: BotListCardProps) {
           >
             <span
               className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${
-                bot.enabled ? "bg-green-neon" : "bg-foreground/20"
+                bot.enabled ? "bg-brand" : "bg-foreground/20"
               }`}
             />
             <div className="min-w-0">
-              <div className="font-mono text-sm text-green-neon truncate">
+              <div className="font-mono text-sm text-brand truncate">
                 {bot.name}
               </div>
               {bot.description && (

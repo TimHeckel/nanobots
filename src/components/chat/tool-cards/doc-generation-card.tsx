@@ -31,7 +31,7 @@ export function DocGenerationCard({ result }: DocGenerationCardProps) {
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap text-sm">
         {data?.repo && (
-          <span className="font-mono text-green-neon">{data.repo}</span>
+          <span className="font-mono text-brand">{data.repo}</span>
         )}
         {data?.docType && (
           <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-purple-accent/15 text-purple-accent">
@@ -53,7 +53,7 @@ export function DocGenerationCard({ result }: DocGenerationCardProps) {
               key={bot}
               className="flex items-center gap-2 rounded-lg bg-background/30 border border-purple-accent/10 px-3 py-2"
             >
-              <span className="text-green-neon text-sm">✓</span>
+              <span className="text-brand text-sm">✓</span>
               <span className="font-mono text-sm text-foreground/70">{bot}</span>
             </div>
           ))}
@@ -82,7 +82,7 @@ export function DocGenerationCard({ result }: DocGenerationCardProps) {
       {/* Summary */}
       <div className="flex items-center justify-between pt-2 border-t border-purple-accent/10">
         <span className="text-sm text-foreground/40">Documentation PRs created</span>
-        <span className="font-mono text-lg font-bold text-green-neon">
+        <span className="font-mono text-lg font-bold text-brand">
           {data?.prsCreated ?? 0}
         </span>
       </div>

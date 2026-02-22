@@ -28,7 +28,7 @@ export function ScanResultsCard({ result }: ScanResultsCardProps) {
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap text-sm">
         {data?.repo && (
-          <span className="font-mono text-green-neon">{data.repo}</span>
+          <span className="font-mono text-brand">{data.repo}</span>
         )}
         {data?.trigger_type && (
           <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-purple-accent/15 text-purple-accent">
@@ -56,7 +56,7 @@ export function ScanResultsCard({ result }: ScanResultsCardProps) {
               <div className="flex items-center gap-3">
                 <span
                   className={`font-mono text-sm ${
-                    br.finding_count > 0 ? "text-amber-warn" : "text-green-neon"
+                    br.finding_count > 0 ? "text-amber-warn" : "text-brand"
                   }`}
                 >
                   {br.finding_count} finding{br.finding_count !== 1 ? "s" : ""}
@@ -82,7 +82,7 @@ export function ScanResultsCard({ result }: ScanResultsCardProps) {
         <span className="text-sm text-foreground/40">Total findings</span>
         <span
           className={`font-mono text-lg font-bold ${
-            totalFindings > 0 ? "text-amber-warn" : "text-green-neon"
+            totalFindings > 0 ? "text-amber-warn" : "text-brand"
           }`}
         >
           {totalFindings}
