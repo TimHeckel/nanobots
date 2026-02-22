@@ -6,11 +6,12 @@ export async function saveMessage(
   userId: string,
   role: "user" | "assistant" | "tool",
   content: string | null,
-  toolCalls?: unknown
+  toolCalls?: unknown,
+  conversationId?: string
 ): Promise<ChatMessage> {
   const { rows } = await sql<ChatMessage>`
-    INSERT INTO chat_messages (org_id, user_id, role, content, tool_calls)
-    VALUES (${orgId}, ${userId}, ${role}, ${content}, ${toolCalls ? JSON.stringify(toolCalls) : null}::jsonb)
+    INSERT INTO chat_messages (org_id, user_id, role, content, tool_calls, conversation_id)
+    VALUES (${orgId}, ${userId}, ${role}, ${content}, ${toolCalls ? JSON.stringify(toolCalls) : null}::jsonb, ${conversationId ?? null})
     RETURNING *
   `;
   return rows[0];
@@ -29,6 +30,19 @@ export async function getMessageHistory(
   `;
   // Return in chronological order
   return rows.reverse();
+}
+
+export async function getMessagesByConversation(
+  conversationId: string,
+  limit: number = 100
+): Promise<ChatMessage[]> {
+  const { rows } = await sql<ChatMessage>`
+    SELECT * FROM chat_messages
+    WHERE conversation_id = ${conversationId}
+    ORDER BY created_at ASC
+    LIMIT ${limit}
+  `;
+  return rows;
 }
 
 export async function clearHistory(orgId: string, userId: string): Promise<void> {

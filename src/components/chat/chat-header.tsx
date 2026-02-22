@@ -20,9 +20,10 @@ interface ChatHeaderProps {
   };
   onLogout: () => void;
   isPlatformAdmin?: boolean;
+  onToggleSidebar: () => void;
 }
 
-export function ChatHeader({ user, org, onLogout, isPlatformAdmin }: ChatHeaderProps) {
+export function ChatHeader({ user, org, onLogout, isPlatformAdmin, onToggleSidebar }: ChatHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -38,12 +39,23 @@ export function ChatHeader({ user, org, onLogout, isPlatformAdmin }: ChatHeaderP
 
   return (
     <header className="flex-shrink-0 h-14 flex items-center justify-between px-4 md:px-6 bg-background/80 backdrop-blur-md border-b border-purple-accent/10">
-      {/* Left: Logo */}
+      {/* Left: Sidebar toggle + New chat + Logo */}
       <div className="flex items-center gap-2">
+        <button
+          onClick={onToggleSidebar}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-colors"
+          title="Toggle sidebar"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
         <Link href="/" className="flex items-center gap-2 font-mono font-bold text-lg tracking-tight">
           <Logo size={24} />
           <span>
-            <span className="text-green-neon">nano</span>
+            <span className="text-brand">nano</span>
             <span className="text-foreground">bots</span>
             <span className="text-purple-accent">.sh</span>
           </span>
@@ -64,7 +76,7 @@ export function ChatHeader({ user, org, onLogout, isPlatformAdmin }: ChatHeaderP
         <span className="text-sm text-foreground/70 font-mono">
           {org.name ?? org.login}
         </span>
-        <span className="w-2 h-2 rounded-full bg-green-neon pulse-dot" />
+        <span className="w-2 h-2 rounded-full bg-brand pulse-dot" />
       </div>
 
       {/* Right: User dropdown */}

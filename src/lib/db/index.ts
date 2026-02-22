@@ -225,4 +225,16 @@ export async function migrate() {
       added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       UNIQUE(swarm_id, bot_name)
     )`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id VARCHAR(16) PRIMARY KEY,
+      org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL DEFAULT 'New Chat',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+
+  await sql`ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS conversation_id VARCHAR(16) REFERENCES conversations(id) ON DELETE CASCADE`;
 }

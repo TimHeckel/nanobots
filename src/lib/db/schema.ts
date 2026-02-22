@@ -117,7 +117,17 @@ export interface ChatMessage {
   role: "user" | "assistant" | "tool";
   content: string | null;
   tool_calls: unknown | null;
+  conversation_id: string | null;
   created_at: Date;
+}
+
+export interface Conversation {
+  id: string;
+  org_id: string;
+  user_id: string;
+  title: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface Invitation {

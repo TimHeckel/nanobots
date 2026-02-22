@@ -5,6 +5,12 @@ import { NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { getOrgContext } from "@/lib/chat/context";
 import { buildSystemPrompt } from "@/lib/chat/system-prompt";
+import { saveMessage } from "@/lib/db/queries/chat-messages";
+import {
+  getConversation,
+  updateConversationTitle,
+  touchConversation,
+} from "@/lib/db/queries/conversations";
 import {
   listBotsToolDef,
   toggleBotToolDef,
@@ -34,6 +40,13 @@ import {
 
 export const maxDuration = 60;
 
+function trimToWordBoundary(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  const trimmed = text.slice(0, maxLen);
+  const lastSpace = trimmed.lastIndexOf(" ");
+  return lastSpace > 20 ? trimmed.slice(0, lastSpace) : trimmed;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession(await cookies());
@@ -44,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     const { userId, orgId, role } = session;
 
-    const { messages: rawMessages } = await req.json();
+    const { messages: rawMessages, conversationId } = await req.json();
 
     // useChat() sends UIMessage format (with `parts`), but streamText() expects
     // ModelMessage format (with `content`). Detect and convert when needed.
@@ -61,6 +74,29 @@ export async function POST(req: NextRequest) {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Save the latest user message to DB if we have a conversation
+    if (conversationId) {
+      const lastMsg = rawMessages[rawMessages.length - 1];
+      if (lastMsg?.role === "user") {
+        const textContent =
+          lastMsg.content ??
+          lastMsg.parts?.find((p: { type: string }) => p.type === "text")?.text ??
+          "";
+        await saveMessage(orgId, userId, "user", textContent, undefined, conversationId);
+
+        // Auto-title: update if still "New Chat"
+        try {
+          const conv = await getConversation(conversationId);
+          if (conv && conv.title === "New Chat" && textContent) {
+            const title = trimToWordBoundary(textContent, 80);
+            await updateConversationTitle(conversationId, title);
+          }
+        } catch {
+          // Non-critical — don't block the stream
+        }
+      }
     }
 
     // Build system prompt with org context
@@ -95,7 +131,7 @@ export async function POST(req: NextRequest) {
       listWebhooks: listWebhooksToolDef(orgId),
     };
 
-    console.log(`[chat/route] streaming for org=${orgId}, messages=${messages.length}`);
+    console.log(`[chat/route] streaming for org=${orgId}, conv=${conversationId ?? "none"}, messages=${messages.length}`);
 
     const result = streamText({
       model: getModel(),
@@ -105,6 +141,17 @@ export async function POST(req: NextRequest) {
       stopWhen: stepCountIs(5),
       onError: ({ error }) => {
         console.error("[chat/route] Stream error:", error);
+      },
+      async onFinish({ text }) {
+        // Save assistant response to DB
+        if (conversationId && text) {
+          try {
+            await saveMessage(orgId, userId, "assistant", text, undefined, conversationId);
+            await touchConversation(conversationId);
+          } catch (e) {
+            console.error("[chat/route] Failed to save assistant message:", e);
+          }
+        }
       },
     });
 

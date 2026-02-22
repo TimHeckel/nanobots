@@ -5,7 +5,7 @@ import { jwtVerify } from "jose";
  * Routes that require authentication.
  */
 const PROTECTED_PAGE_ROUTES = ["/chat", "/admin"];
-const PROTECTED_API_ROUTES = ["/api/chat", "/api/org", "/api/admin"];
+const PROTECTED_API_ROUTES = ["/api/chat", "/api/conversations", "/api/org", "/api/admin"];
 
 function isProtectedRoute(pathname: string): boolean {
   for (const route of PROTECTED_PAGE_ROUTES) {
@@ -27,6 +27,26 @@ function isApiRoute(pathname: string): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Redirect signed-in users from landing page to chat
+  if (pathname === "/") {
+    const token = request.cookies.get("nb-session")?.value;
+    if (token) {
+      try {
+        const secret = process.env.JWT_SECRET;
+        if (secret) {
+          const key = new TextEncoder().encode(secret);
+          await jwtVerify(token, key);
+          const url = request.nextUrl.clone();
+          url.pathname = "/chat";
+          return NextResponse.redirect(url);
+        }
+      } catch {
+        // Invalid token — let them see the landing page
+      }
+    }
+    return NextResponse.next();
+  }
 
   if (!isProtectedRoute(pathname)) {
     return NextResponse.next();
@@ -68,12 +88,15 @@ function unauthorized(request: NextRequest, pathname: string): NextResponse {
 
 export const config = {
   matcher: [
+    "/",
     "/chat",
     "/chat/:path*",
     "/admin",
     "/admin/:path*",
     "/api/chat",
     "/api/chat/:path*",
+    "/api/conversations",
+    "/api/conversations/:path*",
     "/api/org",
     "/api/org/:path*",
     "/api/admin",
