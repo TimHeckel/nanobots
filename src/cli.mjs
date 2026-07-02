@@ -317,7 +317,7 @@ async function cmdInit(flags) {
   }
   if (coords) console.log(`\n  Board: https://github.com/orgs/${cfg.owner}/projects/${coords.projectNumber} (user account: check your projects tab)`);
   console.log(`\nStart the loop:  /loop in Claude Code with .nanobots/LOOP-PROMPT.md`);
-  console.log(`             or:  npx nanobots run outer\n`);
+  console.log(`             or:  npx nanobots-sh run outer\n`);
 }
 
 function cmdUpdate() {
