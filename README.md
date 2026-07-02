@@ -29,7 +29,7 @@ deliberate signal source, not a bottleneck.
 
 ```bash
 cd your-repo
-curl -fsSL nanobots.sh/install | sh     # or: npx github:TimHeckel/nanobots init
+npx nanobots-sh init        # or: curl -fsSL nanobots.sh/install | sh
 ```
 
 `init` asks ~6 questions (test commands, hard-gate areas, WIP cap — with answers
@@ -93,9 +93,9 @@ The loop's policy documents are its weights; GitHub history is the training log.
 ## Commands
 
 ```bash
-npx nanobots init [--smart] [--no-github] [--yes]   # scaffold a repo
-npx nanobots update                                  # re-render engine-owned files only
-npx nanobots run <outer|worker>                      # one headless cycle
+npx nanobots-sh init [--smart] [--no-github] [--yes]   # scaffold a repo
+npx nanobots-sh update                                  # re-render engine-owned files only
+npx nanobots-sh run <outer|worker>                      # one headless cycle
 ```
 
 `update` never touches repo-owned files (TRIAGE.md, RECIPES.md, LEARNINGS.md,

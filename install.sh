@@ -15,4 +15,4 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
   exit 1
 fi
 
-exec npx --yes github:TimHeckel/nanobots init "$@"
+exec npx --yes nanobots-sh init "$@"
