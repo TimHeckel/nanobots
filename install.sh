@@ -1,5 +1,5 @@
 #!/bin/sh
-# nanobots bootstrap — curl -fsSL https://nanobots.sh | sh
+# nanobots bootstrap — curl -fsSL nanobots.sh/install | sh
 # Thin entry: verifies prerequisites, then hands off to the npx-run CLI
 # in the current directory (which must be the target git repo).
 set -eu
