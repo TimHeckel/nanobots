@@ -15,14 +15,13 @@ the extension never talks to the Projects API.
      target repos (classic PAT with `repo` also works). Stored in `chrome.storage.local`,
      never leaves your browser except to `api.github.com`.
    - **Repos** — one `owner/repo` per line; you pick per report.
-   - **Screenshot storage**:
-     - `repo` (default) — the annotated PNG is committed to
-       `.nanobots/inbox/shots/` and embedded in the issue. Zero extra config, and on
-       private repos the image is only visible to people with repo access. The loop may
-       prune old shots.
-     - `r2` — PUT to a Cloudflare R2 bucket via Cloudflare's REST API (account id,
-       bucket, API token with R2 edit, public base URL). Keeps binaries out of git;
-       note the public-URL privacy tradeoff.
+   - **Screenshot storage — Cloudflare R2 (required for screenshots)**: annotated PNGs
+     upload to your R2 bucket via Cloudflare's REST API (no S3 signing) and the issue
+     embeds the public link — nothing is ever committed to git. **Screenshot capture
+     stays disabled until R2 is connected** (account id, bucket, API token, public base
+     URL — the options page has a 3-minute setup guide); text-only reports work without
+     it. R2's free tier (10 GB, zero egress) is far more than screenshot traffic needs.
+     Privacy note: anything under the bucket's public URL is reachable by link.
 
 ## History
 
@@ -51,7 +50,7 @@ loop sees of its output. Continual improvement, no extension update required.
 ```
 click icon → captureVisibleTab → annotate.html (canvas, red pen/box/arrow, undo)
   → title + note + bug|feature + repo
-  → [storage adapter uploads PNG] → POST issue {labels: nanobots:inbox, bug|enhancement}
+  → PNG → R2 (public link) → POST issue {labels: nanobots:inbox, nanobots:ext, bug|enhancement}
   → link to the filed issue; the outer loop triages it next cycle
 ```
 

@@ -34,13 +34,19 @@
   <label for="repos">repos (one per line, owner/repo)</label>
   <textarea id="repos" placeholder="TimHeckel/nanobots&#10;SleeperHitStudio/sleeperhit-studio"></textarea>
 
-  <label for="storage">screenshot storage</label>
-  <select id="storage">
-    <option value="repo">commit into the repo (.nanobots/inbox/shots/) — zero config, private-repo safe</option>
-    <option value="r2">Cloudflare R2 — keeps binaries out of git</option>
-  </select>
-
-  <div id="r2fields" hidden>
+  <label>screenshot storage — Cloudflare R2</label>
+  <div class="hint">Screenshots upload to your R2 bucket and the issue embeds the link — nothing is committed to git. <b>Screenshot capture stays disabled until these four fields are filled</b>; reports file text-only in the meantime.</div>
+  <details style="margin-top:10px">
+    <summary style="cursor:pointer;color:var(--accent);font-size:13px">how to get these (≈3 minutes, free)</summary>
+    <ol class="hint" style="margin:8px 0 0 18px; line-height:1.8">
+      <li>Sign up / log in at <a href="https://dash.cloudflare.com" target="_blank">dash.cloudflare.com</a> (free account). R2's free tier — 10 GB storage, ~1M uploads/month, zero egress fees — is far more than screenshot traffic needs. Cloudflare may ask for a card to enable R2; you won't be charged within the free allowance.</li>
+      <li>Sidebar → <b>R2 Object Storage</b> → <b>Create bucket</b>, name it e.g. <code>nanobots-shots</code>. → <b>bucket</b> field.</li>
+      <li>On the bucket's <b>Settings</b> tab → Public access → <b>enable the r2.dev subdomain</b> (or connect a custom domain). Copy the URL it shows (like <code>https://pub-xxxx.r2.dev</code>) → <b>public base url</b> field. Note: anything in this bucket is publicly reachable by URL — fine for screenshots you're filing to a repo anyway.</li>
+      <li>Back on the R2 overview → <b>Manage R2 API Tokens</b> → Create token with <b>Object Read &amp; Write</b>, scoped to your bucket. Copy the <b>Token Value</b> (not the S3 keys) → <b>api token</b> field.</li>
+      <li>Your <b>account id</b> is shown on the R2 overview page (right side) or in the dashboard URL.</li>
+    </ol>
+  </details>
+  <div id="r2fields">
     <label for="r2account">account id</label>
     <input id="r2account">
     <label for="r2bucket">bucket</label>
@@ -48,8 +54,8 @@
     <label for="r2token">cloudflare api token (R2 edit)</label>
     <input id="r2token" type="password">
     <label for="r2public">public base url</label>
-    <input id="r2public" placeholder="https://shots.example.com or https://pub-xxxx.r2.dev">
-    <div class="hint">Anyone with a URL under this base can view uploads — pick R2 only if that's acceptable for your screenshots.</div>
+    <input id="r2public" placeholder="https://pub-xxxx.r2.dev or https://shots.example.com">
+    <div class="hint" id="r2status"></div>
   </div>
 
   <label for="aikey">model api key (for the repo chat agent)</label>

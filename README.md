@@ -106,7 +106,10 @@ config.json) — those belong to your repo's loop. Engine-owned files carry a
 
 [`extension/`](extension/) is a zero-dependency MV3 Chrome extension that feeds the loop
 from any webpage: click → screenshot → annotate (pen/box/arrow) → filed as a
-`nanobots:inbox` issue the board auto-adds for triage. It keeps a local **history** of
+`nanobots:inbox` issue the board auto-adds for triage. Screenshots live in your
+Cloudflare R2 bucket (free tier; the issue embeds the link, git stays binary-free) —
+capture is disabled until R2 is connected, and the options page walks through the
+3-minute free setup. It keeps a local **history** of
 everything you've filed (with live state), and has a **repo chat** — a BYO-model agent
 with real repo tools (code/issue search, file read, report filing with your pasted
 screenshots). The chat agent's prompt lives in the repo (`.nanobots/EXTENSION-PROMPT.md`)

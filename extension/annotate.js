@@ -1,5 +1,5 @@
-import { getConfig, ghPut, defaultBranch, createIssue, logFiledIssue } from './gh.js';
-import { uploadToRepo, uploadToR2 } from './storage.js';
+import { getConfig, createIssue, logFiledIssue } from './gh.js';
+import { uploadToR2, r2Configured } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 const canvas = $('canvas');
@@ -23,7 +23,10 @@ let current = null;   // in-progress mark
   }
   $('pageinfo').textContent = `${pending.title} — ${pending.url}`;
 
-  if (pending.shot) {
+  const cfg = await getConfig();
+
+  // Screenshots are R2-gated: no bucket connected → text-only reports.
+  if (pending.shot && r2Configured(cfg.r2)) {
     baseImage = new Image();
     baseImage.onload = () => {
       canvas.width = baseImage.naturalWidth;
@@ -34,14 +37,17 @@ let current = null;   // in-progress mark
   } else {
     canvas.hidden = true;
     $('noshot').hidden = false;
+    if (pending.shot) {
+      $('noshot').innerHTML = 'Screenshots are disabled until you connect Cloudflare R2 (free tier is plenty) — <a href="options.html">set it up in options</a>. This report will file as text-only.';
+    }
+    document.querySelector('.toolbar').style.display = 'none';
   }
 
-  const { pat, repos } = await getConfig();
-  if (!pat || repos.length === 0) {
+  if (!cfg.pat || cfg.repos.length === 0) {
     setStatus('Set your GitHub token and repos first — opening options…', true);
     chrome.runtime.openOptionsPage();
   }
-  $('repo').innerHTML = repos.map((r) => `<option>${r}</option>`).join('');
+  $('repo').innerHTML = cfg.repos.map((r) => `<option>${r}</option>`).join('');
 })();
 
 // ── drawing ──────────────────────────────────────────────────────────────────
@@ -141,15 +147,8 @@ $('form').addEventListener('submit', async (e) => {
 
     let imageMd = '';
     if (baseImage) {
-      setStatus('uploading screenshot…');
-      const dataUrl = canvas.toDataURL('image/png');
-      let shotUrl;
-      if (cfg.storageMode === 'r2') {
-        shotUrl = await uploadToR2(cfg.r2, dataUrl);
-      } else {
-        const branch = await defaultBranch(cfg.pat, nwo);
-        shotUrl = await uploadToRepo({ pat: cfg.pat, nwo, branch }, dataUrl, ghPut);
-      }
+      setStatus('uploading screenshot to R2…');
+      const shotUrl = await uploadToR2(cfg.r2, canvas.toDataURL('image/png'));
       imageMd = `\n\n![annotated screenshot](${shotUrl})`;
     }
 

@@ -1,5 +1,6 @@
 import { getConfig } from './gh.js';
 import { chatTurn, loadSystemPrompt } from './agent.js';
+import { r2Configured } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -27,6 +28,10 @@ function renderAttachments() {
 }
 
 async function addAttachment(dataUrl) {
+  if (!r2Configured(cfg?.r2)) {
+    addMsg('agent', 'nanobots', 'Screenshots are disabled until you connect Cloudflare R2 — <a href="options.html">set it up in options</a> (free tier is plenty).');
+    return;
+  }
   attachments.push(dataUrl);
   renderAttachments();
 }

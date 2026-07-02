@@ -2,8 +2,8 @@
 // with client-side GitHub tools. No middleman server: the model key and the
 // GitHub PAT both stay in the browser.
 
-import { searchCode, readFile, searchIssues, listTree, defaultBranch, createIssue, ghPut, logFiledIssue } from './gh.js';
-import { uploadToRepo, uploadToR2 } from './storage.js';
+import { searchCode, readFile, searchIssues, listTree, defaultBranch, createIssue, logFiledIssue } from './gh.js';
+import { uploadToR2, r2Configured } from './storage.js';
 
 const TOOLS = [
   { name: 'search_code', description: 'Search the repo code. Returns matching file paths.',
@@ -31,10 +31,7 @@ async function runTool(cfg, nwo, name, input, attachments) {
   if (name === 'file_report') {
     let imagesMd = '';
     for (const dataUrl of attachments) {
-      const shotUrl = cfg.storageMode === 'r2'
-        ? await uploadToR2(cfg.r2, dataUrl)
-        : await uploadToRepo({ pat: cfg.pat, nwo, branch: await defaultBranch(cfg.pat, nwo) }, dataUrl, ghPut);
-      imagesMd += `\n\n![screenshot](${shotUrl})`;
+      imagesMd += `\n\n![screenshot](${await uploadToR2(cfg.r2, dataUrl)})`;
     }
     const issue = await createIssue(cfg.pat, nwo, {
       title: `[${input.type === 'bug' ? 'bug' : 'feat'}] ${input.title}`,

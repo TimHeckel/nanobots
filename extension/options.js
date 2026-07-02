@@ -1,4 +1,12 @@
 import { getConfig, saveConfig } from './gh.js';
+import { r2Configured } from './storage.js';
+
+function updateR2Status(cfg) {
+  const el = document.getElementById('r2status');
+  el.innerHTML = r2Configured(cfg.r2)
+    ? '<span style="color:var(--accent)">✓ R2 connected — screenshot capture enabled</span>'
+    : 'screenshot capture disabled — fill all four fields above';
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -6,26 +14,20 @@ const $ = (id) => document.getElementById(id);
   const cfg = await getConfig();
   $('pat').value = cfg.pat;
   $('repos').value = cfg.repos.join('\n');
-  $('storage').value = cfg.storageMode;
   $('r2account').value = cfg.r2.accountId;
   $('r2bucket').value = cfg.r2.bucket;
   $('r2token').value = cfg.r2.token;
   $('r2public').value = cfg.r2.publicBase;
-  $('r2fields').hidden = cfg.storageMode !== 'r2';
   $('aikey').value = cfg.ai.apiKey;
   $('aibase').value = cfg.ai.baseUrl;
   $('aimodel').value = cfg.ai.model;
+  updateR2Status(cfg);
 })();
-
-$('storage').addEventListener('change', () => {
-  $('r2fields').hidden = $('storage').value !== 'r2';
-});
 
 $('save').addEventListener('click', async () => {
   await saveConfig({
     pat: $('pat').value.trim(),
     repos: $('repos').value.split('\n').map((s) => s.trim()).filter(Boolean),
-    storageMode: $('storage').value,
     r2: {
       accountId: $('r2account').value.trim(),
       bucket: $('r2bucket').value.trim(),
@@ -38,6 +40,7 @@ $('save').addEventListener('click', async () => {
       model: $('aimodel').value.trim() || 'claude-sonnet-5',
     },
   });
+  updateR2Status(await getConfig());
   $('saved').textContent = 'saved ✓';
   setTimeout(() => ($('saved').textContent = ''), 2000);
 });

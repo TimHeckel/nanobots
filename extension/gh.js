@@ -4,7 +4,6 @@ export async function getConfig() {
   const defaults = {
     pat: '',
     repos: [],
-    storageMode: 'repo', // 'repo' | 'r2'
     r2: { accountId: '', bucket: '', token: '', publicBase: '' },
     // BYO model for the repo chat: Anthropic or any Anthropic-compatible endpoint
     ai: { apiKey: '', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-5' },
