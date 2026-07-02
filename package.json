@@ -1,0 +1,36 @@
+{
+  "name": "nanobots",
+  "version": "0.1.0",
+  "description": "Self-improving agent loops for any GitHub repo — an outer loop that triages and learns, nanobot workers that ship PRs",
+  "type": "module",
+  "bin": {
+    "nanobots": "src/cli.mjs"
+  },
+  "files": [
+    "src",
+    "templates",
+    "install.sh",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node tests/render.test.mjs"
+  },
+  "keywords": [
+    "agents",
+    "github",
+    "automation",
+    "claude",
+    "kanban",
+    "autoresearch"
+  ],
+  "author": "Tim Heckel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TimHeckel/nanobots.git"
+  }
+}

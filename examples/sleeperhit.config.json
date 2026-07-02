@@ -1,0 +1,20 @@
+{
+  "version": "0.1.0",
+  "owner": "SleeperHitStudio",
+  "repo": "sleeperhit-studio",
+  "defaultBranch": "main",
+  "board": "The Loop",
+  "humanLabel": "summon-human",
+  "wipCap": 2,
+  "gates": ["pnpm lint", "pnpm typecheck:web", "pnpm test:unit"],
+  "hardGates": [
+    "payments / Stripe",
+    "auth / sessions",
+    "database schema on the shared prod/stage DB",
+    "credit spend / metering",
+    "production Kubernetes / infra",
+    "destructive data migrations"
+  ],
+  "innerWorkflowManaged": false,
+  "outerWorkflowEnabled": true
+}

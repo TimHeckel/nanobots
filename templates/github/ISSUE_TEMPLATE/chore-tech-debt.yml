@@ -1,0 +1,24 @@
+# nanobots:engine-owned v0.1 — re-rendered by `nanobots update`
+name: Chore / tech debt
+description: Refactor, cleanup, dependency, infra, or hardening work
+title: "[chore] "
+labels: ["chore", "nanobots:inbox"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs doing
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: What risk or friction does this remove?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope hints
+      description: Files, packages, or subsystems involved if known.
