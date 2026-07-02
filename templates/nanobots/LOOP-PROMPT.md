@@ -44,6 +44,12 @@ disagree with them, propose an edit — don't silently deviate.
    promote durable lessons into TRIAGE.md / RECIPES.md / the repo's agent instructions
    file, mark entries `[distilled]`, and commit the doc changes directly to
    `{{DEFAULT_BRANCH}}` (docs-only commit).
+   **Signal-quality feedback:** also review how reports labeled `nanobots:ext` (filed via
+   the browser extension) fared in triage this cycle — duplicates, vagueness, missing
+   context, or instantly-actionable wins. Distill what would have made them better into
+   the "Filing guidance" section of `.nanobots/EXTENSION-PROMPT.md`; every user's
+   extension agent picks the new guidance up on its next chat. This is how the intake
+   itself self-improves.
 
 6. **Dispatch.** While In Progress count < {{WIP_CAP}} and Ready is non-empty: take the
    top Ready item (Priority, then smallest Size) and post the dispatch comment on its

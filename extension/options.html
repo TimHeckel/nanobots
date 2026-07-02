@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nanobots — options</title>
+<style>
+  :root { --bg:#0b0e12; --panel:#11151b; --border:#1e242e; --text:#c9d1d9; --dim:#8b949e; --accent:#4ade80; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+  main { max-width: 640px; margin: 0 auto; padding: 32px 24px 60px; }
+  h1 { font-size: 18px; margin-bottom: 20px; }
+  h1 .bot { color: var(--accent); }
+  label { display: block; color: var(--dim); font-size: 12px; margin: 18px 0 4px; }
+  input, textarea, select { width: 100%; background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; padding: 8px 10px; font: inherit; }
+  textarea { min-height: 70px; }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 4px; }
+  .hint code { color: var(--text); }
+  #r2fields { border: 1px solid var(--border); border-radius: 8px; padding: 4px 16px 16px; margin-top: 10px; }
+  #r2fields[hidden] { display: none; }
+  button { margin-top: 24px; background: var(--accent); border: none; color: #05270f; font-weight: 700;
+    border-radius: 6px; padding: 10px 24px; font: inherit; cursor: pointer; }
+  #saved { color: var(--accent); margin-left: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>nano<span class="bot">bots</span> — options</h1>
+
+  <label for="pat">github token</label>
+  <input id="pat" type="password" placeholder="github_pat_… or ghp_…">
+  <div class="hint">Fine-grained PAT with <code>Issues: write</code> + <code>Contents: write</code> on your target repos (or a classic PAT with <code>repo</code>). Stored locally in this browser profile only.</div>
+
+  <label for="repos">repos (one per line, owner/repo)</label>
+  <textarea id="repos" placeholder="TimHeckel/nanobots&#10;SleeperHitStudio/sleeperhit-studio"></textarea>
+
+  <label for="storage">screenshot storage</label>
+  <select id="storage">
+    <option value="repo">commit into the repo (.nanobots/inbox/shots/) — zero config, private-repo safe</option>
+    <option value="r2">Cloudflare R2 — keeps binaries out of git</option>
+  </select>
+
+  <div id="r2fields" hidden>
+    <label for="r2account">account id</label>
+    <input id="r2account">
+    <label for="r2bucket">bucket</label>
+    <input id="r2bucket">
+    <label for="r2token">cloudflare api token (R2 edit)</label>
+    <input id="r2token" type="password">
+    <label for="r2public">public base url</label>
+    <input id="r2public" placeholder="https://shots.example.com or https://pub-xxxx.r2.dev">
+    <div class="hint">Anyone with a URL under this base can view uploads — pick R2 only if that's acceptable for your screenshots.</div>
+  </div>
+
+  <label for="aikey">model api key (for the repo chat agent)</label>
+  <input id="aikey" type="password" placeholder="sk-ant-… (Anthropic) or any compatible provider's key">
+  <label for="aibase">model base url</label>
+  <input id="aibase" placeholder="https://api.anthropic.com">
+  <div class="hint">Any Anthropic-compatible endpoint works — e.g. <code>https://api.deepseek.com/anthropic</code>.</div>
+  <label for="aimodel">model</label>
+  <input id="aimodel" placeholder="claude-sonnet-5">
+
+  <button id="save">save</button><span id="saved"></span>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>

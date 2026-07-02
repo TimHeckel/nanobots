@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nanobots — history</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; }
+  .state-open { color: var(--accent); }
+  .state-closed { color: var(--dim); }
+  .labels { color: var(--dim); font-size: 11.5px; }
+  #empty { color: var(--dim); padding: 30px 0; }
+</style>
+</head>
+<body>
+<main>
+  <nav>
+    <h1>nano<span class="bot">bots</span></h1>
+    <span class="spacer"></span>
+    <a href="history.html" class="here">history</a>
+    <a href="chat.html">chat</a>
+    <a href="options.html">options</a>
+  </nav>
+  <p class="dim" id="count"></p>
+  <div id="empty" hidden>Nothing filed yet — click the nanobots icon on any page to make your first report.</div>
+  <table id="table" hidden>
+    <thead><tr><th>issue</th><th>type</th><th>state</th><th>page</th><th>filed</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+<script type="module" src="history.js"></script>
+</body>
+</html>

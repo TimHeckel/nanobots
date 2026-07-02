@@ -109,6 +109,7 @@ const REPO_OWNED = [
   { src: 'nanobots/TRIAGE.md', dest: '.nanobots/TRIAGE.md' },
   { src: 'nanobots/RECIPES.md', dest: '.nanobots/RECIPES.md' },
   { src: 'nanobots/LEARNINGS.md', dest: '.nanobots/LEARNINGS.md' },
+  { src: 'nanobots/EXTENSION-PROMPT.md', dest: '.nanobots/EXTENSION-PROMPT.md' },
 ];
 
 function writeRendered(root, entry, values, { overwrite }) {
@@ -192,6 +193,7 @@ function scaffoldGitHub(cfg) {
   const labels = [
     ['nanobots:inbox', 'bfd4f2', 'New signal awaiting outer-loop triage'],
     ['nanobots:built', '0e8a16', 'Implemented by a nanobot worker'],
+    ['nanobots:ext', '5319e7', 'Filed via the browser extension (signal-quality tracked)'],
     [cfg.humanLabel, 'b60205', 'Hard gate: human decision required before work'],
     ['needs-info', 'fbca04', 'Too vague to spec; questions posted'],
     ['chore', 'c2e0c6', 'Refactor / cleanup / hardening'],

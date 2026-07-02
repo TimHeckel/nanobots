@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Report to nanobots</title>
+<style>
+  :root { --bg:#0b0e12; --panel:#11151b; --border:#1e242e; --text:#c9d1d9; --dim:#8b949e; --accent:#4ade80; --red:#ef4444; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 24px 60px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  h1 .bot { color: var(--accent); }
+  .sub { color: var(--dim); font-size: 12.5px; margin-bottom: 16px; word-break: break-all; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .toolbar button { background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+  .toolbar button.active { border-color: var(--accent); color: var(--accent); }
+  .toolbar .spacer { flex: 1; }
+
+  #stage { position: relative; border: 1px solid var(--border); border-radius: 8px; overflow: auto;
+    max-height: 60vh; background: var(--panel); }
+  #stage canvas { display: block; cursor: crosshair; }
+  #noshot { padding: 40px; color: var(--dim); text-align: center; }
+
+  form { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; color: var(--dim); font-size: 12px; margin-bottom: 4px; }
+  input, textarea, select { width: 100%; background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; padding: 8px 10px; font: inherit; }
+  textarea { min-height: 90px; resize: vertical; }
+  .type-row { display: flex; gap: 8px; }
+  .type-row button { flex: 1; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 8px; font: inherit; cursor: pointer; }
+  .type-row button.active { border-color: var(--accent); color: var(--accent); }
+
+  #submit { background: var(--accent); border: none; color: #05270f; font-weight: 700;
+    border-radius: 6px; padding: 12px; font: inherit; cursor: pointer; font-size: 15px; }
+  #submit:disabled { opacity: 0.5; cursor: wait; }
+  #status { grid-column: 1 / -1; min-height: 22px; font-size: 13px; }
+  #status a { color: var(--accent); }
+  #status .err { color: var(--red); }
+</style>
+</head>
+<body>
+<main>
+  <nav style="display:flex;gap:16px;align-items:baseline;margin-bottom:6px">
+    <h1 style="margin:0">report to nano<span class="bot">bots</span></h1>
+    <span style="flex:1"></span>
+    <a href="history.html" style="color:var(--dim);text-decoration:none;font-size:13px">history</a>
+    <a href="chat.html" style="color:var(--dim);text-decoration:none;font-size:13px">chat</a>
+    <a href="options.html" style="color:var(--dim);text-decoration:none;font-size:13px">options</a>
+  </nav>
+  <div class="sub" id="pageinfo"></div>
+
+  <div class="toolbar">
+    <button id="tool-pen" class="active" type="button">✏️ pen</button>
+    <button id="tool-rect" type="button">▭ box</button>
+    <button id="tool-arrow" type="button">↗ arrow</button>
+    <span class="spacer"></span>
+    <button id="undo" type="button">undo</button>
+    <button id="clear" type="button">clear marks</button>
+  </div>
+
+  <div id="stage"><div id="noshot" hidden>No screenshot available for this page — the report will be text-only.</div><canvas id="canvas"></canvas></div>
+
+  <form id="form">
+    <div class="full">
+      <label for="title">title</label>
+      <input id="title" required placeholder="Short, specific: 'Save button dead on the settings page'">
+    </div>
+    <div class="full">
+      <label for="note">what's wrong / what you want (the loop triages from this — be concrete)</label>
+      <textarea id="note" placeholder="What happened, what you expected, steps if you have them."></textarea>
+    </div>
+    <div>
+      <label>type</label>
+      <div class="type-row">
+        <button type="button" id="type-bug" class="active">bug</button>
+        <button type="button" id="type-idea">feature</button>
+      </div>
+    </div>
+    <div>
+      <label for="repo">repo</label>
+      <select id="repo"></select>
+    </div>
+    <button id="submit" class="full" type="submit">file it → the loop takes it from here</button>
+    <div id="status"></div>
+  </form>
+</main>
+<script type="module" src="annotate.js"></script>
+</body>
+</html>

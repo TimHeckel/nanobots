@@ -102,6 +102,18 @@ npx nanobots-sh run <outer|worker>                      # one headless cycle
 config.json) — those belong to your repo's loop. Engine-owned files carry a
 `nanobots:engine-owned` marker in their first lines.
 
+## Browser extension (signal capture)
+
+[`extension/`](extension/) is a zero-dependency MV3 Chrome extension that feeds the loop
+from any webpage: click → screenshot → annotate (pen/box/arrow) → filed as a
+`nanobots:inbox` issue the board auto-adds for triage. It keeps a local **history** of
+everything you've filed (with live state), and has a **repo chat** — a BYO-model agent
+with real repo tools (code/issue search, file read, report filing with your pasted
+screenshots). The chat agent's prompt lives in the repo (`.nanobots/EXTENSION-PROMPT.md`)
+and is refined by the outer loop based on how extension-filed reports fare in triage —
+the intake itself self-improves. Install: `chrome://extensions` → Developer mode → Load
+unpacked → `extension/`. See [extension/README.md](extension/README.md).
+
 ## Docs
 
 - [docs/architecture.md](docs/architecture.md) — the two loops, the GitHub surface mapping,
