@@ -29,7 +29,7 @@ deliberate signal source, not a bottleneck.
 
 ```bash
 cd your-repo
-npx github:TimHeckel/nanobots init
+curl -fsSL nanobots.sh/install | sh     # or: npx github:TimHeckel/nanobots init
 ```
 
 `init` asks ~6 questions (test commands, hard-gate areas, WIP cap — with answers

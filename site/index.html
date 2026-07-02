@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nanobots — self-improving agent loops for any GitHub repo</title>
+<meta name="description" content="An outer loop that triages and learns. Nanobot workers that ship PRs. GitHub is the only state store. When the bots are out of their depth, they summon-human.">
+<meta property="og:title" content="nanobots">
+<meta property="og:description" content="Self-improving agent loops for any GitHub repo.">
+<style>
+  :root {
+    --bg: #0b0e12;
+    --panel: #11151b;
+    --border: #1e242e;
+    --text: #c9d1d9;
+    --dim: #8b949e;
+    --accent: #4ade80;
+    --accent2: #22d3ee;
+    --warn: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  main { max-width: 820px; margin: 0 auto; padding: 0 24px 96px; }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { padding: 88px 0 40px; }
+  .prompt::before { content: "$ "; color: var(--accent); }
+  h1 { font-size: 40px; letter-spacing: -1px; margin: 8px 0 12px; color: #fff; }
+  h1 .bot { color: var(--accent); }
+  .tagline { color: var(--dim); font-size: 17px; max-width: 60ch; }
+  .tagline b { color: var(--text); font-weight: 600; }
+
+  .install {
+    margin: 36px 0 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    overflow-x: auto;
+  }
+  .install code { color: #fff; white-space: nowrap; }
+  .install code::before { content: "$ "; color: var(--accent); }
+  .install button {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .install button:hover { color: var(--text); border-color: var(--dim); }
+  .subnote { color: var(--dim); font-size: 13px; margin-bottom: 48px; }
+  .subnote code { color: var(--text); }
+
+  pre.diagram {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--dim);
+    margin: 0 0 56px;
+  }
+  pre.diagram .o { color: var(--accent); }
+  pre.diagram .w { color: var(--accent2); }
+
+  h2 { font-size: 15px; color: var(--accent); margin: 56px 0 16px; text-transform: lowercase; }
+  h2::before { content: "## "; color: var(--dim); }
+  p { margin: 0 0 16px; color: var(--text); max-width: 68ch; }
+  p code, li code { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 13.5px; }
+  ul { margin: 0 0 16px 22px; }
+  li { margin-bottom: 8px; max-width: 65ch; }
+  .dim { color: var(--dim); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 8px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+  .card h3 { font-size: 14px; color: #fff; margin-bottom: 8px; }
+  .card p { font-size: 13.5px; color: var(--dim); margin: 0; }
+  .card .summon { color: var(--warn); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; margin-bottom: 16px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--dim); font-weight: 600; }
+  td:first-child { color: #fff; white-space: nowrap; }
+
+  footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--dim); font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="prompt dim">npx nanobots init</div>
+    <h1>nano<span class="bot">bots</span></h1>
+    <p class="tagline">
+      Self-improving agent loops for any GitHub repo. An <b>outer loop</b> triages,
+      dispatches, reviews, and <b>learns</b>; <b>nanobot workers</b> claim cards and ship
+      PRs. GitHub is the only state store. When the bots are out of their depth, they
+      <b>summon-human</b>.
+    </p>
+  </header>
+
+  <div class="install">
+    <code id="cmd">curl -fsSL nanobots.sh/install | sh</code>
+    <button onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent)">copy</button>
+  </div>
+  <p class="subnote">or <code>npx github:TimHeckel/nanobots init</code> — runs in the repo you want the loop on. No API key needed to install.</p>
+
+  <pre class="diagram">
+               ┌────────────────────────────────────────────────┐
+ signals ───▶  │  <span class="o">OUTER LOOP</span> (control + learning)               │
+ issues,       │  ingest → triage → prioritize → dispatch       │
+ errors,       │  → review outcomes → <span class="o">LEARN</span> (update its policy) │
+ humans        └───────────────┬────────────────▲───────────────┘
+                               │ dispatch        │ outcomes (PRs, CI)
+                               ▼                 │
+               ┌────────────────────────────────┴───────────────┐
+               │  <span class="w">NANOBOT WORKERS</span> (inner loop)                  │
+               │  claim card → branch → build → tests →         │
+               │  PR (Closes #N) → gates → merged by outer loop │
+               └────────────────────────────────────────────────┘</pre>
+
+  <h2>what init does</h2>
+  <ul>
+    <li>Renders the loop into <code>.nanobots/</code> — prompts, triage rubric, recipes, an append-only learnings log, a one-shot runner.</li>
+    <li>Writes GitHub workflows + issue intake forms; scaffolds the Projects v2 board, Priority/Size fields, labels, and a pinned status issue via <code>gh</code>.</li>
+    <li>Auto-detects your gate commands from <code>package.json</code>; asks ~6 questions; <code>--smart</code> optionally drafts repo-specific recipes with the <code>claude</code> CLI.</li>
+    <li>Then gets out of the way: the repo is <b>fully self-contained</b> — no runtime dependency on nanobots. Your rubric and recipes are <i>supposed</i> to drift from the templates. That drift is the learning.</li>
+  </ul>
+
+  <h2>run it anywhere</h2>
+  <table>
+    <tr><th>where</th><th>how</th></tr>
+    <tr><td>laptop</td><td><code>/loop</code> in Claude Code with <code>.nanobots/LOOP-PROMPT.md</code></td></tr>
+    <tr><td>vm / your own box</td><td><code>npx nanobots run outer</code> on a systemd/launchd timer</td></tr>
+    <tr><td>github actions</td><td>installed cron workflow — set <code>NANOBOTS_OUTER_ENABLED=1</code></td></tr>
+    <tr><td>sandbox cloud</td><td>same script + two env vars (Daytona, E2B, …)</td></tr>
+  </table>
+  <p class="dim">
+    Billing is an env var, not a feature: <code>CLAUDE_CODE_OAUTH_TOKEN</code> runs on a
+    Claude subscription; <code>ANTHROPIC_API_KEY</code> is metered; any Anthropic-compatible
+    provider (DeepSeek et al) works via <code>ANTHROPIC_BASE_URL</code>. Mix per runtime —
+    cheap models for workers, a frontier model for the outer loop's judgment.
+  </p>
+
+  <h2>the parts</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>outer loop</h3>
+      <p>Never writes product code. Triages every inbox issue against a rubric, writes work specs, dispatches under a WIP cap, reviews and merges PRs, reports each cycle to a pinned issue.</p>
+    </div>
+    <div class="card">
+      <h3>nanobot workers</h3>
+      <p>Anything that reads a work spec and opens a PR with <code>Closes #N</code>. Claude Code shipped; Copilot's coding agent, Codex, or OpenHands plug into the same seam. The board can't tell the difference.</p>
+    </div>
+    <div class="card">
+      <h3>learning</h3>
+      <p>Every finished item appends to <code>LEARNINGS.md</code>; distill passes promote durable lessons into the rubric and recipes. The policy docs are the loop's weights; GitHub history is the training log.</p>
+    </div>
+    <div class="card">
+      <h3><span class="summon">summon-human</span></h3>
+      <p>Payments, auth, schema, prod infra — hard-gated areas are never auto-worked. The bots post one crisp escalation with options and a recommendation, then wait for you.</p>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://github.com/TimHeckel/nanobots">github</a>
+    <a href="https://github.com/TimHeckel/nanobots/blob/main/docs/architecture.md">architecture</a>
+    <a href="https://github.com/TimHeckel/nanobots/tree/main/docs/research">research</a>
+    <span>MIT · inspired by <a href="https://www.latent.space/p/autoresearch-introspection">autoresearch/introspection</a></span>
+  </footer>
+</main>
+</body>
+</html>
