@@ -6,7 +6,15 @@ board's auto-add workflow pulls into the Inbox column for the outer loop to tria
 Issues are the canonical record; the kanban board picks them up automatically —
 the extension never talks to the Projects API.
 
-## Install (unpacked, Chrome/Brave/Edge)
+## Install
+
+**Via npx** (materializes the folder anywhere):
+
+```bash
+npx nanobots-sh extension     # copies to ./nanobots-extension + prints load steps
+```
+
+**Or unpacked from a clone** (Chrome/Brave/Edge):
 
 1. `chrome://extensions` → enable **Developer mode** → **Load unpacked** → pick this
    `extension/` directory.
@@ -57,3 +65,18 @@ click icon → captureVisibleTab → annotate.html (canvas, red pen/box/arrow, u
 No build step, no dependencies, MV3, vanilla JS. Permissions: `activeTab` (capture only
 when you click), `storage` (your settings), host access to `api.github.com` and
 `api.cloudflare.com` (R2 mode only).
+
+## Publishing to the Chrome Web Store (maintainers)
+
+1. One-time: register at the [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole)
+   ($5 one-time fee, any Google account).
+2. Build the upload zip: `scripts/pack-extension.sh` → `dist/nanobots-extension-<version>.zip`.
+3. Dashboard → **New item** → upload the zip. Listing needs: description, at least one
+   1280×800 screenshot (annotate page + chat page are the money shots), category
+   (Developer Tools), and privacy disclosures.
+4. Privacy justifications (all true, state them plainly): no remote code (MV3, all JS
+   bundled); `activeTab` — screenshot only on explicit click; `storage` — user settings
+   only; host permissions — direct calls to GitHub/Cloudflare/model APIs with the user's
+   own keys; no analytics, no data collection, keys never leave the browser.
+5. Review typically takes a few business days. Bump `manifest.json` version for every
+   re-upload.

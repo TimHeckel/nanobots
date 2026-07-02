@@ -3,7 +3,7 @@
 // Zero-dependency scaffolder: after `init`, the target repo is self-contained.
 
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, chmodSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, chmodSync, cpSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import readline from 'node:readline/promises';
@@ -338,6 +338,23 @@ function cmdUpdate() {
   say('engine-owned files re-rendered. Repo-owned files (TRIAGE, RECIPES, LEARNINGS, config) untouched.');
 }
 
+function cmdExtension() {
+  // Chrome has no CLI install path for extensions (by design), so this
+  // materializes the extension folder locally and prints the load steps.
+  const src = join(TEMPLATES, '..', 'extension');
+  if (!existsSync(src)) die('extension files missing from this package — update nanobots-sh');
+  const dest = join(process.cwd(), 'nanobots-extension');
+  cpSync(src, dest, { recursive: true });
+  say(`extension copied to ${dest}`);
+  console.log(`
+To load it in Chrome/Brave/Edge:
+  1. open chrome://extensions
+  2. toggle "Developer mode" (top right)
+  3. "Load unpacked" → select ${dest}
+  4. pin the icon, then open its Options to connect GitHub + R2 + a model key
+`);
+}
+
 function cmdRun(role) {
   if (!['outer', 'worker'].includes(role)) die('usage: nanobots run <outer|worker>');
   const d = detect();
@@ -367,6 +384,9 @@ switch (command) {
   case 'run':
     cmdRun(args[args.indexOf('run') + 1]);
     break;
+  case 'extension':
+    cmdExtension();
+    break;
   case 'version':
     console.log(VERSION);
     break;
@@ -377,6 +397,7 @@ ${c.cyan('nanobots')} v${VERSION} — self-improving agent loops for any GitHub 
   nanobots init [--smart] [--no-github] [--yes]   scaffold this repo
   nanobots update                                  re-render engine-owned files
   nanobots run <outer|worker>                      one headless cycle
+  nanobots extension                               copy the browser extension here (+ load steps)
   nanobots version
 
 Docs: https://github.com/TimHeckel/nanobots
