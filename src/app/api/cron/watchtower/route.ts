@@ -1,94 +1,110 @@
-import { NextRequest, NextResponse } from "next/server";
-import { runWatchtower } from "@/lib/watchtower";
+import { NextResponse } from "next/server";
+import {
+  buildSprintoControlEntities,
+  type ScanEvidence,
+} from "@/lib/compliance/sprinto";
+import {
+  recordSprintoExportBaseline,
+  runSprintoMonitoringLoop,
+} from "@/lib/compliance/monitoring";
+import { loadSprintoControlBaselinesFromDb } from "@/lib/db/monitoring";
 
-function authenticate(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // No secret configured, allow all
+const PREVIEW_ORG_ID = "preview-org";
+const PREVIEW_BASELINE_SYNCED_AT = "2026-03-26T09:15:00.000Z";
+const PREVIEW_CHECKED_AT = "2026-03-29T12:00:00.000Z";
 
-  const header = req.headers.get("authorization");
-  return header === `Bearer ${secret}`;
-}
-
-function parseParams(req: NextRequest) {
-  const url = new URL(req.url);
-  const installationId = url.searchParams.get("installationId");
-  const owner = url.searchParams.get("owner");
-  const repo = url.searchParams.get("repo");
-
-  return { installationId, owner, repo };
-}
-
-export async function GET(req: NextRequest) {
-  if (!authenticate(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { installationId, owner, repo } = parseParams(req);
-
-  if (!installationId || !owner || !repo) {
-    return NextResponse.json(
-      {
-        error: "Missing query params: installationId, owner, repo",
-        usage: "GET /api/cron/watchtower?installationId=123&owner=yourname&repo=yourrepo",
+const previewExportScans: ScanEvidence[] = [
+  {
+    scanId: "preview_scan_clean",
+    repo: "acme/api",
+    startedAt: "2026-03-26T08:55:00.000Z",
+    completedAt: "2026-03-26T09:15:00.000Z",
+    durationMs: 1_200_000,
+    totalFindings: 0,
+    totalPrs: 0,
+    botsRun: ["security-scanner", "actions-hardening"],
+    botResults: {
+      "security-scanner": {
+        findingCount: 0,
+        durationMs: 900_000,
       },
-      { status: 400 }
-    );
+      "actions-hardening": {
+        findingCount: 0,
+        durationMs: 300_000,
+      },
+    },
+    findingEvents: [],
+    prUrls: [],
+  },
+];
+
+const previewObservedScans: ScanEvidence[] = [
+  {
+    scanId: "preview_scan_clean",
+    repo: "acme/api",
+    startedAt: "2026-03-01T08:55:00.000Z",
+    completedAt: "2026-03-01T09:15:00.000Z",
+    durationMs: 1_200_000,
+    totalFindings: 1,
+    totalPrs: 0,
+    botsRun: ["security-scanner", "actions-hardening"],
+    botResults: {
+      "security-scanner": {
+        findingCount: 1,
+        durationMs: 900_000,
+      },
+      "actions-hardening": {
+        findingCount: 0,
+        durationMs: 300_000,
+      },
+    },
+    findingEvents: [
+      {
+        botName: "security-scanner",
+        file: "src/release.ts",
+        line: 88,
+        severity: "high",
+        category: "release",
+        description: "Release approval screenshot is missing for CC8.1 evidence.",
+      },
+    ],
+    prUrls: [],
+  },
+];
+
+async function runPreviewMonitoringCycle() {
+  const baselines = await loadSprintoControlBaselinesFromDb(PREVIEW_ORG_ID);
+  if (baselines.length === 0) {
+    await recordSprintoExportBaseline({
+      orgId: PREVIEW_ORG_ID,
+      entities: buildSprintoControlEntities(previewExportScans),
+      syncedAt: PREVIEW_BASELINE_SYNCED_AT,
+    });
   }
 
-  try {
-    const result = await runWatchtower(Number(installationId), owner, repo);
-    return NextResponse.json({
-      ok: true,
-      repo: `${owner}/${repo}`,
-      threatsFound: result.matches.length,
-      advisoriesChecked: result.advisoriesChecked,
-      dependenciesIndexed: result.dependenciesIndexed,
-      sources: result.sources,
-    });
-  } catch (err) {
-    console.error("[watchtower] Cron error:", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  const currentEntities = buildSprintoControlEntities(previewObservedScans);
+  const result = await runSprintoMonitoringLoop({
+    orgId: PREVIEW_ORG_ID,
+    currentEntities,
+    checkedAt: PREVIEW_CHECKED_AT,
+  });
+
+  return NextResponse.json({
+    surface: "operator-control-room-monitoring",
+    monitoringStatus: "active",
+    controlFreshness: result.run.stale_controls > 0 ? "review-due" : "healthy",
+    checkedControls: result.run.controls_checked,
+    staleControls: result.run.stale_controls,
+    openExceptions: result.run.open_exceptions,
+    comparedBaselineControls: result.comparedBaselineControls,
+    findings: result.findings,
+  });
 }
 
-export async function POST(req: NextRequest) {
-  if (!authenticate(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function GET() {
+  return runPreviewMonitoringCycle();
+}
 
-  let installationId: string | null;
-  let owner: string | null;
-  let repo: string | null;
-
-  const contentType = req.headers.get("content-type");
-  if (contentType?.includes("application/json")) {
-    const body = await req.json();
-    installationId = body.installationId?.toString() ?? null;
-    owner = body.owner ?? null;
-    repo = body.repo ?? null;
-  } else {
-    ({ installationId, owner, repo } = parseParams(req));
-  }
-
-  if (!installationId || !owner || !repo) {
-    return NextResponse.json(
-      { error: "Missing required fields: installationId, owner, repo" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const result = await runWatchtower(Number(installationId), owner, repo);
-    return NextResponse.json({
-      ok: true,
-      repo: `${owner}/${repo}`,
-      threatsFound: result.matches.length,
-      advisoriesChecked: result.advisoriesChecked,
-      dependenciesIndexed: result.dependenciesIndexed,
-      sources: result.sources,
-    });
-  } catch (err) {
-    console.error("[watchtower] Cron error:", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+export async function POST() {
+  return runPreviewMonitoringCycle();
 }

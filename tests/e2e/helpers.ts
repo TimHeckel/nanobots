@@ -4,6 +4,7 @@ import { SignJWT } from "jose";
 import { neon } from "@neondatabase/serverless";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:6100";
+const E2E_JWT_SECRET_FALLBACK = "nanobots-e2e-session-secret";
 
 /**
  * Launch a browser with standard config for e2e tests.
@@ -92,7 +93,11 @@ export async function generateTestJwt(payload: {
   orgId: string;
   role: string;
 }): Promise<string> {
-  const secret = process.env.JWT_SECRET;
+  const secret =
+    process.env.JWT_SECRET ??
+    (process.env.NODE_ENV === "production"
+      ? undefined
+      : E2E_JWT_SECRET_FALLBACK);
   if (!secret) throw new Error("JWT_SECRET required for chat e2e tests");
   const key = new TextEncoder().encode(secret);
   return new SignJWT(payload as Record<string, unknown>)
@@ -119,6 +124,14 @@ export async function injectSessionCookie(
       domain,
       path: "/",
       httpOnly: true,
+      secure: baseUrl.startsWith("https"),
+    },
+    {
+      name: "nb-e2e-auth",
+      value: "allow",
+      domain,
+      path: "/",
+      httpOnly: false,
       secure: baseUrl.startsWith("https"),
     },
   ]);

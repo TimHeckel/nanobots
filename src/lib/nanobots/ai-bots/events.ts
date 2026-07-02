@@ -13,7 +13,15 @@ export type BotEvent =
       type: "scan.completed";
       timestamp: string;
       scanId: string;
+      repo: string;
+      botsRun: string[];
+      findings: Array<{
+        bot: string;
+        findingCount: number;
+        prUrl?: string;
+      }>;
       totalFindings: number;
+      totalPrs: number;
       durationMs: number;
     }
   | {

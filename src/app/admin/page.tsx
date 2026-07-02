@@ -1,21 +1,15 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
-import { getUserById } from "@/lib/db/queries/users";
-import { isPlatformAdmin } from "@/lib/auth/platform-admin";
-import { AdminDashboard } from "@/components/admin/admin-dashboard";
-
-export default async function AdminPage() {
-  const session = await getSession(await cookies());
-
-  if (!session) {
-    redirect("/");
-  }
-
-  const user = await getUserById(session.userId);
-  if (!user || !isPlatformAdmin(user.email, user.github_login)) {
-    redirect("/chat");
-  }
-
-  return <AdminDashboard />;
+export default function AdminPage() {
+  return (
+    <section className="rounded-3xl border border-white/10 bg-slate-900/80 p-6">
+      <p className="text-xs uppercase tracking-[0.24em] text-cyan-300/70">
+        Admin Surface
+      </p>
+      <h1 className="mt-3 text-2xl font-semibold text-white">
+        Operator Control Room Admin
+      </h1>
+      <p className="mt-3 text-sm leading-6 text-slate-300">
+        Stable placeholder for future prompt and policy administration.
+      </p>
+    </section>
+  );
 }

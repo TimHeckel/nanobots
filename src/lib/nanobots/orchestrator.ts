@@ -203,7 +203,17 @@ export async function runAllNanobots(
   console.log(`[orchestrator] Scan complete: ${owner}/${repo} in ${duration}ms, ${prUrls.length} PRs created`);
 
   const totalFindings = findings.reduce((sum, f) => sum + f.findingCount, 0);
-  await emit?.({ type: "scan.completed", timestamp: new Date().toISOString(), scanId: "", totalFindings, durationMs: duration });
+  await emit?.({
+    type: "scan.completed",
+    timestamp: new Date().toISOString(),
+    scanId: "",
+    repo: `${owner}/${repo}`,
+    botsRun,
+    findings,
+    totalFindings,
+    totalPrs: prUrls.length,
+    durationMs: duration,
+  });
 
   if (options?.structured) {
     return {

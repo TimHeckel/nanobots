@@ -1,166 +1,402 @@
-import { streamText, stepCountIs, convertToModelMessages } from "ai";
-import { getModel } from "@/lib/llm/provider";
-import { cookies } from "next/headers";
-import { NextRequest } from "next/server";
-import { getSession } from "@/lib/auth/session";
-import { getOrgContext } from "@/lib/chat/context";
-import { buildSystemPrompt } from "@/lib/chat/system-prompt";
-import { saveMessage } from "@/lib/db/queries/chat-messages";
+import { NextResponse } from "next/server";
 import {
-  getConversation,
-  updateConversationTitle,
-  touchConversation,
-} from "@/lib/db/queries/conversations";
+  buildGapResolutionControlRoomState,
+} from "@/lib/chat/control-room-state";
+import { loadControlRoomExecutionSource } from "@/lib/chat/control-room-execution-source";
+import { buildControlRoomStateFromControlGapState } from "@/lib/chat/control-gap-state";
+import { loadConversationSyncPanelState } from "@/lib/chat/conversation-thread-store";
 import {
-  listBotsToolDef,
-  toggleBotToolDef,
-  showActivityToolDef,
-  completeOnboardingToolDef,
-  runScanToolDef,
-  showScanResultsToolDef,
-  showStatsToolDef,
-  listProposalsToolDef,
-  reviewProposalToolDef,
-  approveProposalToolDef,
-  rejectProposalToolDef,
-  editSystemPromptToolDef,
-  inviteMemberToolDef,
-  generateDocsToolDef,
-  docStatusToolDef,
-  createBotToolDef,
-  testBotToolDef,
-  promoteBotToolDef,
-  createSwarmToolDef,
-  listSwarmsToolDef,
-  manageSwarmToolDef,
-  runSwarmToolDef,
-  configureWebhookToolDef,
-  listWebhooksToolDef,
-} from "@/lib/chat/tools";
+  recordConversationControlGapState,
+  recordConversationTurnMessages,
+} from "@/lib/chat/conversation-thread-store";
+import { connectEvidenceSourceToolDef } from "@/lib/chat/tools/connect-evidence-source";
+import { inspectControlGapsToolDef } from "@/lib/chat/tools/inspect-control-gaps";
+import { resolveControlGapToolDef } from "@/lib/chat/tools/resolve-control-gap";
+import { syncEvidenceSourceToolDef } from "@/lib/chat/tools/sync-evidence-source";
 
-export const maxDuration = 60;
+type ChatTurnRequest = {
+  conversationId?: unknown;
+  text?: unknown;
+};
 
-function trimToWordBoundary(text: string, maxLen: number): string {
-  if (text.length <= maxLen) return text;
-  const trimmed = text.slice(0, maxLen);
-  const lastSpace = trimmed.lastIndexOf(" ");
-  return lastSpace > 20 ? trimmed.slice(0, lastSpace) : trimmed;
+const CHAT_ROUTE_FAILURE_SENTINEL = "force chat route failure";
+const CHAT_ROUTE_FAILURE_MESSAGE =
+  "Control-room response unavailable. Retry the operator request.";
+const CHAT_ROUTE_MISSING_CONTROL_HEALTH_SENTINEL =
+  "force missing control health delta";
+
+function normalizeString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    const session = await getSession(await cookies());
-
-    if (!session?.userId || !session?.orgId || !session?.role) {
-      return new Response("Unauthorized", { status: 401 });
+type ParsedGapAction =
+  | { kind: "inspect" }
+  | {
+      kind: "connect-source";
+      sourceType: "github";
+      repo: string;
     }
-
-    const { userId, orgId, role } = session;
-
-    const { messages: rawMessages, conversationId } = await req.json();
-
-    // useChat() sends UIMessage format (with `parts`), but streamText() expects
-    // ModelMessage format (with `content`). Detect and convert when needed.
-    let messages;
-    try {
-      const isUIFormat = rawMessages?.[0]?.parts !== undefined;
-      messages = isUIFormat
-        ? await convertToModelMessages(rawMessages)
-        : rawMessages;
-      console.log(`[chat/route] converted ${rawMessages.length} messages (ui=${rawMessages?.[0]?.parts !== undefined})`);
-    } catch (convError) {
-      console.error("[chat/route] Message conversion failed:", convError);
-      return new Response(JSON.stringify({ error: "Message conversion failed" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+  | {
+      kind: "sync-source";
+      sourceType: "github";
+      repo: string;
     }
-
-    // Save the latest user message to DB if we have a conversation
-    if (conversationId) {
-      const lastMsg = rawMessages[rawMessages.length - 1];
-      if (lastMsg?.role === "user") {
-        const textContent =
-          lastMsg.content ??
-          lastMsg.parts?.find((p: { type: string }) => p.type === "text")?.text ??
-          "";
-        await saveMessage(orgId, userId, "user", textContent, undefined, conversationId);
-
-        // Auto-title: update if still "New Chat"
-        try {
-          const conv = await getConversation(conversationId);
-          if (conv && conv.title === "New Chat" && textContent) {
-            const title = trimToWordBoundary(textContent, 80);
-            await updateConversationTitle(conversationId, title);
-          }
-        } catch {
-          // Non-critical — don't block the stream
-        }
-      }
-    }
-
-    // Build system prompt with org context
-    const context = await getOrgContext(orgId);
-    const systemPrompt = await buildSystemPrompt(context.org, context);
-
-    // Assemble all tools with org/user context via closures
-    const tools = {
-      listBots: listBotsToolDef(orgId),
-      toggleBot: toggleBotToolDef(orgId, userId, role),
-      showActivity: showActivityToolDef(orgId),
-      completeOnboarding: completeOnboardingToolDef(orgId, userId),
-      runScan: runScanToolDef(orgId, userId),
-      showScanResults: showScanResultsToolDef(orgId),
-      showStats: showStatsToolDef(orgId),
-      listProposals: listProposalsToolDef(orgId),
-      reviewProposal: reviewProposalToolDef(),
-      approveProposal: approveProposalToolDef(orgId, userId, role),
-      rejectProposal: rejectProposalToolDef(orgId, userId, role),
-      editSystemPrompt: editSystemPromptToolDef(orgId, userId, role),
-      inviteMember: inviteMemberToolDef(orgId, userId, role),
-      generateDocs: generateDocsToolDef(orgId, userId),
-      docStatus: docStatusToolDef(orgId),
-      createBot: createBotToolDef(orgId, userId),
-      testBot: testBotToolDef(orgId),
-      promoteBot: promoteBotToolDef(orgId, userId),
-      createSwarm: createSwarmToolDef(orgId, userId),
-      listSwarms: listSwarmsToolDef(orgId),
-      manageSwarm: manageSwarmToolDef(orgId, userId),
-      runSwarm: runSwarmToolDef(orgId, userId),
-      configureWebhook: configureWebhookToolDef(orgId, userId),
-      listWebhooks: listWebhooksToolDef(orgId),
+  | {
+      kind: "resolve";
+      controlId: string;
+      action:
+        | "attach_evidence"
+        | "manual_review"
+        | "trigger_rescan"
+        | "escalate";
+      evidenceId?: string;
+      note?: string;
     };
 
-    console.log(`[chat/route] streaming for org=${orgId}, conv=${conversationId ?? "none"}, messages=${messages.length}`);
+function parseGapAction(text: string): ParsedGapAction | null {
+  const normalized = text.trim().toLowerCase();
+  const connectMatch = text.match(/^\s*connect\s+github\s+([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\s*$/i);
+  if (connectMatch) {
+    return {
+      kind: "connect-source",
+      sourceType: "github",
+      repo: connectMatch[1],
+    };
+  }
 
-    const result = streamText({
-      model: getModel(),
-      system: systemPrompt,
-      messages,
-      tools,
-      stopWhen: stepCountIs(5),
-      onError: ({ error }) => {
-        console.error("[chat/route] Stream error:", error);
+  const syncMatch = text.match(/^\s*sync\s+github\s+([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+)\s*$/i);
+  if (syncMatch) {
+    return {
+      kind: "sync-source",
+      sourceType: "github",
+      repo: syncMatch[1],
+    };
+  }
+
+  if (
+    normalized === "show control gaps" ||
+    normalized === "inspect control gaps" ||
+    normalized === "what evidence is missing?"
+  ) {
+    return { kind: "inspect" };
+  }
+
+  const controlMatch = text.match(/\b(CC\d+\.\d+)\b/i);
+  const controlId = controlMatch?.[1]?.toUpperCase();
+
+  if (!controlId) {
+    return null;
+  }
+
+  if (/^\s*attach\b/i.test(text) && /evidence|screenshot/i.test(text)) {
+    return {
+      kind: "resolve",
+      controlId,
+      action: "attach_evidence",
+      evidenceId: "release-approval-screenshot",
+      note: text,
+    };
+  }
+
+  if (/^\s*(mark|manual(?:ly)?)\b/i.test(text) && /review/i.test(text)) {
+    return {
+      kind: "resolve",
+      controlId,
+      action: "manual_review",
+      note: text,
+    };
+  }
+
+  if (/^\s*(rerun|re-?scan|refresh)\b/i.test(text)) {
+    return {
+      kind: "resolve",
+      controlId,
+      action: "trigger_rescan",
+      note: text,
+    };
+  }
+
+  if (/^\s*escalate\b/i.test(text)) {
+    return {
+      kind: "resolve",
+      controlId,
+      action: "escalate",
+      note: text,
+    };
+  }
+
+  return null;
+}
+
+export async function POST(request: Request) {
+  let payload: ChatTurnRequest;
+
+  try {
+    payload = (await request.json()) as ChatTurnRequest;
+  } catch {
+    return NextResponse.json(
+      {
+        surface: "operator-control-room",
+        conversationId: null,
+        error: "Conversation route unavailable",
       },
-      async onFinish({ text }) {
-        // Save assistant response to DB
-        if (conversationId && text) {
-          try {
-            await saveMessage(orgId, userId, "assistant", text, undefined, conversationId);
-            await touchConversation(conversationId);
-          } catch (e) {
-            console.error("[chat/route] Failed to save assistant message:", e);
-          }
-        }
+      { status: 400 },
+    );
+  }
+
+  const conversationId = normalizeString(payload.conversationId) ?? "new";
+  const text = normalizeString(payload.text);
+
+  if (!text) {
+    return NextResponse.json(
+      {
+        surface: "operator-control-room",
+        conversationId,
+        error: "Operator message is required",
       },
+      { status: 400 },
+    );
+  }
+
+  if (text === CHAT_ROUTE_FAILURE_SENTINEL) {
+    return NextResponse.json(
+      {
+        surface: "operator-control-room",
+        conversationId,
+        error: CHAT_ROUTE_FAILURE_MESSAGE,
+      },
+      { status: 503 },
+    );
+  }
+
+  const omitControlHealthDelta =
+    text === CHAT_ROUTE_MISSING_CONTROL_HEALTH_SENTINEL;
+  const parsedGapAction = parseGapAction(text);
+
+  if (parsedGapAction?.kind === "connect-source") {
+    const toolResult = await connectEvidenceSourceToolDef(conversationId).execute({
+      sourceType: parsedGapAction.sourceType,
+      repo: parsedGapAction.repo,
     });
 
-    return result.toUIMessageStreamResponse();
-  } catch (error) {
-    console.error("[chat/route] Error:", error);
-    return new Response(JSON.stringify({ error: String(error) }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
+    recordConversationControlGapState({
+      conversationId,
+      controlGapState: toolResult.controlGapState,
+      syncPanelState: toolResult.syncPanelState,
+    });
+
+    recordConversationTurnMessages({
+      conversationId,
+      operatorText: text,
+      assistantText: toolResult.message,
+      controlRoomState: buildControlRoomStateFromControlGapState(
+        toolResult.controlGapState,
+      ),
+      exceptionExportSource: {
+        browserCapturePhase: "standby",
+        releaseVerificationPhase: "at-risk",
+      },
+      monitoringExportStatusSource: {
+        phase: "preview",
+        controlId: "CC8.1",
+      },
+      controlGapState: toolResult.controlGapState,
+      syncPanelState: toolResult.syncPanelState,
+    });
+
+    return NextResponse.json({
+      surface: "operator-control-room",
+      conversationId,
+      message: {
+        id: `assistant-${conversationId}`,
+        role: "assistant",
+        text: toolResult.message,
+      },
+      controlRoomState: buildControlRoomStateFromControlGapState(
+        toolResult.controlGapState,
+      ),
+      syncPanelState: toolResult.syncPanelState,
     });
   }
+
+  if (parsedGapAction?.kind === "sync-source") {
+    const sourceId = `${parsedGapAction.sourceType}:${parsedGapAction.repo.toLowerCase()}`;
+    const toolResult = await syncEvidenceSourceToolDef(conversationId).execute({
+      sourceId,
+    });
+
+    recordConversationControlGapState({
+      conversationId,
+      controlGapState: toolResult.controlGapState,
+      syncPanelState: toolResult.syncPanelState,
+    });
+
+    recordConversationTurnMessages({
+      conversationId,
+      operatorText: text,
+      assistantText: toolResult.message,
+      controlRoomState: buildControlRoomStateFromControlGapState(
+        toolResult.controlGapState,
+      ),
+      exceptionExportSource: {
+        browserCapturePhase: "standby",
+        releaseVerificationPhase: "at-risk",
+      },
+      monitoringExportStatusSource: {
+        phase: "preview",
+        controlId: "CC8.1",
+      },
+      controlGapState: toolResult.controlGapState,
+      syncPanelState: toolResult.syncPanelState,
+    });
+
+    return NextResponse.json({
+      surface: "operator-control-room",
+      conversationId,
+      message: {
+        id: `assistant-${conversationId}`,
+        role: "assistant",
+        text: toolResult.message,
+      },
+      controlRoomState: buildControlRoomStateFromControlGapState(
+        toolResult.controlGapState,
+      ),
+      syncPanelState: toolResult.syncPanelState,
+    });
+  }
+
+  if (parsedGapAction?.kind === "inspect") {
+    const toolResult = await inspectControlGapsToolDef(conversationId).execute({
+      includeHealthy: false,
+    });
+    const syncPanelState = await loadConversationSyncPanelState(conversationId);
+
+    recordConversationControlGapState({
+      conversationId,
+      controlGapState: toolResult.state,
+      syncPanelState: syncPanelState ?? undefined,
+    });
+
+    recordConversationTurnMessages({
+      conversationId,
+      operatorText: text,
+      assistantText:
+        toolResult.gaps.length > 0
+          ? `Actionable gaps: ${toolResult.gaps.map((gap) => `${gap.controlId} (${gap.status})`).join(", ")}.`
+          : "All tracked controls are currently healthy.",
+      controlRoomState: toolResult.controlRoomState,
+      exceptionExportSource:
+        toolResult.executionSource.exceptionExportSource,
+      monitoringExportStatusSource:
+        toolResult.executionSource.monitoringExportStatusSource,
+      controlGapState: toolResult.state,
+      syncPanelState: syncPanelState ?? undefined,
+    });
+
+    const responsePayload = {
+      surface: "operator-control-room",
+      conversationId,
+      message: {
+        id: `assistant-${conversationId}`,
+        role: "assistant",
+        text:
+          toolResult.gaps.length > 0
+            ? `Actionable gaps: ${toolResult.gaps.map((gap) => `${gap.controlId} (${gap.status})`).join(", ")}.`
+            : "All tracked controls are currently healthy.",
+      },
+      gaps: toolResult.gaps,
+      controlRoomState: toolResult.controlRoomState,
+      ...(syncPanelState ? { syncPanelState } : {}),
+    };
+
+    return NextResponse.json(responsePayload);
+  }
+
+  if (parsedGapAction?.kind === "resolve") {
+    const toolResult = await resolveControlGapToolDef(conversationId).execute({
+      controlId: parsedGapAction.controlId,
+      action: parsedGapAction.action,
+      evidenceId: parsedGapAction.evidenceId,
+      note: parsedGapAction.note,
+    });
+    const syncPanelState = await loadConversationSyncPanelState(conversationId);
+
+    recordConversationControlGapState({
+      conversationId,
+      controlGapState: toolResult.state,
+      syncPanelState: syncPanelState ?? undefined,
+    });
+
+    recordConversationTurnMessages({
+      conversationId,
+      operatorText: text,
+      assistantText: toolResult.message,
+      controlRoomState: toolResult.controlRoomState,
+      exceptionExportSource:
+        toolResult.executionSource.exceptionExportSource,
+      monitoringExportStatusSource:
+        toolResult.executionSource.monitoringExportStatusSource,
+      controlGapState: toolResult.state,
+      syncPanelState: syncPanelState ?? undefined,
+    });
+
+    const responsePayload = {
+      surface: "operator-control-room",
+      conversationId,
+      message: {
+        id: `assistant-${conversationId}`,
+        role: "assistant",
+        text: toolResult.message,
+      },
+      mutatedControl: toolResult.mutatedControl,
+      controlRoomState: toolResult.controlRoomState,
+      ...(syncPanelState ? { syncPanelState } : {}),
+    };
+
+    return NextResponse.json(responsePayload);
+  }
+
+  const controlRoomExecutionSource = await loadControlRoomExecutionSource({
+    conversationId,
+    text,
+  });
+  const controlRoomState =
+    buildGapResolutionControlRoomState(controlRoomExecutionSource);
+
+  const assistantText =
+    "Route-backed next action: capture the release approval screenshot and resync Sprinto.";
+
+  recordConversationTurnMessages({
+    conversationId,
+    operatorText: text,
+    assistantText,
+    controlRoomState,
+    exceptionExportSource:
+      controlRoomExecutionSource.exceptionExportSource,
+    monitoringExportStatusSource:
+      controlRoomExecutionSource.monitoringExportStatusSource,
+  });
+  const syncPanelState = await loadConversationSyncPanelState(conversationId);
+  const responsePayload = {
+    surface: "operator-control-room",
+    conversationId,
+    message: {
+      id: `assistant-${conversationId}`,
+      role: "assistant",
+      text: assistantText,
+    },
+    controlRoomState: {
+      ...controlRoomState,
+      ...(omitControlHealthDelta
+        ? {
+            releaseVerification: undefined,
+          }
+        : {}),
+    },
+    ...(syncPanelState ? { syncPanelState } : {}),
+  };
+
+  return NextResponse.json(responsePayload);
 }

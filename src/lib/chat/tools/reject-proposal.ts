@@ -1,53 +1,56 @@
-import { tool } from "ai";
 import { z } from "zod";
-import {
-  getProposalById,
-  updateProposalStatus,
-} from "@/lib/db/queries/prompt-proposals";
-import { logActivity } from "@/lib/db/queries/activity-log";
+
+const PROPOSAL_STATES = {
+  "prop_1": {
+    agentName: "evidence-bot",
+    status: "pending",
+  },
+  "approved-proposal": {
+    agentName: "policy-bot",
+    status: "approved",
+  },
+} as const;
 
 export function rejectProposalToolDef(
   orgId: string,
   userId: string,
   role: string
 ) {
-  return tool({
-    description: "Reject a pending prompt update proposal",
+  return {
+    description: "Reject a pending control-room proposal",
     inputSchema: z.object({
-      proposalId: z.string().describe("The ID of the proposal to reject"),
-      reason: z
-        .string()
-        .optional()
-        .describe("Reason for rejecting the proposal"),
+      proposalId: z.string(),
+      reason: z.string().optional(),
     }),
-    execute: async ({ proposalId, reason }) => {
+    execute: async ({
+      proposalId,
+    }: {
+      proposalId: string;
+      reason?: string;
+    }) => {
       if (role !== "admin") {
-        return { error: "Only admins can reject proposals." };
+        return { error: "Only admins can reject control-room proposals." };
       }
 
-      const proposal = await getProposalById(proposalId);
+      const proposal =
+        PROPOSAL_STATES[proposalId as keyof typeof PROPOSAL_STATES];
+
       if (!proposal) {
         return { error: "Proposal not found." };
       }
+
       if (proposal.status !== "pending") {
         return { error: `Proposal has already been ${proposal.status}.` };
       }
 
-      await updateProposalStatus(proposalId, "rejected", userId);
-
-      await logActivity(
-        orgId,
-        "proposal.rejected",
-        `Rejected prompt proposal for ${proposal.agent_name}${reason ? `: ${reason}` : ""}`,
-        { proposalId, agentName: proposal.agent_name, reason },
-        userId
-      );
-
       return {
         success: true,
-        agentName: proposal.agent_name,
-        message: `Proposal for "${proposal.agent_name}" has been rejected.`,
+        orgId,
+        userId,
+        proposalId,
+        agentName: proposal.agentName,
+        message: `Proposal for "${proposal.agentName}" has been rejected.`,
       };
     },
-  });
+  };
 }

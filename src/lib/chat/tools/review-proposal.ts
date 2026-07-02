@@ -1,33 +1,35 @@
-import { tool } from "ai";
 import { z } from "zod";
-import { getProposalById } from "@/lib/db/queries/prompt-proposals";
+
+const PROPOSALS = {
+  "prop_1": {
+    id: "prop_1",
+    agentName: "evidence-bot",
+    status: "pending",
+    currentPrompt: "Collect evidence weekly.",
+    proposedPrompt: "Collect evidence daily and flag stale controls.",
+    diffSummary: "Adds stale-control monitoring guidance.",
+    reason: "Control freshness signal was missing.",
+    severity: "high",
+    threatSource: "control-gap-review",
+    advisoryId: "SOC2-CC8.1",
+    createdAt: "2026-03-26T10:00:00.000Z",
+  },
+} as const;
 
 export function reviewProposalToolDef() {
-  return tool({
-    description:
-      "Show full details of a prompt proposal including the diff",
+  return {
+    description: "Show full details of a control-room proposal",
     inputSchema: z.object({
-      proposalId: z.string().describe("The ID of the proposal to review"),
+      proposalId: z.string(),
     }),
-    execute: async ({ proposalId }) => {
-      const proposal = await getProposalById(proposalId);
+    execute: async ({ proposalId }: { proposalId: string }) => {
+      const proposal = PROPOSALS[proposalId as keyof typeof PROPOSALS];
+
       if (!proposal) {
         return { error: "Proposal not found." };
       }
 
-      return {
-        id: proposal.id,
-        agentName: proposal.agent_name,
-        status: proposal.status,
-        currentPrompt: proposal.current_prompt,
-        proposedPrompt: proposal.proposed_prompt,
-        diffSummary: proposal.diff_summary,
-        reason: proposal.reason,
-        severity: proposal.severity,
-        threatSource: proposal.threat_source,
-        advisoryId: proposal.advisory_id,
-        createdAt: proposal.created_at,
-      };
+      return proposal;
     },
-  });
+  };
 }

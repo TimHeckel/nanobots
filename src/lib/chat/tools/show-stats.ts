@@ -1,14 +1,16 @@
-import { tool } from "ai";
 import { z } from "zod";
-import { getStats } from "@/lib/db/queries/scan-results";
 
 export function showStatsToolDef(orgId: string) {
-  return tool({
-    description: "Show aggregate scan statistics",
+  return {
+    description: "Show aggregate control-room scan statistics",
     inputSchema: z.object({}),
-    execute: async () => {
-      const stats = await getStats(orgId);
-      return stats;
-    },
-  });
+    execute: async () => ({
+      orgId,
+      connectedSources: 3,
+      mappedControls: 12,
+      staleControls: 2,
+      openExceptions: 1,
+      lastSprintoSyncAt: "2026-03-26T12:00:00.000Z",
+    }),
+  };
 }

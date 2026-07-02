@@ -110,6 +110,67 @@ export interface ActivityLogEntry {
   created_at: Date;
 }
 
+export interface SprintoControlBaseline {
+  org_id: string;
+  external_id: string;
+  control_key: string;
+  repo: string;
+  monitoring_status: "healthy" | "needs_attention" | "stale" | "not_scanned";
+  exception_state: "none" | "open" | "remediating" | "missing_data";
+  sprinto_export_state: "ready" | "action_required" | "blocked";
+  summary: string;
+  synced_at: Date;
+}
+
+export interface SprintoMonitoringRun {
+  id: string;
+  org_id: string;
+  checked_at: Date;
+  controls_checked: number;
+  stale_controls: number;
+  open_exceptions: number;
+  findings_count: number;
+}
+
+export interface SprintoMonitoringFinding {
+  id: string;
+  run_id: string;
+  org_id: string;
+  external_id: string;
+  control_key: string;
+  repo: string;
+  finding_type:
+    | "stale-control"
+    | "exception-opened"
+    | "exception-changed"
+    | "exception-resolved"
+    | "export-state-changed"
+    | "monitoring-regressed";
+  severity: "low" | "medium" | "high";
+  detail: string;
+  previous_monitoring_status:
+    | "healthy"
+    | "needs_attention"
+    | "stale"
+    | "not_scanned"
+    | null;
+  current_monitoring_status:
+    | "healthy"
+    | "needs_attention"
+    | "stale"
+    | "not_scanned";
+  previous_exception_state:
+    | "none"
+    | "open"
+    | "remediating"
+    | "missing_data"
+    | null;
+  current_exception_state: "none" | "open" | "remediating" | "missing_data";
+  previous_export_state: "ready" | "action_required" | "blocked" | null;
+  current_export_state: "ready" | "action_required" | "blocked";
+  created_at: Date;
+}
+
 export interface ChatMessage {
   id: string;
   org_id: string;

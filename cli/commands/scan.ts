@@ -152,11 +152,19 @@ export async function scanCommand(flags: ParsedFlags): Promise<number> {
 
   // Emit scan.completed
   const totalFindings = results.reduce((sum, r) => sum + r.findings.length, 0);
+  const findings = results.map((result) => ({
+    bot: result.bot,
+    findingCount: result.findings.length,
+  }));
   onEvent({
     type: "scan.completed",
     timestamp: new Date().toISOString(),
     scanId: "",
+    repo: basename(targetDir),
+    botsRun: results.map((result) => result.bot),
+    findings,
     totalFindings,
+    totalPrs: 0,
     durationMs: Date.now() - scanStart,
   });
 

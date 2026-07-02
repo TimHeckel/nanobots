@@ -97,7 +97,7 @@ function buildSummary(event: BotEvent): string {
     case "scan.started":
       return `Scan started: ${event.botCount} bots, ${event.fileCount} files on ${event.repo}`;
     case "scan.completed":
-      return `Scan completed: ${event.totalFindings} findings in ${event.durationMs}ms`;
+      return `Scan completed on ${event.repo}: ${event.totalFindings} findings, ${event.totalPrs} remediation artifacts in ${event.durationMs}ms`;
     case "bot.started":
       return `${event.botName} started: ${event.fileCount} files, ${event.batchCount} batches`;
     case "bot.completed":

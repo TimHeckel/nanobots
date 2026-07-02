@@ -1,16 +1,13 @@
 import { defineConfig } from "vitest/config";
 
-
 export default defineConfig({
   test: {
-    include: ["tests/e2e/browser-*.test.ts"],
+    include: ["tests/e2e/control-room-*.test.ts"],
     testTimeout: 120000,
     hookTimeout: 60000,
     globals: true,
     environment: "node",
-    fileParallelism: true,
-    // Limit concurrent workers to avoid Kernel browser API rate limits.
-    // Each test file creates its own browser session.
-    maxWorkers: 2,
+    fileParallelism: false,
+    maxWorkers: 1,
   },
 });

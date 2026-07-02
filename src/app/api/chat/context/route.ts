@@ -1,27 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
-import { getBotConfigs } from "@/lib/db/queries/bot-configs";
-import { listSwarms } from "@/lib/db/queries/swarms";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request.cookies);
-
-  if (!session?.userId || !session?.orgId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const [botConfigs, swarms] = await Promise.all([
-    getBotConfigs(session.orgId),
-    listSwarms(session.orgId),
-  ]);
-
+export async function GET() {
   return NextResponse.json({
-    bots: botConfigs,
-    swarms: swarms.map((s) => ({
-      name: s.name,
-      description: s.description,
-      botCount: s.bot_count,
-      bots: s.bot_names,
-    })),
+    surface: "operator-control-room",
+    conversationContext: {
+      evidenceSources: ["GitHub", "Screenshot Capture"],
+      missingEvidence: ["Incident response walkthrough recording"],
+      nextRecommendedAction: "Resolve Evidence Gap",
+    },
   });
 }

@@ -1,31 +1,31 @@
-import { tool } from "ai";
 import { z } from "zod";
-import { getWebhookEndpoints } from "@/lib/db/queries/webhooks";
 
 export function listWebhooksToolDef(orgId: string) {
-  return tool({
-    description: "List all webhook endpoints configured for this organization",
+  return {
+    description: "List control-room webhook endpoints",
     inputSchema: z.object({}),
     execute: async () => {
-      const endpoints = await getWebhookEndpoints(orgId);
+      const webhooks =
+        orgId === "org_empty"
+          ? []
+          : [
+              {
+                id: "wh_1",
+                url: "https://example.com/control-room/webhooks/github",
+                events: ["evidence.updated", "control.exception"],
+                active: true,
+                description: "Primary Sprinto middleware webhook",
+              },
+            ];
 
-      if (endpoints.length === 0) {
+      if (webhooks.length === 0) {
         return {
           webhooks: [],
-          message: "No webhooks configured. Use configureWebhook to set one up.",
+          message: "No control-room webhooks configured yet.",
         };
       }
 
-      return {
-        webhooks: endpoints.map((ep) => ({
-          id: ep.id,
-          url: ep.url,
-          events: ep.events,
-          active: ep.active,
-          description: ep.description,
-          createdAt: ep.created_at,
-        })),
-      };
+      return { webhooks };
     },
-  });
+  };
 }

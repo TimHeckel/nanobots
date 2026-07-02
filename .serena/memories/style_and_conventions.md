@@ -1,0 +1,27 @@
+# Style and conventions
+
+- Language/style:
+  - TypeScript throughout, with `strict: true`
+  - ES module syntax, double quotes, semicolons, trailing commas
+  - Prefer explicit interfaces/types for props, config, and return shapes
+  - Small helper functions with descriptive names; comments are present but used sparingly for non-obvious intent
+- Naming:
+  - React component symbols use PascalCase (`Logo`, etc.)
+  - Utility/functions use camelCase
+  - Many file names are kebab-case (`chat-interface.tsx`, `prompt-editor.tsx`)
+  - Bot names are kebab-case strings per architecture doc
+- Imports:
+  - Internal app imports often use the `@/` alias for `src/*`
+  - Node built-ins are imported from `node:*`
+- React / Next:
+  - App Router structure in `src/app`
+  - Components are plain function components; prop interfaces are declared near component definitions
+- Linting/testing conventions:
+  - ESLint uses Next core-web-vitals + TypeScript presets
+  - Test files under `tests/**/*.ts` / `tests/**/*.tsx`
+  - Test-specific ESLint relaxations allow some `any` and unused vars inside `tests/**`
+- Practical editing guidance:
+  - Preserve existing quote/semicolon style
+  - Keep files colocated by feature area rather than introducing broad new top-level folders
+  - Reuse existing shared libraries under `src/lib/nanobots`, `src/lib/chat/tools`, and `src/lib/db/queries` before creating parallel abstractions
+  - Prefer focused validation: run only the relevant test suite(s) for changed areas, then lint if scope justifies it

@@ -1,34 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "nanobots.sh — Build AI bot swarms for your GitHub repos",
+  title: "nanobots — Operator Control Room",
   description:
-    "Describe a bot in plain English. Test it against your code. Deploy a swarm that scans, fixes, and ships PRs autonomously. Start with 6 built-in bots. Create your own in seconds.",
+    "Sprinto-first SOC 2 evidence collection, monitoring, and export middleware.",
   openGraph: {
-    title: "nanobots.sh — Build AI bot swarms for your GitHub repos",
+    title: "nanobots — Operator Control Room",
     description:
-      "Describe a bot in plain English. Deploy a swarm that scans, fixes, and ships PRs autonomously.",
+      "Conversation-first control room for evidence sources, control health, and Sprinto export state.",
     url: "https://nanobots.sh",
-    siteName: "nanobots.sh",
+    siteName: "nanobots",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "nanobots.sh — Build AI bot swarms for your GitHub repos",
+    title: "nanobots — Operator Control Room",
     description:
-      "Describe a bot in plain English. Deploy a swarm that scans, fixes, and ships PRs autonomously.",
+      "Conversation-first control room for evidence sources, control health, and Sprinto export state.",
   },
 };
 
@@ -39,11 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
-        {children}
-      </body>
+      <body className="bg-background text-foreground antialiased">{children}</body>
     </html>
   );
 }

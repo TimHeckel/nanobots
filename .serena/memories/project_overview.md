@@ -1,0 +1,31 @@
+# nanobots project overview
+
+- Purpose: `nanobots` is an AI-native code scanning platform with two product surfaces:
+  - a Next.js SaaS app for chat-driven bot/swarm management, GitHub App onboarding, proposals, webhooks, and admin flows
+  - a Bun-driven CLI for local scanning, bot creation/testing/promotion, and interactive chat
+- Core architecture: shared TypeScript logic in `src/lib/nanobots/ai-bots/` powers both the SaaS app and CLI. Bots are data-driven (`BotDefinition` JSON-style config) and executed through the Vercel AI SDK rather than custom code execution.
+- Bot lifecycle: `draft -> testing -> active -> archived`.
+- Major areas:
+  - `src/app`: Next.js App Router pages and API routes
+  - `src/components`: UI components for chat, admin, and shared pieces
+  - `src/lib/chat/tools`: SaaS chat tool implementations
+  - `src/lib/nanobots`: shared scanner/orchestrator/AI-bot runtime
+  - `src/lib/db`: Neon/Postgres access and query modules
+  - `src/lib/watchtower`: dependency/vulnerability/proposal generation logic
+  - `cli`: standalone CLI entrypoint, commands, config, providers, and local bot storage
+  - `tests/unit`, `tests/integration`, `tests/e2e`: separate test layers
+  - `docs/ai-bots-platform.md`: best architecture doc for shared bot system
+- Tech stack:
+  - TypeScript with `strict: true`
+  - Next.js 16 App Router + React 19
+  - Tailwind CSS 4 via PostCSS
+  - Vercel AI SDK (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`)
+  - Neon serverless Postgres (`@neondatabase/serverless`)
+  - GitHub integrations via Octokit
+  - Vitest for unit/integration/e2e-style tests
+  - Bun is used for CLI execution/build scripts even though the repo also has `package-lock.json`
+- Config/env notes:
+  - CLI relies on `OPENROUTER_API_KEY` or `nanobots auth` / `.nanobots.toml`
+  - App/integration flows may require `DATABASE_URL`, `JWT_SECRET`, `NEXT_PUBLIC_APP_URL`, GitHub OAuth/App secrets, webhook/cron secrets
+  - integration tests load `.env.local` if present
+- README is still the default Next.js template and does not reflect the real app; prefer `package.json`, `docs/ai-bots-platform.md`, and source files for project truth.

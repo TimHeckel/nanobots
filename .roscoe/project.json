@@ -1,0 +1,390 @@
+{
+  "name": "nanobots",
+  "directory": "/Users/timheckel/Projects/node/nanobots",
+  "goals": [
+    "Rebuild nanobots as a Sprinto-first SOC 2 evidence collection, monitoring, and export middleware product",
+    "Replace the legacy bot/swarm/CLI product with a conversation-first operator control room that assembles evidence, tracks control health, and drives actionable updates back into Sprinto"
+  ],
+  "milestones": [
+    "Milestone 1 by date TBD: delete or replace legacy product surfaces and ship the first end-to-end Sprinto-first flow for evidence ingestion, control mapping, export, monitoring, and UI status",
+    "Milestone 2 by date TBD: ship conversational gap resolution that materially changes evidence state or next actions and reflects those changes in structured control/evidence panels",
+    "Milestone 3 by date TBD: add non-GitHub evidence capture, including screenshot/video artifacts where controls require them, and support more complex chained evidence workflows"
+  ],
+  "techStack": [
+    "TypeScript",
+    "Next.js 16",
+    "React 19",
+    "Vercel AI SDK",
+    "Postgres-backed data layer",
+    "Vitest",
+    "agent-browser and/or Playwright-style browser automation",
+    "GitHub Actions",
+    "Kubernetes deployment patterns from ~/Projects/node/k12io",
+    "Let’s Encrypt patterns from ~/Projects/node/k12io"
+  ],
+  "notes": "The repo currently still reflects the deprecated nanobots SaaS + CLI bot/swarm product. Existing README is a default Next.js template, current root CLAUDE.md is stale for the new direction, current tests are organized around the old product, and current coverage only measures selected engine/CLI paths. Roscoe should treat all of that as replaceable legacy. This is a greenfield rewrite with no current customers. The provider boundary is no longer OpenRouter; Roscoe should keep the Vercel AI SDK abstraction and support user-managed provider/API keys inside the product.",
+  "referenceResources": [],
+  "intentBrief": {
+    "projectStory": "nanobots is no longer a general-purpose AI bot swarm product. It is now a Sprinto-first SOC 2 middleware system that collects evidence from GitHub and other authenticated surfaces, structures that evidence into control-oriented artifacts, continuously monitors control freshness and exceptions, and exports actionable updates back into Sprinto. The product’s main interface is a conversation-first control room that helps an operator assemble the 'provable middle' needed for compliance evidence while showing structured evidence, control, export, and exception state alongside the conversation.",
+    "primaryUsers": [
+      "Compliance, security, or platform operators responsible for producing and maintaining SOC 2 evidence in Sprinto",
+      "Technical org admins who need conversational guidance to close evidence gaps and drive actions back into GitHub and other systems"
+    ],
+    "definitionOfDone": [
+      "A real operator can connect evidence sources, gather evidence, map it to Sprinto-relevant controls, export or update Sprinto, and see current sync and health state in the UI",
+      "The system continuously monitors control freshness and exceptions after export instead of behaving like a one-shot uploader",
+      "The conversation interface can identify missing evidence, guide the user through gap closure, and materially change next actions or evidence state",
+      "Non-GitHub evidence capture works when the control requires it, including screenshot and/or video artifacts",
+      "Frontend and backend outcomes are both proven by unit/component tests and e2e tests; Roscoe must not call work done until pillars 3 and 4 prove pillars 1 and 2",
+      "Measured coverage for the new SOC 2 middleware scope is 100%, including expected behavior and edge cases, with a numeric coverage report produced from this repo"
+    ],
+    "acceptanceChecks": [
+      "Roscoe must produce a measurable 100% coverage report for the new product scope",
+      "Roscoe must produce passing e2e proof of the full operator flow from authenticated entry through evidence collection, gap handling, export/update, and monitoring state",
+      "Roscoe must show visible proof that Sprinto export/update and monitoring status actually worked",
+      "Roscoe must show that a gap-resolution conversation changed the system’s next action or evidence state in a meaningful way",
+      "Roscoe must show that non-GitHub evidence capture worked when required, including screenshot/video artifacts",
+      "Roscoe must not rely on polished UI alone, happy-path backend demos alone, adapter/API tests alone, or GitHub-only evidence paths alone as proof of completion"
+    ],
+    "successSignals": [
+      "Operators can use nanobots as a serious evidence-control room rather than a generic chatbot or bot gallery",
+      "Sprinto exports are reliable, durable, and reflected back as visible sync/health state",
+      "Control freshness and exceptions are monitored continuously rather than discovered manually",
+      "Conversational guidance reduces ambiguity and produces concrete next steps for evidence collection or remediation",
+      "Legacy product drag is removed and the repo is clearly aligned to the new SOC 2 middleware mission"
+    ],
+    "userJourneys": [],
+    "entrySurfaceContract": {
+      "summary": "The default first surface should be a truthful operator-facing entry point on first boot.",
+      "defaultRoute": "/",
+      "expectedExperience": "Roscoe must produce a measurable 100% coverage report for the new product scope",
+      "allowedShellStates": []
+    },
+    "localRunContract": {
+      "summary": "Local boot should expose the real happy path and any missing prerequisites honestly.",
+      "startCommand": "pnpm dev",
+      "firstRoute": "http://localhost:3000",
+      "prerequisites": [
+        "Authentication requirements must be surfaced honestly before the local happy path is considered ready."
+      ],
+      "seedRequirements": [
+        "Any required tenant or operator bootstrap must be explicit before local validation is treated as complete."
+      ],
+      "expectedBlockedStates": [],
+      "operatorSteps": [
+        "Run `pnpm dev`.",
+        "Open `http://localhost:3000` and verify the truthful default experience."
+      ]
+    },
+    "acceptanceLedgerMode": "inferred",
+    "acceptanceLedger": [
+      {
+        "label": "A real operator can connect evidence sources, gather evidence, map it to Sprinto-relevant controls, export or update Sprinto, and see current sync and health state in the UI",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      },
+      {
+        "label": "The system continuously monitors control freshness and exceptions after export instead of behaving like a one-shot uploader",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      },
+      {
+        "label": "The conversation interface can identify missing evidence, guide the user through gap closure, and materially change next actions or evidence state",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      },
+      {
+        "label": "Non-GitHub evidence capture works when the control requires it, including screenshot and/or video artifacts",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      },
+      {
+        "label": "Roscoe must produce a measurable 100% coverage report for the new product scope",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      },
+      {
+        "label": "Roscoe must produce passing e2e proof of the full operator flow from authenticated entry through evidence collection, gap handling, export/update, and monitoring state",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      },
+      {
+        "label": "Roscoe must show visible proof that Sprinto export/update and monitoring status actually worked",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      },
+      {
+        "label": "Roscoe must show that a gap-resolution conversation changed the system’s next action or evidence state in a meaningful way",
+        "status": "open",
+        "evidence": [],
+        "notes": ""
+      }
+    ],
+    "deliveryPillars": {
+      "frontend": [
+        "Ship a conversation-first control room where chat is the main operator interface",
+        "Show evidence status, control health, export state, and exceptions in structured side panels tied to the conversation",
+        "Support conversational evidence-gap resolution that updates the visible state of the system",
+        "Support evidence workflows involving GitHub and other authenticated surfaces, including media evidence state when required"
+      ],
+      "backend": [
+        "Implement evidence ingestion, normalization, control mapping, Sprinto export/update, and continuous monitoring as the core service contract",
+        "Support user-managed provider/API key configuration through the Vercel AI SDK-based system and do not reintroduce OpenRouter",
+        "Support browser/evidence collection jobs, durable evidence storage, and monitoring execution on the Kubernetes deployment model patterned after ~/Projects/node/k12io",
+        "Provide durable, trustworthy control-state and export-state handling with strong failure-mode behavior"
+      ],
+      "unitComponentTests": [
+        "Unit and component tests must cover 100% of expected behavior and edge cases for all new SOC 2 middleware codepaths",
+        "Those tests must prove the frontend and backend outcomes by covering evidence collectors, control mappers, export adapters, monitoring logic, provider-key handling, UI state transitions, and failure states",
+        "Roscoe must expand or replace the current Vitest coverage scope so it measures the new product paths such as src/app, src/components, src/lib/compliance, src/lib/chat, src/lib/db, and any new evidence-collection modules",
+        "Pillar 3 is a hard requirement, not supporting evidence; no task is done without this proof"
+      ],
+      "e2eTests": [
+        "E2E tests must prove the full operator workflow from authenticated entry through evidence collection, control mapping, Sprinto export/update, monitoring state, exception visibility, and conversational gap resolution",
+        "E2E must cover edge cases and failure modes, including missing evidence, stale controls, failed exports, auth/session issues, provider-key issues, and evidence capture flows that require screenshots/videos",
+        "The new e2e suite should replace the repo’s current landing/chat/swarm emphasis and target the Sprinto-first control-room workflows",
+        "Pillar 4 is a hard requirement; Roscoe must not call work complete without end-to-end proof"
+      ]
+    },
+    "coverageMechanism": [
+      "Replace the current partial Vitest coverage include list with a new scope that measures the Sprinto-first SOC 2 middleware codepaths",
+      "Use `npm run test:coverage` as the canonical measurable coverage command for this repo",
+      "Require a numeric V8 coverage report and treat 100% statements, branches, functions, and lines as mandatory for the new product scope",
+      "Legacy untouched areas do not need to be preserved; delete legacy code rather than carrying false coverage obligations for the old product",
+      "Use agent-browser for screenshot/snapshot review on milestone-grade UI work when it is available; otherwise use the repo's canonical headless browser harness."
+    ],
+    "deploymentContract": {
+      "mode": "inferred-existing",
+      "summary": "Existing deploy signals detected. Signals: package.json:scripts.build, package.json:scripts.start. Roscoe should lean into these existing patterns instead of inventing a new deployment stack..",
+      "artifactType": "web app",
+      "platforms": [],
+      "environments": [],
+      "buildSteps": [
+        "npm run build"
+      ],
+      "deploySteps": [],
+      "previewStrategy": [],
+      "presenceStrategy": [
+        "Define the first truthful non-local web presence before calling hosted milestones done."
+      ],
+      "proofTargets": [],
+      "healthChecks": [],
+      "rollback": [],
+      "requiredSecrets": []
+    },
+    "nonGoals": [
+      "Preserving or polishing the old bot/swarm/CLI product except as needed to delete or replace it",
+      "Building broad multi-provider compliance-platform support before Sprinto-first evidence/export flows are solid",
+      "Investing in generic AI-agent features that are not directly tied to SOC 2 evidence collection, control monitoring, or export",
+      "Maintaining backward-compatible APIs, schemas, tests, or deployment assumptions from the old product when they conflict with the new direction"
+    ],
+    "constraints": [
+      "Sprinto is the first provider target and should win near-term roadmap tradeoffs",
+      "Use the Vercel AI SDK abstraction and user-managed provider/API keys; do not depend on OpenRouter",
+      "Deploy using the same Kubernetes, GitHub workflow, Let’s Encrypt, and related infrastructure patterns already established in ~/Projects/node/k12io",
+      "Evidence collection may extend beyond GitHub into other authenticated apps and may require screenshot or video artifacts",
+      "This is a greenfield rewrite with no current customers, so Roscoe should optimize for the best architecture rather than legacy compatibility"
+    ],
+    "architecturePrinciples": [
+      "Favor shared components and shared domain modules over duplicated feature-specific implementations.",
+      "Keep material writes, external integrations, and background or queued work behind explicit service seams with consistent audit logging."
+    ],
+    "autonomyRules": [
+      "Roscoe may freely delete or replace any legacy product surface, tests, infra wiring, product contract, or runtime policy that does not support the new SOC 2 middleware goal",
+      "Roscoe should not preserve backward compatibility for the deprecated product unless explicitly instructed otherwise",
+      "Roscoe should use best architectural judgment and not stop for approval on greenfield rewrite decisions",
+      "Roscoe should keep moving unless blocked by missing information that materially changes technical correctness"
+    ],
+    "qualityBar": [
+      "Any gap in export/monitoring correctness, evidence durability, or control-state trustworthiness is a hard blocker",
+      "Any missing edge-case coverage, flaky e2e proof, or unmeasured behavior in the new product scope is a hard blocker",
+      "Shallow UI polish, happy-path backend demos, adapter-only test success, and GitHub-only evidence paths are all invalid completion states",
+      "Roscoe should keep iterating until all blocking quality conditions are cleared",
+      "The UI should feel like a serious operator control room rather than a generic chat demo or marketing shell",
+      "For user-facing milestone routes, require headless browser screenshot/snapshot review and keep workflow or e2e proof growing with the UI."
+    ],
+    "riskBoundaries": [
+      "Do not produce an architecture that weakens evidence trust, durability, or auditability",
+      "Do not accept incomplete export or monitoring correctness as 'good enough'",
+      "Do not accept missing coverage, flaky e2e proof, or unmeasured behavior in the new product scope",
+      "Do not let scope drift back toward the deprecated bot/swarm product or generic AI-agent work",
+      "No approval gate is required for contract or runtime-policy changes in this greenfield rewrite; the real risk boundary is shipping something untrustworthy, weakly tested, or strategically off-target"
+    ],
+    "uiDirection": "Conversation-first control room. Chat is the main interface, with evidence status, control health, exports, and exceptions presented as structured side panels. The design should optimize operator clarity and evidence assembly, not marketing or generic AI theatrics."
+  },
+  "interviewAnswers": [
+    {
+      "question": "When the SaaS chat app, the Bun CLI, and the shared bot engine compete for scope or polish, which one should Roscoe treat as the product's primary source of truth?",
+      "answer": "The SaaS chat control plane is primary; CLI support matters but should not drive roadmap tradeoffs",
+      "theme": "project-story"
+    },
+    {
+      "question": "Given the current SaaS shape in `src/app/chat`, GitHub OAuth onboarding, org-scoped bot/suite tools, and admin prompt controls, who should Roscoe treat as the primary operator when making product decisions?",
+      "answer": "The entire scope of the project must be revamped to target sprinto first, and other soc2 providers layer - heoping with the squishy provable 'middle' that orgs must have to provide sufficient soc2 evidence to these platforms...the general purpose swarming shoudl be completely deprecated, nanobots.sh is now a soc2 middleware for soc2 platforms to help provide detailed controls to meet demands",
+      "theme": "primary-users"
+    },
+    {
+      "question": "If nanobots.sh is becoming Sprinto-first SOC 2 middleware instead of a general bot-swarm product, which end-to-end workflow should Roscoe treat as the first non-negotiable definition-of-done target to replace the current `/chat` bot/swarm emphasis?",
+      "answer": "it's API/export middleware is primary: the UI can stay thin as long as nanobots reliably structures and delivers evidence to Sprinto first + continuous monitoring of those controls - the UI must support the gaps via a conversation with the user on how to best leverage the github ecosystem to drive controls back into sprinto (and eventually others) - these conversations should yield changes to the nanobots patterns to best fulfill waht the user is asking; so the nanobots adapt within the github ecosystem to wahtever the user needs...we may need to build out comfyui style node chaining here to allow the user to chain together multiple things before returning to the sprinto (or other) UIs the controls in question",
+      "theme": "definition-of-done"
+    },
+    {
+      "question": "For the first Sprinto-first milestone, which exact workflow must all four delivery pillars prove end-to-end before Roscoe can call the work complete?",
+      "answer": "it's really a combo of all 3: Connect GitHub repo -> gather evidence -> map/export to Sprinto -> continuously monitor control freshness and exceptions -> show sync/health status in the UI                                                  │\r │   Connect GitHub repo -> map/export to Sprinto -> continuously monitor -> let the chat UI identify gaps and recommend GitHub-side changes before marking controls healthy                                        │\r │   Connect GitHub repo -> map/export to Sprinto -> continuously monitor -> let the user compose multi-step evidence flows/node chains before sending results back to Sprinto\n\nthe main interface with the user should be a conversation that helps assemble the collected evidence and continually onitored repo into actionable steps back into sprinto - and some of these will require the comfy-ui based node positioning, but many may be able to flow in - cruciailly, screenshots and/or videos may be required as evidence, so that needs to be taken into account - and .... i know i said this is github only, but github needs to become a surface for evidence collection - one of many - and nanobots may collecdt evidence from other surfaces, so needs to be able to use playwright or agent-browser clis to auth and navigate apps and collect evidence on the user's behalf as well...managing this complexity in the nanobots.sh UI will be essential as well",
+      "theme": "delivery-pillars"
+    },
+    {
+      "question": "Which provider should Roscoe lock for this project after onboarding, given the current code already routes SaaS and CLI model calls through OpenRouter-backed paths?",
+      "answer": "let's lock this fully to vercel ai sdk's tool - no openrouter, but full management of keys by the user to define which api keys and providers  are available...also i have a big question about the devops deployment story so please ask me that too",
+      "theme": "constraints"
+    },
+    {
+      "question": "Given the current repo is shaped around Next.js on Vercel, Neon Postgres, webhook/cron routes, and post-deploy browser e2e, what deployment model should Roscoe optimize for after the Sprinto-first pivot adds browser evidence capture, screenshots/videos, provider-key management, and long-running monitoring jobs?",
+      "answer": "fully leverage the existing kubernetes based deploy that exists in ~/Projects/node/k12io for this repo - same github workflows, same k8 infrastructure - same k8 instance - same patterns for letsencrypt, all of it",
+      "theme": "constraints"
+    },
+    {
+      "question": "How should Roscoe redefine measurable coverage for this repo so 'done' includes a real percentage for the new Sprinto-first product instead of the current partial engine/CLI-only coverage scope?",
+      "answer": "untouched legacy errors can be fully deleted, this is 100% about the new soc2 evidence collection middleware tool - nothing more - no backwards compat needed, and 100% test coverage of all parts towards this new goal",
+      "theme": "coverage-mechanism"
+    },
+    {
+      "question": "When Roscoe is rewriting this repo away from the current landing/chat/swarm/CLI/OpenRouter/Vercel setup and toward the new SOC 2 middleware on the shared Kubernetes pattern, what level of autonomy should Roscoe have to delete or replace legacy systems without asking first?",
+      "answer": "Roscoe may freely delete or replace any legacy product surface, tests, and infra wiring that do not support the new SOC 2 middleware, and only ask before changing external customer-facing contracts or secrets/runtime policies",
+      "theme": "autonomy-rules"
+    },
+    {
+      "question": "What UI direction should Roscoe treat as the quality bar for replacing the current landing/chat/swarm experience with the new SOC 2 evidence middleware operator surface?",
+      "answer": "Conversation-first control room: chat is the main interface, with evidence status, control health, exports, and exceptions as structured side panels",
+      "theme": "ui-direction"
+    },
+    {
+      "question": "After the rewrite, which shortcut would most dangerously look 'done' in this repo but must explicitly count as NOT done unless Roscoe has deeper proof?",
+      "answer": "all of the above: A polished conversation-first UI that shows evidence/control panels, but the backend export, monitoring, or evidence collectors are still incomplete or not durable                                            │\r │   Backend export and monitoring appear to work in happy-path demos, but edge cases, failure modes, and measurable 100% coverage are missing                                                                      │\r │   Tests pass for adapters and API routes, but there is no end-to-end proof that a real operator can collect evidence, resolve gaps, and push results back into Sprinto                                           │\r │   A working GitHub-only path exists, but non-GitHub evidence capture, screenshots/videos, or multi-surface evidence collection are still stubbed or hand-waved",
+      "theme": "definition-of-done"
+    },
+    {
+      "question": "When Roscoe claims a Sprinto-first middleware task is complete, what concrete proof bundle should it be expected to produce as the acceptance check?",
+      "answer": "Everything in the second option, plus proof that non-GitHub evidence capture worked when required, including screenshot/video artifacts",
+      "theme": "acceptance-checks"
+    },
+    {
+      "question": "Which of these should Roscoe treat as the clearest non-goal during the rewrite unless you explicitly re-open it later?",
+      "answer": "question is a bit confusing, but basically all of these should NOT be pursued - we no longer care about the old project here at all:  Preserving or polishing the old bot/swarm/CLI product beyond what is strictly needed to delete or replace it                                                                                                   │\r │   Building broad multi-provider compliance-platform support before Sprinto-first evidence/export flows are solid                                                                                                 │\r │   Investing in generic AI-agent features that are not directly tied to SOC 2 evidence collection, control monitoring, or export                                                                                  │\r │   Maintaining backward-compatible APIs, schemas, or deployment assumptions from the old product when they conflict with the new direction",
+      "theme": "non-goals"
+    },
+    {
+      "question": "In this rewrite, which review blocker should Roscoe treat as the strongest quality and risk boundary when deciding whether to keep iterating versus asking for approval?",
+      "answer": "All three are equally blocking and should be treated as hard stop conditions",
+      "theme": "quality-bar"
+    },
+    {
+      "question": "Which risk should Roscoe treat as the clearest 'do not cross without approval' boundary while rewriting this repo into the Sprinto-first SOC 2 middleware product?",
+      "answer": "none of these require approval - do you best judgement and don't stop working towards the best arch decisions here",
+      "theme": "risk-boundaries"
+    },
+    {
+      "question": "Which rule should Roscoe actually follow when a rewrite decision would change external customer-facing contracts or secrets/runtime policy in this repo?",
+      "answer": "roscoe doesn't have to ask for any of this - there are no customers rihgt now, it's a green field",
+      "theme": "risk-boundaries"
+    }
+  ],
+  "runtimeDefaults": {
+    "guildProvider": "codex",
+    "guildProviders": [
+      "codex",
+      "claude",
+      "qwen",
+      "kimi"
+    ],
+    "responderProvider": "claude",
+    "workerByProtocol": {
+      "claude": {
+        "executionMode": "safe",
+        "tuningMode": "auto",
+        "model": "claude-opus-4-6",
+        "reasoningEffort": "xhigh",
+        "permissionMode": "auto"
+      },
+      "codex": {
+        "executionMode": "accelerated",
+        "tuningMode": "auto",
+        "model": "gpt-5.4",
+        "reasoningEffort": "xhigh",
+        "bypassApprovalsAndSandbox": true
+      },
+      "qwen": {
+        "executionMode": "accelerated",
+        "tuningMode": "auto",
+        "reasoningEffort": "high"
+      },
+      "kimi": {
+        "executionMode": "accelerated",
+        "tuningMode": "auto",
+        "reasoningEffort": "high"
+      }
+    },
+    "responderByProtocol": {
+      "claude": {
+        "executionMode": "accelerated",
+        "tuningMode": "manual",
+        "model": "claude-opus-4-6",
+        "reasoningEffort": "high",
+        "dangerouslySkipPermissions": true
+      },
+      "codex": {
+        "tuningMode": "manual",
+        "model": "gpt-5.4",
+        "reasoningEffort": "high"
+      }
+    },
+    "onboarding": {
+      "profileName": "codex",
+      "runtime": {
+        "executionMode": "accelerated",
+        "tuningMode": "auto",
+        "model": "gpt-5.4",
+        "reasoningEffort": "low",
+        "bypassApprovalsAndSandbox": true
+      }
+    },
+    "workerGovernanceMode": "roscoe-arbiter",
+    "verificationCadence": "batched",
+    "tokenEfficiencyMode": "balanced",
+    "responderApprovalMode": "auto",
+    "swarmWorkerCount": 3,
+    "providerAssessment": [
+      {
+        "provider": "codex",
+        "score": 86,
+        "role": "primary slice owner",
+        "rationale": "Codex is available locally and is a good fit for primary slice owner with gpt-5.4 as the default top model."
+      },
+      {
+        "provider": "claude",
+        "score": 72,
+        "role": "supporting implementation owner",
+        "rationale": "Claude is available locally and is a good fit for supporting implementation owner with claude-opus-4-6 as the default top model."
+      },
+      {
+        "provider": "qwen",
+        "score": 71,
+        "role": "verification and integration owner",
+        "rationale": "Qwen is available locally and is a good fit for verification and integration owner with default as the default top model."
+      },
+      {
+        "provider": "kimi",
+        "score": 67,
+        "role": "verification and integration owner",
+        "rationale": "Kimi is available locally and is a good fit for verification and integration owner with default as the default top model."
+      }
+    ]
+  }
+}
