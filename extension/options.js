@@ -25,6 +25,16 @@ const $ = (id) => document.getElementById(id);
 })();
 
 $('save').addEventListener('click', async () => {
+  // Arbitrary OpenAI-compatible hosts need a runtime permission grant
+  // (static grants cover github/cloudflare/anthropic).
+  try {
+    const base = $('aibase').value.trim();
+    if (base) {
+      const origin = new URL(base).origin + '/*';
+      const has = await chrome.permissions.contains({ origins: [origin] });
+      if (!has) await chrome.permissions.request({ origins: [origin] });
+    }
+  } catch { /* invalid URL or user declined — save proceeds; calls will surface it */ }
   await saveConfig({
     pat: $('pat').value.trim(),
     repos: $('repos').value.split('\n').map((s) => s.trim()).filter(Boolean),

@@ -5,8 +5,9 @@ export async function getConfig() {
     pat: '',
     repos: [],
     r2: { accountId: '', bucket: '', token: '', publicBase: '' },
-    // BYO model for the repo chat: Anthropic or any Anthropic-compatible endpoint
-    ai: { apiKey: '', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-5' },
+    // BYO model for the repo chat: any OpenAI-compatible endpoint. Default is
+    // Anthropic's OpenAI-compat layer so an Anthropic key works out of the box.
+    ai: { apiKey: '', baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-5' },
   };
   const stored = await chrome.storage.local.get(Object.keys(defaults));
   return {

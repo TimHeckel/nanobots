@@ -59,12 +59,13 @@
   </div>
 
   <label for="aikey">model api key (for the repo chat agent)</label>
-  <input id="aikey" type="password" placeholder="sk-ant-… (Anthropic) or any compatible provider's key">
-  <label for="aibase">model base url</label>
-  <input id="aibase" placeholder="https://api.anthropic.com">
-  <div class="hint">Any Anthropic-compatible endpoint works — e.g. <code>https://api.deepseek.com/anthropic</code>.</div>
+  <input id="aikey" type="password" placeholder="sk-ant-…, sk-…, or any OpenAI-compatible provider's key">
+  <label for="aibase">model base url (OpenAI-compatible)</label>
+  <input id="aibase" placeholder="https://api.anthropic.com/v1">
+  <div class="hint">Any OpenAI-compatible endpoint: Anthropic <code>https://api.anthropic.com/v1</code> · OpenAI <code>https://api.openai.com/v1</code> · Gemini <code>https://generativelanguage.googleapis.com/v1beta/openai</code> · OpenRouter <code>https://openrouter.ai/api/v1</code> · local Ollama <code>http://localhost:11434/v1</code>.</div>
   <label for="aimodel">model</label>
   <input id="aimodel" placeholder="claude-sonnet-5">
+  <div class="hint"><b>Pick a multimodal model</b> (claude-sonnet-5, gpt-4o, gemini-2.5-flash) if you want the agent to <i>see</i> pasted screenshots. Text-only models (e.g. DeepSeek) still chat, search, and file reports — screenshots attach to the filed issue via R2 regardless — the agent just can't look at them.</div>
 
   <button id="save">save</button><span id="saved"></span>
 </main>

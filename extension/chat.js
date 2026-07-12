@@ -98,13 +98,14 @@ async function send() {
   const shownImgs = attachments.map((a) => `<img src="${a}">`).join('');
   addMsg('user', 'you', `${esc(text)}${shownImgs}`);
 
-  const content = [
-    ...attachments.map((a) => ({
-      type: 'image',
-      source: { type: 'base64', media_type: 'image/png', data: a.split(',')[1] },
-    })),
-    { type: 'text', text: text || '(see attached screenshot)' },
-  ];
+  // OpenAI-compat multimodal parts; text-only models will error on image
+  // parts — the catch below surfaces a clear message.
+  const content = attachments.length
+    ? [
+        ...attachments.map((a) => ({ type: 'image_url', image_url: { url: a } })),
+        { type: 'text', text: text || '(see attached screenshot)' },
+      ]
+    : text;
   history.push({ role: 'user', content });
 
   const turnAttachments = [...attachments];
@@ -124,7 +125,10 @@ async function send() {
       }
     });
   } catch (e) {
-    addMsg('agent err', 'nanobots', `<span class="err">${esc(e.message)}</span>`);
+    const hint = turnAttachments.length && /image|vision|multimodal|content type/i.test(e.message)
+      ? '<br><span class="dim">Your model may not support images — use a multimodal one (claude-sonnet-5, gpt-4o, gemini-flash). Screenshots still attach to filed reports either way.</span>'
+      : '';
+    addMsg('agent err', 'nanobots', `<span class="err">${esc(e.message)}</span>${hint}`);
     history.pop(); // drop the failed user turn so retry is clean
   }
   $('send').disabled = false;

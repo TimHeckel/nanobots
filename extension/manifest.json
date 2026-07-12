@@ -1,15 +1,15 @@
 {
   "manifest_version": 3,
   "name": "nanobots — report to the loop",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Screenshot → annotate → filed as a GitHub issue for your nanobots loop. Plus full report history and a repo-aware agent chat.",
   "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "https://api.github.com/*",
     "https://api.cloudflare.com/*",
-    "https://api.anthropic.com/*",
-    "https://api.deepseek.com/*"
+    "https://api.anthropic.com/*"
   ],
+  "optional_host_permissions": ["https://*/*", "http://localhost/*"],
   "background": { "service_worker": "background.js" },
   "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   "action": {

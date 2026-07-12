@@ -39,8 +39,11 @@ configure.
 
 ## Repo chat (the connected agent)
 
-The **chat** page is a repo-aware agent: BYO model key (Anthropic, or any
-Anthropic-compatible endpoint like DeepSeek — set base URL + model in options). The agent
+The **chat** page is a repo-aware agent: BYO model key against **any OpenAI-compatible
+endpoint** (Anthropic's compat layer is the default; OpenAI, Gemini, OpenRouter, local
+Ollama all work — set base URL + model in options). Pick a **multimodal** model if you
+want the agent to see pasted screenshots; text-only models (e.g. DeepSeek) still chat,
+search, and file — screenshots attach to issues via R2 regardless. The agent
 has client-side tools against your repo — `search_code`, `read_file`, `search_issues`,
 `list_files`, and `file_report` — so it answers with real lookups and can file reports
 for you, dedupe-checking first. Paste or drop screenshots into the chat; the agent sees

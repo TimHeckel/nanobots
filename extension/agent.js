@@ -5,22 +5,24 @@
 import { searchCode, readFile, searchIssues, listTree, defaultBranch, createIssue, logFiledIssue } from './gh.js';
 import { uploadToR2, r2Configured } from './storage.js';
 
+// OpenAI function-calling tool definitions (the compat lingua franca:
+// OpenAI, Anthropic's compat layer, Gemini, OpenRouter, Ollama, DeepSeek…)
 const TOOLS = [
   { name: 'search_code', description: 'Search the repo code. Returns matching file paths.',
-    input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
+    parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
   { name: 'read_file', description: 'Read a file from the repo by path.',
-    input_schema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] } },
+    parameters: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] } },
   { name: 'search_issues', description: 'Search issues and PRs (dedupe before filing!). Query uses GitHub search syntax.',
-    input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
+    parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } },
   { name: 'list_files', description: 'List all file paths in the repo (truncated at 2000).',
-    input_schema: { type: 'object', properties: {}, required: [] } },
+    parameters: { type: 'object', properties: {}, required: [] } },
   { name: 'file_report', description: 'File a report as a GitHub issue for the nanobots loop. Any screenshots the user attached in this chat are uploaded and embedded automatically.',
-    input_schema: { type: 'object', properties: {
+    parameters: { type: 'object', properties: {
       title: { type: 'string', description: 'Specific, observable. No [bug]/[feat] prefix — added automatically.' },
       body: { type: 'string', description: 'Markdown. What happened vs expected, page URL, steps.' },
       type: { type: 'string', enum: ['bug', 'idea'] },
     }, required: ['title', 'body', 'type'] } },
-];
+].map((t) => ({ type: 'function', function: t }));
 
 async function runTool(cfg, nwo, name, input, attachments) {
   if (name === 'search_code') return searchCode(cfg.pat, nwo, input.query);
@@ -58,49 +60,49 @@ export async function loadSystemPrompt(cfg, nwo) {
   }
 }
 
-async function callModel(ai, system, messages) {
-  const res = await fetch(`${ai.baseUrl.replace(/\/$/, '')}/v1/messages`, {
+async function callModel(ai, messages) {
+  const base = ai.baseUrl.replace(/\/$/, '').replace(/\/chat\/completions$/, '');
+  const res = await fetch(`${base}/chat/completions`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-api-key': ai.apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      Authorization: `Bearer ${ai.apiKey}`,
     },
-    body: JSON.stringify({ model: ai.model, max_tokens: 2000, system, tools: TOOLS, messages }),
+    body: JSON.stringify({ model: ai.model, max_tokens: 2000, tools: TOOLS, messages }),
   });
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
-    throw new Error(`model → ${res.status}: ${detail.error?.message ?? 'unknown error'}`);
+    throw new Error(`model → ${res.status}: ${detail.error?.message ?? detail.message ?? 'unknown error'}`);
   }
   return res.json();
 }
 
-// One user turn: runs the tool loop to completion.
-// onEvent receives {kind: 'tool'|'text', ...} for live UI updates.
+// One user turn: runs the tool loop to completion (OpenAI chat-completions
+// protocol). onEvent receives {kind: 'tool'|'text', ...} for live UI updates.
 export async function chatTurn(cfg, nwo, system, history, attachments, onEvent) {
-  const messages = [...history];
+  const messages = [{ role: 'system', content: system }, ...history];
   for (let i = 0; i < 12; i++) {
-    const resp = await callModel(cfg.ai, system, messages);
-    messages.push({ role: 'assistant', content: resp.content });
-    if (resp.stop_reason !== 'tool_use') {
-      const text = resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
-      onEvent({ kind: 'text', text });
-      return messages;
+    const resp = await callModel(cfg.ai, messages);
+    const msg = resp.choices?.[0]?.message;
+    if (!msg) throw new Error('model returned no choices');
+    messages.push(msg);
+    if (!msg.tool_calls?.length) {
+      onEvent({ kind: 'text', text: msg.content ?? '' });
+      return messages.slice(1); // drop the system message from stored history
     }
-    const results = [];
-    for (const block of resp.content.filter((b) => b.type === 'tool_use')) {
-      onEvent({ kind: 'tool', name: block.name, input: block.input });
+    for (const call of msg.tool_calls) {
+      let input = {};
+      try { input = JSON.parse(call.function.arguments || '{}'); } catch { /* tolerate bad JSON */ }
+      onEvent({ kind: 'tool', name: call.function.name, input });
       let content;
       try {
-        content = JSON.stringify(await runTool(cfg, nwo, block.name, block.input, attachments));
+        content = JSON.stringify(await runTool(cfg, nwo, call.function.name, input, attachments));
       } catch (e) {
         content = JSON.stringify({ error: e.message });
       }
-      results.push({ type: 'tool_result', tool_use_id: block.id, content });
+      messages.push({ role: 'tool', tool_call_id: call.id, content });
     }
-    messages.push({ role: 'user', content: results });
   }
   onEvent({ kind: 'text', text: '(stopped: too many tool rounds)' });
-  return messages;
+  return messages.slice(1);
 }
