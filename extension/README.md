@@ -69,11 +69,20 @@ loop sees of its output. Continual improvement, no extension update required.
 ## Flow
 
 ```
-click icon → captureVisibleTab → annotate.html (canvas, red pen/box/arrow, undo)
+click icon → captureVisibleTab (before any UI, so the shot is clean)
+  → in-page overlay on the SAME tab: frozen shot fills the viewport
+  → drag to crop the region (F = full view, esc = cancel)
+  → annotate the crop in place (red pen/box/arrow, undo, recrop)
   → title + note + bug|feature + repo
-  → PNG → R2 (public link) → POST issue {labels: nanobots:inbox, nanobots:ext, bug|enhancement}
-  → link to the filed issue; the outer loop triages it next cycle
+  → background worker: PNG → R2 (public link) → POST issue
+      {labels: nanobots:inbox, nanobots:ext, bug|enhancement}
+  → issue link shown in place; the outer loop triages it next cycle
 ```
+
+The overlay is a shadow-DOM content script injected on demand (`activeTab` +
+`scripting`); all network runs in the background service worker (MV3 content scripts
+are subject to the page's CORS). Pages where content scripts can't run (chrome://,
+web store) fall back to the old annotate tab.
 
 No build step, no dependencies, MV3, vanilla JS. Permissions: `activeTab` (capture only
 when you click), `storage` (your settings), host access to `api.github.com` and
