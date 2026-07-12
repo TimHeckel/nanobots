@@ -1,0 +1,248 @@
+// In-page reporting overlay (content script, injected on icon click).
+// Flow: frozen screenshot fills the viewport → drag to crop (or F for full
+// view) → annotate the crop (pen/box/arrow) → title/note/type/repo → file.
+// UI only — all network happens in the background service worker.
+(() => {
+  if (window.__nanobots) { return; } // singleton per page; reopened via message
+  window.__nanobots = true;
+
+  let host = null;
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.kind !== 'nanobots-open') return;
+    close();
+    if (!msg.configured) {
+      chrome.runtime.sendMessage({ kind: 'nanobots-open-options' });
+      return;
+    }
+    open(msg);
+  });
+
+  const close = () => { host?.remove(); host = null; };
+
+  function open(ctx) {
+    host = document.createElement('nanobots-overlay');
+    host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = `
+      <style>
+        :host { all: initial; }
+        * { box-sizing: border-box; margin: 0; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+        .veil { position: fixed; inset: 0; background: rgba(4,6,9,.55); cursor: crosshair; }
+        .veil img { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: .45; }
+        .selrect { position: absolute; border: 1.5px solid #4ade80; background: rgba(74,222,128,.08);
+          box-shadow: 0 0 0 100000px rgba(4,6,9,.55); display: none; }
+        .hintbar { position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+          background: #11151b; color: #c9d1d9; border: 1px solid #1e242e; border-radius: 8px;
+          padding: 8px 16px; }
+        .hintbar b { color: #4ade80; }
+        .panel { position: fixed; top: 4vh; left: 50%; transform: translateX(-50%);
+          width: min(680px, 94vw); max-height: 92vh; overflow-y: auto; background: #0b0e12;
+          border: 1px solid #1e242e; border-radius: 10px; padding: 16px; color: #c9d1d9; }
+        .panel h1 { font-size: 14px; margin-bottom: 10px; } .panel h1 b { color: #4ade80; }
+        .tools { display: flex; gap: 6px; margin-bottom: 8px; }
+        button { background: #11151b; border: 1px solid #1e242e; color: #c9d1d9; border-radius: 6px;
+          padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12.5px; }
+        button.on { border-color: #4ade80; color: #4ade80; }
+        button.go { background: #4ade80; border: none; color: #05270f; font-weight: 700; padding: 9px 18px; }
+        .spacer { flex: 1; }
+        canvas { display: block; max-width: 100%; border: 1px solid #1e242e; border-radius: 6px;
+          cursor: crosshair; margin-bottom: 10px; }
+        input, textarea, select { width: 100%; background: #11151b; border: 1px solid #1e242e;
+          color: #c9d1d9; border-radius: 6px; padding: 7px 9px; font: inherit; margin-bottom: 8px; }
+        textarea { min-height: 56px; resize: vertical; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .status { min-height: 18px; margin-top: 6px; }
+        .ok { color: #4ade80; } .err { color: #ef4444; }
+        a { color: #22d3ee; }
+      </style>`;
+
+    if (ctx.shot && ctx.r2on) cropPhase(root, ctx);
+    else panelPhase(root, ctx, null);
+
+    host.tabIndex = -1;
+    document.documentElement.appendChild(host);
+    root.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    window.addEventListener('keydown', escOnce, { capture: true });
+    function escOnce(e) {
+      if (e.key === 'Escape' && host) { e.stopPropagation(); close(); window.removeEventListener('keydown', escOnce, { capture: true }); }
+    }
+  }
+
+  // ── phase 1: crop ──────────────────────────────────────────────────────────
+
+  function cropPhase(root, ctx) {
+    const veil = document.createElement('div');
+    veil.className = 'veil';
+    veil.innerHTML = `<img src="${ctx.shot}"><div class="selrect"></div>
+      <div class="hintbar"><b>drag</b> to select the region · <b>F</b> full view · <b>esc</b> cancel</div>`;
+    root.appendChild(veil);
+    const rect = veil.querySelector('.selrect');
+
+    let start = null;
+    const box = (a, b) => ({
+      x: Math.min(a.x, b.x), y: Math.min(a.y, b.y),
+      w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y),
+    });
+    veil.addEventListener('pointerdown', (e) => {
+      start = { x: e.clientX, y: e.clientY };
+      veil.setPointerCapture(e.pointerId);
+    });
+    veil.addEventListener('pointermove', (e) => {
+      if (!start) return;
+      const r = box(start, { x: e.clientX, y: e.clientY });
+      Object.assign(rect.style, { display: 'block', left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+    });
+    veil.addEventListener('pointerup', (e) => {
+      const r = box(start, { x: e.clientX, y: e.clientY });
+      start = null;
+      if (r.w < 8 || r.h < 8) { rect.style.display = 'none'; return; } // stray click
+      toCanvas(ctx.shot, r).then((cropped) => { veil.remove(); panelPhase(root, ctx, cropped); });
+    });
+    root.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'f' && veil.isConnected) {
+        toCanvas(ctx.shot, null).then((full) => { veil.remove(); panelPhase(root, ctx, full); });
+      }
+    });
+    veil.querySelector('img').ondragstart = () => false;
+    setTimeout(() => host.focus(), 0);
+  }
+
+  // Crop rect is in CSS px; the bitmap is devicePixelRatio-scaled.
+  function toCanvas(shot, r) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const sx = img.naturalWidth / window.innerWidth;
+        const sy = img.naturalHeight / window.innerHeight;
+        const c = document.createElement('canvas');
+        if (r) { c.width = Math.round(r.w * sx); c.height = Math.round(r.h * sy); }
+        else { c.width = img.naturalWidth; c.height = img.naturalHeight; }
+        const g = c.getContext('2d');
+        if (r) g.drawImage(img, r.x * sx, r.y * sy, c.width, c.height, 0, 0, c.width, c.height);
+        else g.drawImage(img, 0, 0);
+        resolve(c);
+      };
+      img.src = shot;
+    });
+  }
+
+  // ── phase 2: annotate + file ───────────────────────────────────────────────
+
+  function panelPhase(root, ctx, baseCanvas) {
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = `
+      <h1>report to nano<b>bots</b> <span style="color:#8b949e">— ${esc(ctx.title).slice(0, 60)}</span></h1>
+      ${baseCanvas ? `
+      <div class="tools">
+        <button data-tool="pen" class="on">✏️ pen</button>
+        <button data-tool="rect">▭ box</button>
+        <button data-tool="arrow">↗ arrow</button>
+        <span class="spacer"></span>
+        <button data-act="undo">undo</button>
+        <button data-act="recrop">↺ recrop</button>
+      </div>` : (ctx.shot ? '<div class="status">screenshots disabled — connect R2 in options to attach them</div>' : '')}
+      <div class="canvas-slot"></div>
+      <input name="title" placeholder="title — short and specific" >
+      <textarea name="note" placeholder="what happened / what you want — the loop triages from this"></textarea>
+      <div class="grid">
+        <select name="type"><option value="bug">bug</option><option value="idea">feature</option></select>
+        <select name="repo">${ctx.repos.map((r) => `<option>${esc(r)}</option>`).join('')}</select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="go" data-act="file">file it</button>
+        <button data-act="cancel">cancel</button>
+        <span class="spacer"></span>
+        <button data-act="page" data-page="history.html">history</button>
+        <button data-act="page" data-page="chat.html">chat</button>
+      </div>
+      <div class="status"></div>`;
+    root.appendChild(panel);
+
+    // annotation layer
+    let strokes = [], current = null, tool = 'pen', canvas = null, g = null, bmp = null;
+    if (baseCanvas) {
+      canvas = document.createElement('canvas');
+      canvas.width = baseCanvas.width;
+      canvas.height = baseCanvas.height;
+      panel.querySelector('.canvas-slot').appendChild(canvas);
+      g = canvas.getContext('2d');
+      bmp = baseCanvas;
+      redraw();
+      canvas.addEventListener('pointerdown', (e) => {
+        canvas.setPointerCapture(e.pointerId);
+        const [x, y] = pt(e);
+        current = tool === 'pen' ? { tool, points: [[x, y]] } : { tool, box: [x, y, x, y] };
+      });
+      canvas.addEventListener('pointermove', (e) => {
+        if (!current) return;
+        const [x, y] = pt(e);
+        if (current.tool === 'pen') current.points.push([x, y]);
+        else { current.box[2] = x; current.box[3] = y; }
+        redraw();
+      });
+      canvas.addEventListener('pointerup', () => { if (current) strokes.push(current); current = null; redraw(); });
+    }
+    function pt(e) {
+      const r = canvas.getBoundingClientRect();
+      return [((e.clientX - r.left) / r.width) * canvas.width, ((e.clientY - r.top) / r.height) * canvas.height];
+    }
+    function redraw() {
+      g.drawImage(bmp, 0, 0);
+      g.strokeStyle = g.fillStyle = '#ef4444';
+      g.lineWidth = Math.max(3, canvas.width / 400);
+      g.lineCap = g.lineJoin = 'round';
+      for (const s of [...strokes, current].filter(Boolean)) {
+        g.beginPath();
+        if (s.tool === 'pen') { s.points.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); }
+        else if (s.tool === 'rect') { const [a, b, c2, d] = s.box; g.strokeRect(Math.min(a, c2), Math.min(b, d), Math.abs(c2 - a), Math.abs(d - b)); }
+        else { const [a, b, c2, d] = s.box; g.moveTo(a, b); g.lineTo(c2, d); g.stroke();
+          const an = Math.atan2(d - b, c2 - a), h = g.lineWidth * 4;
+          g.beginPath(); g.moveTo(c2, d);
+          g.lineTo(c2 - h * Math.cos(an - 0.4), d - h * Math.sin(an - 0.4));
+          g.lineTo(c2 - h * Math.cos(an + 0.4), d - h * Math.sin(an + 0.4));
+          g.closePath(); g.fill(); }
+      }
+    }
+
+    panel.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.dataset.tool) {
+        tool = btn.dataset.tool;
+        panel.querySelectorAll('[data-tool]').forEach((b) => b.classList.toggle('on', b === btn));
+      }
+      if (btn.dataset.act === 'undo') { strokes.pop(); redraw(); }
+      if (btn.dataset.act === 'recrop') { panel.remove(); cropPhase(root, ctx); }
+      if (btn.dataset.act === 'cancel') close();
+      if (btn.dataset.act === 'page') chrome.runtime.sendMessage({ kind: 'nanobots-open-page', page: btn.dataset.page });
+      if (btn.dataset.act === 'file') {
+        const status = panel.querySelector('.status');
+        const title = panel.querySelector('[name=title]').value;
+        if (!title.trim()) { status.innerHTML = '<span class="err">title required</span>'; return; }
+        btn.disabled = true;
+        status.textContent = canvas ? 'uploading screenshot…' : 'filing…';
+        const resp = await chrome.runtime.sendMessage({
+          kind: 'nanobots-file',
+          nwo: panel.querySelector('[name=repo]').value,
+          title,
+          note: panel.querySelector('[name=note]').value,
+          type: panel.querySelector('[name=type]').value,
+          image: canvas ? canvas.toDataURL('image/png') : null,
+          page: ctx.url,
+          pageTitle: ctx.title,
+        });
+        if (resp?.ok) {
+          status.innerHTML = `<span class="ok">filed → <a href="${resp.url}" target="_blank" rel="noreferrer">#${resp.number}</a> — the loop takes it from here.</span>`;
+          setTimeout(close, 4000);
+        } else {
+          status.innerHTML = `<span class="err">${esc(resp?.error ?? 'failed')}</span>`;
+          btn.disabled = false;
+        }
+      }
+    });
+  }
+
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+})();
