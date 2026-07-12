@@ -156,7 +156,7 @@
         ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
           .map((c, i) => `<button class="dot${i === 0 ? ' on' : ''}" data-color="${c}" style="background:${c}"></button>`).join('')}
         <span class="spacer"></span>
-        <span style="color:#8b949e;font-size:11.5px">select a mark to delete or recolor it</span>
+        <span style="color:#8b949e;font-size:11.5px">select: drag to move · ⌘C/⌘V duplicate · del removes · swatch recolors</span>
       </div>` : (ctx.shot ? '<div class="status">screenshots disabled — connect R2 in options to attach them</div>' : '')}
       <div class="canvas-slot canvas-wrap"></div>
       <input name="title" placeholder="title — short and specific" >
@@ -189,11 +189,17 @@
       g = canvas.getContext('2d');
       bmp = baseCanvas;
       redraw();
+      let drag = null; // { start: [x,y], orig: snapshot of the selected mark }
       canvas.addEventListener('pointerdown', (e) => {
         const [x, y] = pt(e);
         if (tool === 'select') {
           selected = hitTest(x, y);
           delBtn.hidden = selected < 0;
+          if (selected >= 0) {
+            drag = { start: [x, y], orig: structuredClone(strokes[selected]) };
+            canvas.setPointerCapture(e.pointerId);
+            canvas.style.cursor = 'move';
+          }
           redraw();
           return;
         }
@@ -202,13 +208,23 @@
         current = tool === 'pen' ? { tool, color, points: [[x, y]] } : { tool, color, box: [x, y, x, y] };
       });
       canvas.addEventListener('pointermove', (e) => {
-        if (!current) return;
         const [x, y] = pt(e);
+        if (drag && selected >= 0) {
+          strokes[selected] = translated(drag.orig, x - drag.start[0], y - drag.start[1]);
+          redraw();
+          return;
+        }
+        if (!current) return;
         if (current.tool === 'pen') current.points.push([x, y]);
         else { current.box[2] = x; current.box[3] = y; }
         redraw();
       });
-      canvas.addEventListener('pointerup', () => { if (current) strokes.push(current); current = null; redraw(); });
+      canvas.addEventListener('pointerup', () => {
+        if (drag) { drag = null; canvas.style.cursor = 'default'; return; }
+        if (current) strokes.push(current);
+        current = null;
+        redraw();
+      });
     }
 
     function pt(e) {
@@ -308,6 +324,14 @@
       }
     }
 
+    function translated(s, dx, dy) {
+      const c = structuredClone(s);
+      if (c.tool === 'pen') c.points = c.points.map(([px, py]) => [px + dx, py + dy]);
+      else if (c.tool === 'text') { c.x += dx; c.y += dy; }
+      else c.box = [c.box[0] + dx, c.box[1] + dy, c.box[2] + dx, c.box[3] + dy];
+      return c;
+    }
+
     function removeSelected() {
       if (selected < 0) return;
       strokes.splice(selected, 1);
@@ -316,10 +340,23 @@
       redraw();
     }
 
+    let clipboardMark = null;
     root.addEventListener('keydown', (e) => {
       const t = e.composedPath()[0];
       if (t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.tagName === 'SELECT') return;
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected >= 0) { e.preventDefault(); removeSelected(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selected >= 0 && strokes[selected]) {
+        e.preventDefault();
+        clipboardMark = structuredClone(strokes[selected]);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && clipboardMark && canvas) {
+        e.preventDefault();
+        const off = Math.max(14, canvas.width / 50);
+        strokes.push(translated(clipboardMark, off, off));
+        selected = strokes.length - 1;
+        delBtn.hidden = false;
+        redraw();
+      }
     });
 
     panel.addEventListener('click', async (e) => {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "nanobots — report to the loop",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Screenshot → annotate → filed as a GitHub issue for your nanobots loop. Plus full report history and a repo-aware agent chat.",
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": [
