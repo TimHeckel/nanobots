@@ -41,6 +41,49 @@ async function gh(pat, method, path, body) {
 
 export const ghPut = (pat, path, body) => gh(pat, 'PUT', path, body);
 
+// ── GitHub sign-in (OAuth device flow — the only secretless flow, so it works
+// with no server). Requires a registered OAuth App with device flow enabled;
+// its client id is public by design. Empty string hides the Connect button.
+export const GITHUB_OAUTH_CLIENT_ID = '';
+
+export async function deviceFlowStart() {
+  const res = await fetch('https://github.com/login/device/code', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({ client_id: GITHUB_OAUTH_CLIENT_ID, scope: 'repo' }),
+  });
+  if (!res.ok) throw new Error(`device flow start → ${res.status}`);
+  return res.json(); // { device_code, user_code, verification_uri, interval, expires_in }
+}
+
+export async function deviceFlowPoll(deviceCode, intervalSec, onTick) {
+  for (let waited = 0; waited < 900; waited += intervalSec) {
+    await new Promise((r) => setTimeout(r, intervalSec * 1000));
+    onTick?.();
+    const res = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: GITHUB_OAUTH_CLIENT_ID,
+        device_code: deviceCode,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+      }),
+    });
+    const j = await res.json();
+    if (j.access_token) return j.access_token;
+    if (j.error === 'slow_down') intervalSec += 5;
+    else if (j.error !== 'authorization_pending') throw new Error(j.error_description ?? j.error);
+  }
+  throw new Error('sign-in timed out');
+}
+
+export async function listMyRepos(pat) {
+  const r = await gh(pat, 'GET', '/user/repos?sort=pushed&per_page=30&type=owner');
+  const member = await gh(pat, 'GET', '/user/repos?sort=pushed&per_page=30&affiliation=organization_member').catch(() => []);
+  const names = [...r, ...member].map((x) => x.full_name);
+  return [...new Set(names)];
+}
+
 export async function defaultBranch(pat, nwo) {
   return (await gh(pat, 'GET', `/repos/${nwo}`)).default_branch;
 }

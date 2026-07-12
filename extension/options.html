@@ -21,6 +21,12 @@
   button { margin-top: 24px; background: var(--accent); border: none; color: #05270f; font-weight: 700;
     border-radius: 6px; padding: 10px 24px; font: inherit; cursor: pointer; }
   #saved { color: var(--accent); margin-left: 12px; }
+  button.mini { margin: 0; background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    font-weight: 400; font-size: 12px; padding: 4px 12px; }
+  button.mini:hover { border-color: var(--accent); color: var(--accent); }
+  .chip { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 2px 10px; cursor: pointer; font-size: 12px; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -29,10 +35,17 @@
 
   <label for="pat">github token</label>
   <input id="pat" type="password" placeholder="github_pat_… or ghp_…">
-  <div class="hint">Fine-grained PAT with <code>Issues: write</code> + <code>Contents: write</code> on your target repos (or a classic PAT with <code>repo</code>). Stored locally in this browser profile only.</div>
+  <div class="hint" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button type="button" id="gh-connect" class="mini" hidden>connect with github</button>
+    <a href="https://github.com/settings/tokens/new?scopes=repo&description=nanobots%20extension" target="_blank">create a pre-filled token ↗</a>
+    <span>(opens GitHub with the right scope selected — Generate, copy, paste here)</span>
+  </div>
+  <div class="hint" id="gh-status"></div>
 
   <label for="repos">repos (one per line, owner/repo)</label>
   <textarea id="repos" placeholder="TimHeckel/nanobots&#10;SleeperHitStudio/sleeperhit-studio"></textarea>
+  <div class="hint"><button type="button" id="gh-loadrepos" class="mini">load my repos</button> <span>fetches your recent repos — click to add</span></div>
+  <div id="repo-chips" class="hint" style="display:flex;gap:6px;flex-wrap:wrap"></div>
 
   <label>screenshot storage — Cloudflare R2</label>
   <div class="hint">Screenshots upload to your R2 bucket and the issue embeds the link — nothing is committed to git. <b>Screenshot capture stays disabled until these four fields are filled</b>; reports file text-only in the meantime.</div>
@@ -47,6 +60,13 @@
     </ol>
   </details>
   <div id="r2fields">
+    <label for="r2token-quick">connect cloudflare — paste an API token, we do the rest</label>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="r2token-quick" type="password" placeholder="Cloudflare API token (R2 edit — see guide above)" style="flex:1">
+      <button type="button" id="r2-setup" class="mini" style="white-space:nowrap">set up R2 for me</button>
+    </div>
+    <div class="hint" id="r2-setup-status"></div>
+    <div class="hint" style="margin-top:10px">…or fill the four fields manually:</div>
     <label for="r2account">account id</label>
     <input id="r2account">
     <label for="r2bucket">bucket</label>

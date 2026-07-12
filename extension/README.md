@@ -19,17 +19,27 @@ npx nanobots-sh extension     # copies to ./nanobots-extension + prints load ste
 1. `chrome://extensions` → enable **Developer mode** → **Load unpacked** → pick this
    `extension/` directory.
 2. Open the extension's **Options**:
-   - **GitHub token** — fine-grained PAT with `Issues: write` + `Contents: write` on your
-     target repos (classic PAT with `repo` also works). Stored in `chrome.storage.local`,
-     never leaves your browser except to `api.github.com`.
-   - **Repos** — one `owner/repo` per line; you pick per report.
+   - **GitHub token** — three ways, easiest first:
+     1. **connect with github** — OAuth device-flow sign-in (enter a code on
+        github.com, the token fills itself). Shown only when the extension is built
+        with an OAuth App client id (see "Enabling GitHub sign-in" below).
+     2. **create a pre-filled token ↗** — deep link that opens GitHub's token page
+        with the right scope pre-selected; Generate → copy → paste.
+     3. Paste any existing PAT (fine-grained with `Issues: write` + `Contents: write`,
+        or classic `repo`).
+     Stored in `chrome.storage.local`, never leaves your browser except to GitHub.
+   - **Repos** — one `owner/repo` per line, or click **load my repos** and add your
+     recent repos as clickable chips.
    - **Screenshot storage — Cloudflare R2 (required for screenshots)**: annotated PNGs
      upload to your R2 bucket via Cloudflare's REST API (no S3 signing) and the issue
      embeds the public link — nothing is ever committed to git. **Screenshot capture
-     stays disabled until R2 is connected** (account id, bucket, API token, public base
-     URL — the options page has a 3-minute setup guide); text-only reports work without
-     it. R2's free tier (10 GB, zero egress) is far more than screenshot traffic needs.
-     Privacy note: anything under the bucket's public URL is reachable by link.
+     stays disabled until R2 is connected**; text-only reports work without it.
+     Easiest path: paste one Cloudflare API token and click **set up R2 for me** — the
+     extension resolves your account, creates the bucket, enables the public `r2.dev`
+     domain, and fills all four fields itself (manual fields remain as fallback; the
+     options page has a 3-minute guide). R2's free tier (10 GB, zero egress) is far more
+     than screenshot traffic needs. Privacy note: anything under the bucket's public URL
+     is reachable by link.
 
 ## History
 
@@ -68,6 +78,22 @@ click icon → captureVisibleTab → annotate.html (canvas, red pen/box/arrow, u
 No build step, no dependencies, MV3, vanilla JS. Permissions: `activeTab` (capture only
 when you click), `storage` (your settings), host access to `api.github.com` and
 `api.cloudflare.com` (R2 mode only).
+
+## Enabling GitHub sign-in (maintainers)
+
+The **connect with github** button uses the OAuth device flow — the only OAuth flow that
+needs no client secret, so it runs fully serverless. To enable it:
+
+1. GitHub → Settings → Developer settings → **OAuth Apps** → New OAuth App
+   (name `nanobots`, homepage `https://nanobots.sh`; the callback URL is unused by
+   device flow — put the homepage).
+2. On the app's settings page, check **Enable Device Flow**.
+3. Put the app's **Client ID** (public by design) in `GITHUB_OAUTH_CLIENT_ID` in
+   `gh.js`. The button appears automatically.
+
+Notes: device-flow tokens carry the classic `repo` scope (repo-granular selection is a
+PAT-only feature — offer the pre-filled-PAT link for users who want tighter scoping).
+There is deliberately no "auto-create a PAT" — GitHub has no API for that.
 
 ## Publishing to the Chrome Web Store (maintainers)
 
