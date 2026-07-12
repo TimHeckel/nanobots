@@ -36,8 +36,8 @@
           background: #11151b; color: #c9d1d9; border: 1px solid #1e242e; border-radius: 8px;
           padding: 8px 16px; }
         .hintbar b { color: #4ade80; }
-        .panel { position: fixed; top: 4vh; left: 50%; transform: translateX(-50%);
-          width: min(680px, 94vw); max-height: 92vh; overflow-y: auto; background: #0b0e12;
+        .panel { position: fixed; top: 3vh; left: 50%; transform: translateX(-50%);
+          width: min(680px, 94vw); max-height: 94vh; overflow-y: auto; background: #0b0e12;
           border: 1px solid #1e242e; border-radius: 10px; padding: 16px; color: #c9d1d9; }
         .panel h1 { font-size: 14px; margin-bottom: 10px; } .panel h1 b { color: #4ade80; }
         .tools { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
@@ -51,8 +51,8 @@
         button.on { border-color: #4ade80; color: #4ade80; }
         button.go { background: #4ade80; border: none; color: #05270f; font-weight: 700; padding: 9px 18px; }
         .spacer { flex: 1; }
-        canvas { display: block; max-width: 100%; border: 1px solid #1e242e; border-radius: 6px;
-          cursor: crosshair; margin-bottom: 10px; }
+        canvas { display: block; max-width: 100%; max-height: 44vh; width: auto; height: auto;
+          border: 1px solid #1e242e; border-radius: 6px; cursor: crosshair; margin: 0 auto 10px; }
         input, textarea, select { width: 100%; background: #11151b; border: 1px solid #1e242e;
           color: #c9d1d9; border-radius: 6px; padding: 7px 9px; font: inherit; margin-bottom: 8px; }
         textarea { min-height: 56px; resize: vertical; }
