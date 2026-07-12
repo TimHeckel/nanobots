@@ -24,11 +24,16 @@ chrome.action.onClicked.addListener(async (tab) => {
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['overlay.js'] });
     await chrome.tabs.sendMessage(tab.id, payload);
-  } catch {
+  } catch (e) {
     // Content scripts can't run here (chrome://, web store, pdf viewer…) —
-    // fall back to the annotate tab.
+    // fall back to the annotate tab. Keep the reason visible for debugging.
+    console.warn('[nanobots] overlay unavailable, falling back to tab:', e?.message, tab.url);
     await chrome.storage.session.set({
-      pending: { shot, url: tab.url ?? '', title: tab.title ?? '', capturedAt: new Date().toISOString() },
+      pending: {
+        shot, url: tab.url ?? '', title: tab.title ?? '',
+        capturedAt: new Date().toISOString(),
+        fallbackReason: e?.message ?? 'unknown',
+      },
     });
     await chrome.tabs.create({ url: chrome.runtime.getURL('annotate.html') });
   }

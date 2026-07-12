@@ -22,6 +22,9 @@ let current = null;   // in-progress mark
     return;
   }
   $('pageinfo').textContent = `${pending.title} — ${pending.url}`;
+  if (pending.fallbackReason) {
+    $('pageinfo').textContent += ` — (overlay unavailable here: ${pending.fallbackReason})`;
+  }
 
   const cfg = await getConfig();
 
