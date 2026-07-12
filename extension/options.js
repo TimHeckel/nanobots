@@ -24,6 +24,7 @@ const $ = (id) => document.getElementById(id);
   $('aimodel').value = cfg.ai.model;
   updateR2Status(cfg);
   $('gh-connect').hidden = !GITHUB_OAUTH_CLIENT_ID;
+  renderOrgLinks();
 })();
 
 // ── "connect with github" (OAuth device flow) ────────────────────────────────
@@ -41,6 +42,25 @@ $('gh-connect').addEventListener('click', async () => {
   }
 });
 
+// ── per-org token creation links (derived from the repos list) ───────────────
+// Fine-grained prefill supports target_name, so each org gets a ready-made
+// creation link with the owner + permissions pre-selected.
+
+function renderOrgLinks() {
+  const owners = [...new Set(
+    $('repos').value.split('\n').map((s) => s.trim().split('/')[0]).filter(Boolean),
+  )];
+  const configured = new Set(
+    $('pat-orgs').value.split('\n').map((l) => l.split('=')[0].trim()).filter(Boolean),
+  );
+  $('org-links').innerHTML = owners.length < 2 ? '' : 'mint per-org tokens: ' + owners.map((o) => {
+    const url = `https://github.com/settings/personal-access-tokens/new?name=nanobots%20(${encodeURIComponent(o)})&target_name=${encodeURIComponent(o)}&issues=write&contents=read&description=Files%20reports%20from%20the%20nanobots%20browser%20extension`;
+    return `<a href="${url}" target="_blank">${o}${configured.has(o) ? ' ✓' : ' ↗'}</a>`;
+  }).join(' · ');
+}
+$('repos').addEventListener('input', renderOrgLinks);
+$('pat-orgs').addEventListener('input', renderOrgLinks);
+
 // ── "load my repos" chips ────────────────────────────────────────────────────
 
 $('gh-loadrepos').addEventListener('click', async () => {
@@ -57,6 +77,7 @@ $('gh-loadrepos').addEventListener('click', async () => {
       chip.addEventListener('click', () => {
         $('repos').value = [...chosen(), chip.dataset.repo].join('\n');
         chip.remove();
+        renderOrgLinks();
       });
     }
   } catch (e) {

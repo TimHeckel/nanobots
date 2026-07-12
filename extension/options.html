@@ -48,6 +48,7 @@
   <label for="pat-orgs">per-org tokens (optional, one per line: owner=token)</label>
   <textarea id="pat-orgs" placeholder="SleeperHitStudio=github_pat_…&#10;Slatebox=github_pat_…" style="min-height:48px"></textarea>
   <div class="hint">Fine-grained tokens are limited to <b>one</b> user/org each — for repos across several orgs, mint one per org here (the token above is the fallback). A classic <code>repo</code> token or GitHub sign-in spans all orgs with a single credential.</div>
+  <div class="hint" id="org-links" style="display:flex;gap:8px;flex-wrap:wrap"></div>
 
   <label for="repos">repos (one per line, owner/repo)</label>
   <textarea id="repos" placeholder="TimHeckel/nanobots&#10;SleeperHitStudio/sleeperhit-studio"></textarea>
