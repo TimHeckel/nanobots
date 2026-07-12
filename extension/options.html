@@ -2,74 +2,133 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>nanobots — options</title>
+<title>nanobots — setup</title>
 <style>
-  :root { --bg:#0b0e12; --panel:#11151b; --border:#1e242e; --text:#c9d1d9; --dim:#8b949e; --accent:#4ade80; }
+  :root { --bg:#0b0e12; --panel:#11151b; --border:#1e242e; --text:#c9d1d9; --dim:#8b949e; --accent:#4ade80; --cyan:#22d3ee; --red:#ef4444; }
   * { box-sizing: border-box; margin: 0; }
   body { background: var(--bg); color: var(--text); font: 14px/1.6 ui-monospace, Menlo, Consolas, monospace; }
-  main { max-width: 640px; margin: 0 auto; padding: 32px 24px 60px; }
-  h1 { font-size: 18px; margin-bottom: 20px; }
+  main { max-width: 620px; margin: 0 auto; padding: 32px 24px 80px; }
+  h1 { font-size: 18px; margin-bottom: 24px; }
   h1 .bot { color: var(--accent); }
-  label { display: block; color: var(--dim); font-size: 12px; margin: 18px 0 4px; }
-  input, textarea, select { width: 100%; background: var(--panel); border: 1px solid var(--border);
-    color: var(--text); border-radius: 6px; padding: 8px 10px; font: inherit; }
-  textarea { min-height: 70px; }
-  .hint { color: var(--dim); font-size: 12px; margin-top: 4px; }
-  .hint code { color: var(--text); }
-  #r2fields { border: 1px solid var(--border); border-radius: 8px; padding: 4px 16px 16px; margin-top: 10px; }
-  #r2fields[hidden] { display: none; }
-  button { margin-top: 24px; background: var(--accent); border: none; color: #05270f; font-weight: 700;
-    border-radius: 6px; padding: 10px 24px; font: inherit; cursor: pointer; }
-  #saved { color: var(--accent); margin-left: 12px; }
-  button.mini { margin: 0; background: var(--panel); border: 1px solid var(--border); color: var(--text);
-    font-weight: 400; font-size: 12px; padding: 4px 12px; }
+  h2 { font-size: 16px; color: #fff; margin-bottom: 6px; }
+  .sub { color: var(--dim); font-size: 13px; margin-bottom: 20px; }
+
+  /* rail */
+  #rail { display: flex; gap: 6px; list-style: none; margin-bottom: 28px; padding: 0; }
+  #rail li { flex: 1; text-align: center; padding: 8px 4px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--dim); font-size: 12px; cursor: pointer; }
+  #rail li .n { display: block; font-size: 11px; }
+  #rail li.active { border-color: var(--accent); color: var(--accent); }
+  #rail li.done { color: var(--text); }
+  #rail li.done .n::after { content: " ✓"; color: var(--accent); }
+
+  section[data-step] { display: none; }
+  section[data-step].active { display: block; }
+
+  label { display: block; color: var(--dim); font-size: 12px; margin: 16px 0 4px; }
+  input, textarea { width: 100%; background: var(--panel); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; padding: 9px 11px; font: inherit; }
+  textarea { min-height: 64px; resize: vertical; }
+
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  button.mini { background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
   button.mini:hover { border-color: var(--accent); color: var(--accent); }
-  .chip { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-    padding: 2px 10px; cursor: pointer; font-size: 12px; }
-  .chip:hover { border-color: var(--accent); color: var(--accent); }
-  .r2tab.active { border-color: var(--accent); color: var(--accent); }
-  .step { margin: 12px 0; font-size: 13px; line-height: 1.6; }
-  .step b { color: var(--accent); }
+  a { color: var(--cyan); }
+  .hint { color: var(--dim); font-size: 12.5px; margin-top: 8px; line-height: 1.55; }
+  .status { font-size: 13px; margin-top: 10px; min-height: 18px; }
+  .ok { color: var(--accent); }
+  .err { color: var(--red); }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--dim); font-size: 12.5px; }
+  details[open] summary { color: var(--accent); }
+  details .hint { margin-left: 4px; }
+
+  .bigstep { display: flex; gap: 12px; margin: 14px 0; align-items: baseline; }
+  .bigstep .k { color: var(--accent); font-weight: 700; flex-shrink: 0; }
+  .bigstep .body { flex: 1; }
+
+  /* footer nav */
+  #nav { display: flex; gap: 10px; margin-top: 28px; align-items: center; }
+  #nav .spacer { flex: 1; }
+  button.primary { background: var(--accent); border: none; color: #05270f; font-weight: 700;
+    border-radius: 6px; padding: 10px 26px; font: inherit; cursor: pointer; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--dim);
+    border-radius: 6px; padding: 10px 18px; font: inherit; cursor: pointer; }
+  button.ghost:hover { color: var(--text); }
+  #saved { color: var(--accent); font-size: 13px; }
+
+  /* review */
+  .review-row { display: flex; gap: 12px; align-items: baseline; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--panel); margin-bottom: 10px; }
+  .review-row .what { flex: 1; }
+  .review-row .state { font-size: 13px; }
 </style>
 </head>
 <body>
 <main>
-  <h1>nano<span class="bot">bots</span> — options</h1>
+  <h1>nano<span class="bot">bots</span> — setup</h1>
 
-  <label for="pats">github tokens (one per line — paste as many as you like)</label>
-  <textarea id="pats" placeholder="github_pat_…  (fine-grained, one per org)&#10;github_pat_…&#10;ghp_…  (classic works too)" style="min-height:64px"></textarea>
-  <div class="hint" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-    <button type="button" id="gh-discover" class="mini">discover repos</button>
-    <button type="button" id="gh-connect" class="mini" hidden>connect with github</button>
-    <a href="https://github.com/settings/personal-access-tokens/new?name=nanobots%20extension&description=Files%20reports%20from%20the%20nanobots%20browser%20extension&issues=write&contents=read" target="_blank">mint a fine-grained token ↗</a>
-  </div>
-  <div class="hint">Each fine-grained token (<code>Issues: write</code> + <code>Contents: read</code>) is pinned to one user/org and its chosen repos — paste one per org and <b>discover repos</b> reads what each can reach, filling the list below and routing every call to the right token automatically. Classic tokens work too (capped to recent repos — prune below). Stored locally only.</div>
-  <div class="hint" id="gh-status"></div>
-  <div class="hint" id="org-links" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  <ol id="rail">
+    <li data-goto="1"><span class="n">1</span>github</li>
+    <li data-goto="2"><span class="n">2</span>screenshots</li>
+    <li data-goto="3"><span class="n">3</span>chat model</li>
+    <li data-goto="4"><span class="n">4</span>done</li>
+  </ol>
 
-  <label for="repos">repos (one per line, owner/repo — auto-filled by discover, prune freely)</label>
-  <textarea id="repos" placeholder="TimHeckel/nanobots&#10;SleeperHitStudio/sleeperhit-studio"></textarea>
+  <!-- ── step 1: github ─────────────────────────────────────────────────── -->
+  <section data-step="1" class="active">
+    <h2>Connect GitHub</h2>
+    <p class="sub">Reports file as GitHub issues. Paste one or more tokens — repos come along automatically.</p>
 
-  <label>screenshot storage — Cloudflare R2</label>
-  <div class="hint">Screenshots upload to your R2 bucket and the issue embeds the link — nothing is committed to git. Screenshot capture stays disabled until R2 is connected; reports file text-only in the meantime. Free: R2's free tier (10&nbsp;GB, zero egress) is far more than screenshots need — Cloudflare may ask for a card to enable R2, but you won't be charged within the allowance.</div>
+    <div class="bigstep"><span class="k">a.</span><div class="body">
+      <a id="mint-link" href="https://github.com/settings/personal-access-tokens/new?name=nanobots&description=Files%20reports%20from%20the%20nanobots%20browser%20extension&issues=write&contents=read" target="_blank">mint a fine-grained token ↗</a>
+      <span class="hint" style="display:inline">— pick the repos on GitHub's page, Generate, copy.</span>
+      <button type="button" id="gh-connect" class="mini" hidden>or connect with github</button>
+    </div></div>
 
-  <div id="r2fields">
-    <div style="display:flex;gap:4px;margin-bottom:12px">
-      <button type="button" class="mini r2tab active" data-tab="quick">connect cloudflare</button>
-      <button type="button" class="mini r2tab" data-tab="manual">manual setup</button>
-    </div>
+    <div class="bigstep"><span class="k">b.</span><div class="body">
+      paste it below (repeat per org — fine-grained tokens cover one org each)
+      <textarea id="pats" placeholder="github_pat_…&#10;github_pat_… (another org)&#10;ghp_… (classic works too)"></textarea>
+    </div></div>
 
-    <div id="r2tab-quick">
-      <div class="step"><b>1.</b> <a href="https://dash.cloudflare.com/?to=/:account/r2/api-tokens" target="_blank">create an R2 API token ↗</a> — <b>Create API Token</b> → permissions <b>Admin Read &amp; Write</b> (lets us create the bucket for you) → copy the <b>Token Value</b>. <span class="dim">(Free Cloudflare account works — sign up at dash.cloudflare.com first if needed.)</span></div>
-      <div class="step"><b>2.</b> paste it:
-        <input id="r2token-quick" type="password" placeholder="Cloudflare API token" style="margin-top:6px">
-      </div>
-      <div class="step"><b>3.</b> <button type="button" id="r2-setup" class="mini">set up R2 for me</button> <span class="dim">— we create the <code>nanobots-shots</code> bucket, enable its public r2.dev URL, and fill everything in.</span></div>
-      <div class="hint" id="r2-setup-status"></div>
-    </div>
+    <div class="bigstep"><span class="k">c.</span><div class="body">
+      <button type="button" id="gh-discover" class="mini">discover repos</button>
+      <span class="hint" style="display:inline">— reads what each token can reach and fills your repo list.</span>
+      <div class="status" id="gh-status"></div>
+      <div class="hint" id="org-links" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div></div>
 
-    <div id="r2tab-manual" hidden>
-      <div class="hint">Already have a bucket, or want a custom domain / tighter token scope? Fill the four fields yourself (dashboard → R2: create a bucket; bucket Settings → enable the r2.dev public URL; Manage R2 API Tokens → Object Read &amp; Write token; account id is on the R2 overview page).</div>
+    <details>
+      <summary>repo list (auto-filled — open to prune)</summary>
+      <textarea id="repos" placeholder="owner/repo — one per line"></textarea>
+    </details>
+  </section>
+
+  <!-- ── step 2: screenshots / R2 ───────────────────────────────────────── -->
+  <section data-step="2">
+    <h2>Screenshot storage</h2>
+    <p class="sub">Screenshots live in your own Cloudflare R2 bucket (free tier, ~3 min) — issues embed the link. Skip for now and reports file text-only.</p>
+
+    <div class="bigstep"><span class="k">a.</span><div class="body">
+      <a href="https://dash.cloudflare.com/?to=/:account/r2/api-tokens" target="_blank">create an R2 API token ↗</a>
+      <span class="hint" style="display:inline">— Create API Token → <b>Admin Read &amp; Write</b> → copy the Token Value.</span>
+      <div class="hint">No Cloudflare account? Sign up free at dash.cloudflare.com first (a card may be required to enable R2; the free tier covers screenshots many times over).</div>
+    </div></div>
+
+    <div class="bigstep"><span class="k">b.</span><div class="body">
+      paste it: <input id="r2token-quick" type="password" placeholder="Cloudflare API token" style="margin-top:6px">
+    </div></div>
+
+    <div class="bigstep"><span class="k">c.</span><div class="body">
+      <button type="button" id="r2-setup" class="mini">set up R2 for me</button>
+      <span class="hint" style="display:inline">— creates the bucket, enables its public URL, fills everything.</span>
+      <div class="status" id="r2-setup-status"></div>
+    </div></div>
+
+    <details>
+      <summary>manual setup (existing bucket / custom domain)</summary>
+      <div class="hint">Dashboard → R2: create a bucket; bucket Settings → enable the r2.dev public URL; Manage R2 API Tokens → Object Read &amp; Write token; account id is on the R2 overview page.</div>
       <label for="r2account">account id</label>
       <input id="r2account">
       <label for="r2bucket">bucket</label>
@@ -77,22 +136,44 @@
       <label for="r2token">cloudflare api token</label>
       <input id="r2token" type="password">
       <label for="r2public">public base url</label>
-      <input id="r2public" placeholder="https://pub-xxxx.r2.dev or https://shots.example.com">
-    </div>
+      <input id="r2public" placeholder="https://pub-xxxx.r2.dev">
+    </details>
+    <div class="status" id="r2status"></div>
+  </section>
 
-    <div class="hint" id="r2status"></div>
+  <!-- ── step 3: model ──────────────────────────────────────────────────── -->
+  <section data-step="3">
+    <h2>Chat agent model</h2>
+    <p class="sub">Powers the repo chat: it searches your code and issues, reads your screenshots, and files reports for you. Skip for now — capture &amp; annotate work without it.</p>
+
+    <label for="aikey">api key</label>
+    <input id="aikey" type="password" placeholder="your provider's API key">
+    <label for="aibase">base url (any OpenAI-compatible endpoint)</label>
+    <input id="aibase" placeholder="https://api.anthropic.com/v1">
+    <label for="aimodel">model</label>
+    <input id="aimodel" placeholder="claude-sonnet-5">
+    <div class="hint">Best experience: a <b>multimodal</b> model with tool calling — vision is how the agent reads screenshots while filing. Text-only models still chat and file; they just can't see images.</div>
+    <details>
+      <summary>endpoint examples</summary>
+      <div class="hint">Anthropic <code>https://api.anthropic.com/v1</code> · OpenAI <code>https://api.openai.com/v1</code> · Gemini <code>https://generativelanguage.googleapis.com/v1beta/openai</code> · OpenRouter <code>https://openrouter.ai/api/v1</code> · local Ollama <code>http://localhost:11434/v1</code></div>
+    </details>
+  </section>
+
+  <!-- ── step 4: review ─────────────────────────────────────────────────── -->
+  <section data-step="4">
+    <h2>You're set</h2>
+    <p class="sub">Click the nanobots icon on any page to capture → annotate → file. Jump back to any step to change things.</p>
+    <div class="review-row"><span class="what">github</span><span class="state" id="rev-gh"></span></div>
+    <div class="review-row"><span class="what">screenshots (R2)</span><span class="state" id="rev-r2"></span></div>
+    <div class="review-row"><span class="what">chat model</span><span class="state" id="rev-ai"></span></div>
+  </section>
+
+  <div id="nav">
+    <button type="button" id="back" class="ghost">← back</button>
+    <span class="spacer"></span>
+    <span id="saved"></span>
+    <button type="button" id="next" class="primary">save &amp; continue →</button>
   </div>
-
-  <label for="aikey">model api key (for the repo chat agent)</label>
-  <input id="aikey" type="password" placeholder="sk-ant-…, sk-…, or any OpenAI-compatible provider's key">
-  <label for="aibase">model base url (OpenAI-compatible)</label>
-  <input id="aibase" placeholder="https://api.anthropic.com/v1">
-  <div class="hint">Any OpenAI-compatible endpoint: Anthropic <code>https://api.anthropic.com/v1</code> · OpenAI <code>https://api.openai.com/v1</code> · Gemini <code>https://generativelanguage.googleapis.com/v1beta/openai</code> · OpenRouter <code>https://openrouter.ai/api/v1</code> · local Ollama <code>http://localhost:11434/v1</code>.</div>
-  <label for="aimodel">model</label>
-  <input id="aimodel" placeholder="claude-sonnet-5">
-  <div class="hint">Use a <b>multimodal model that supports tool calling</b> — vision lets the agent actually read your screenshots when filing reports; tools let it search the repo and file. Text-only models can still chat and file, but can't see images.</div>
-
-  <button id="save">save</button><span id="saved"></span>
 </main>
 <script type="module" src="options.js"></script>
 </body>

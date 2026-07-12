@@ -3,17 +3,108 @@ import { r2Configured, r2AutoSetup } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 
+let step = 1;
 let lastPatByOwner = {}; // owner → token, rebuilt by discovery
-
-function updateR2Status(cfg) {
-  const el = $('r2status');
-  el.innerHTML = r2Configured(cfg.r2)
-    ? '<span style="color:var(--accent)">✓ R2 connected — screenshot capture enabled</span>'
-    : 'screenshot capture disabled — connect cloudflare above';
-}
+let tokensDirty = false; // re-derive routing on save only when tokens changed
 
 const parsePats = () => $('pats').value.split('\n').map((s) => s.trim()).filter(Boolean);
 const parseRepos = () => $('repos').value.split('\n').map((s) => s.trim()).filter(Boolean);
+
+// ── stepper ──────────────────────────────────────────────────────────────────
+
+function stepDone(n, cfg) {
+  if (n === 1) return Boolean((cfg.pats?.length || cfg.pat) && cfg.repos.length);
+  if (n === 2) return r2Configured(cfg.r2);
+  if (n === 3) return Boolean(cfg.ai.apiKey);
+  return false;
+}
+
+async function paintRail() {
+  const cfg = await getConfig();
+  for (const li of document.querySelectorAll('#rail li')) {
+    const n = Number(li.dataset.goto);
+    li.classList.toggle('active', n === step);
+    li.classList.toggle('done', n < 4 && stepDone(n, cfg));
+  }
+}
+
+async function goto(n) {
+  step = Math.min(4, Math.max(1, n));
+  for (const sec of document.querySelectorAll('section[data-step]')) {
+    sec.classList.toggle('active', Number(sec.dataset.step) === step);
+  }
+  $('back').style.visibility = step === 1 ? 'hidden' : 'visible';
+  $('next').textContent = step === 4 ? 'save ✓' : 'save & continue →';
+  if (step === 4) await paintReview();
+  await paintRail();
+}
+
+document.querySelectorAll('#rail li').forEach((li) =>
+  li.addEventListener('click', async () => { await persist(); goto(Number(li.dataset.goto)); }));
+$('back').addEventListener('click', () => goto(step - 1));
+$('next').addEventListener('click', async () => {
+  await persist();
+  $('saved').textContent = 'saved ✓';
+  setTimeout(() => ($('saved').textContent = ''), 1500);
+  if (step < 4) goto(step + 1);
+  else paintReview();
+});
+
+async function paintReview() {
+  const cfg = await getConfig();
+  const owners = Object.keys(cfg.patByOwner ?? {}).length;
+  $('rev-gh').innerHTML = stepDone(1, cfg)
+    ? `<span class="ok">✓ ${cfg.repos.length} repos · ${owners} owner${owners === 1 ? '' : 's'}</span>`
+    : '<span class="err">not connected — step 1</span>';
+  $('rev-r2').innerHTML = stepDone(2, cfg)
+    ? '<span class="ok">✓ connected — screenshots on</span>'
+    : 'skipped — reports file text-only';
+  $('rev-ai').innerHTML = stepDone(3, cfg)
+    ? `<span class="ok">✓ ${cfg.ai.model}</span>`
+    : 'skipped — chat disabled';
+}
+
+// ── persist (runs on every save & continue / rail jump) ─────────────────────
+
+async function persist() {
+  // Arbitrary OpenAI-compatible hosts need a runtime permission grant.
+  try {
+    const base = $('aibase').value.trim();
+    if (base) {
+      const origin = new URL(base).origin + '/*';
+      const has = await chrome.permissions.contains({ origins: [origin] });
+      if (!has) await chrome.permissions.request({ origins: [origin] });
+    }
+  } catch { /* invalid URL or declined — calls will surface it */ }
+
+  const pats = parsePats();
+  if (tokensDirty && pats.length) {
+    const { patByOwner } = await derive(pats);
+    if (Object.keys(patByOwner).length) lastPatByOwner = patByOwner;
+    tokensDirty = false;
+  } else if (!pats.length) {
+    lastPatByOwner = {};
+  }
+
+  await saveConfig({
+    pats,
+    pat: pats[0] ?? '',
+    patByOwner: lastPatByOwner,
+    repos: parseRepos(),
+    r2: {
+      accountId: $('r2account').value.trim(),
+      bucket: $('r2bucket').value.trim(),
+      token: $('r2token').value.trim(),
+      publicBase: $('r2public').value.trim(),
+    },
+    ai: {
+      apiKey: $('aikey').value.trim(),
+      baseUrl: $('aibase').value.trim() || 'https://api.anthropic.com/v1',
+      model: $('aimodel').value.trim() || 'claude-sonnet-5',
+    },
+  });
+  await paintRail();
+}
 
 // ── boot ─────────────────────────────────────────────────────────────────────
 
@@ -32,14 +123,15 @@ const parseRepos = () => $('repos').value.split('\n').map((s) => s.trim()).filte
   $('aibase').value = cfg.ai.baseUrl;
   $('aimodel').value = cfg.ai.model;
   lastPatByOwner = cfg.patByOwner ?? {};
-  updateR2Status(cfg);
   $('gh-connect').hidden = !GITHUB_OAUTH_CLIENT_ID;
   renderOrgLinks();
+  // Land on the first incomplete step; fully configured → review.
+  goto(stepDone(1, cfg) ? (stepDone(2, cfg) ? (stepDone(3, cfg) ? 4 : 3) : 2) : 1);
 })();
 
+$('pats').addEventListener('input', () => { tokensDirty = true; });
+
 // ── token → repo discovery ───────────────────────────────────────────────────
-// Each token is asked what it can reach; fine-grained grants are exact, classic
-// tokens are capped to recent repos. Fine-grained wins owner routing conflicts.
 
 async function derive(pats, onStatus) {
   const patByOwner = {};
@@ -65,19 +157,21 @@ $('gh-discover').addEventListener('click', async () => {
   if (!pats.length) { $('gh-status').textContent = 'paste at least one token first'; return; }
   const { patByOwner, discovered, failures } = await derive(pats, (m) => { $('gh-status').textContent = m; });
   lastPatByOwner = patByOwner;
+  tokensDirty = false;
   $('repos').value = [...new Set([...parseRepos(), ...discovered])].join('\n');
   $('gh-status').innerHTML = [
-    `<span style="color:var(--accent)">✓ ${discovered.length} repos across ${Object.keys(patByOwner).length} owner(s) — prune the list, then save</span>`,
+    `<span class="ok">✓ ${discovered.length} repos across ${Object.keys(patByOwner).length} owner(s)</span>`,
     ...failures.map((f) => `<span class="err">${f}</span>`),
   ].join('<br>');
   renderOrgLinks();
+  await persist();
 });
 
 // ── per-org token minting links (owners without a routed token get ↗) ────────
 
 function renderOrgLinks() {
   const owners = [...new Set(parseRepos().map((r) => r.split('/')[0]).filter(Boolean))];
-  $('org-links').innerHTML = !owners.length ? '' : 'per-org tokens: ' + owners.map((o) => {
+  $('org-links').innerHTML = !owners.length ? '' : 'per-org: ' + owners.map((o) => {
     const url = `https://github.com/settings/personal-access-tokens/new?name=nanobots%20(${encodeURIComponent(o)})&target_name=${encodeURIComponent(o)}&issues=write&contents=read&description=Files%20reports%20from%20the%20nanobots%20browser%20extension`;
     return `<a href="${url}" target="_blank">${o}${lastPatByOwner[o] ? ' ✓' : ' ↗'}</a>`;
   }).join(' · ');
@@ -90,31 +184,22 @@ $('gh-connect').addEventListener('click', async () => {
   const status = $('gh-status');
   try {
     const d = await deviceFlowStart();
-    status.innerHTML = `Enter code <b style="color:var(--accent);font-size:16px">${d.user_code}</b> at <a href="${d.verification_uri}" target="_blank">${d.verification_uri}</a> — waiting…`;
+    status.innerHTML = `Enter code <b class="ok" style="font-size:16px">${d.user_code}</b> at <a href="${d.verification_uri}" target="_blank">${d.verification_uri}</a> — waiting…`;
     const token = await deviceFlowPoll(d.device_code, d.interval ?? 5, () => { status.textContent += '.'; });
     $('pats').value = [...new Set([...parsePats(), token])].join('\n');
-    status.innerHTML = '<span style="color:var(--accent)">✓ connected — token added; click "discover repos"</span>';
+    tokensDirty = true;
+    status.innerHTML = '<span class="ok">✓ connected — now click "discover repos"</span>';
   } catch (e) {
     status.innerHTML = `<span class="err">${e.message}</span>`;
   }
 });
-
-// ── R2 tabs ──────────────────────────────────────────────────────────────────
-
-for (const tab of document.querySelectorAll('.r2tab')) {
-  tab.addEventListener('click', () => {
-    for (const t of document.querySelectorAll('.r2tab')) t.classList.toggle('active', t === tab);
-    $('r2tab-quick').hidden = tab.dataset.tab !== 'quick';
-    $('r2tab-manual').hidden = tab.dataset.tab !== 'manual';
-  });
-}
 
 // ── "set up R2 for me" ───────────────────────────────────────────────────────
 
 $('r2-setup').addEventListener('click', async () => {
   const status = $('r2-setup-status');
   const token = $('r2token-quick').value.trim() || $('r2token').value.trim();
-  if (!token) { status.textContent = 'paste a Cloudflare API token first (step 1)'; return; }
+  if (!token) { status.textContent = 'paste a Cloudflare API token first (step b)'; return; }
   const bucket = $('r2bucket').value.trim() || 'nanobots-shots';
   try {
     const result = await r2AutoSetup(token, bucket, (msg) => { status.textContent = msg; }, $('r2account').value);
@@ -122,56 +207,11 @@ $('r2-setup').addEventListener('click', async () => {
     $('r2bucket').value = result.bucket;
     $('r2token').value = result.token;
     $('r2public').value = result.publicBase;
-    status.innerHTML = '<span style="color:var(--accent)">✓ all set — hit save</span>';
+    status.innerHTML = '<span class="ok">✓ screenshots enabled</span>';
+    await persist();
   } catch (e) {
     status.innerHTML = e.message === 'NEED_ACCOUNT_ID'
-      ? '<span class="err">Couldn\'t auto-detect your account — paste your account id on the manual tab (it\'s on the R2 overview page / dashboard URL), then click again.</span>'
+      ? '<span class="err">Couldn\'t auto-detect your account — open "manual setup" below, paste your account id (it\'s on the R2 overview page), then click again.</span>'
       : `<span class="err">${e.message}</span>`;
   }
-});
-
-// ── save ─────────────────────────────────────────────────────────────────────
-
-$('save').addEventListener('click', async () => {
-  // Arbitrary OpenAI-compatible hosts need a runtime permission grant
-  // (static grants cover github/cloudflare/anthropic).
-  try {
-    const base = $('aibase').value.trim();
-    if (base) {
-      const origin = new URL(base).origin + '/*';
-      const has = await chrome.permissions.contains({ origins: [origin] });
-      if (!has) await chrome.permissions.request({ origins: [origin] });
-    }
-  } catch { /* invalid URL or user declined — save proceeds; calls will surface it */ }
-
-  const pats = parsePats();
-  // Re-derive routing silently so edits to the token list can't leave stale routes.
-  if (pats.length) {
-    const { patByOwner } = await derive(pats);
-    if (Object.keys(patByOwner).length) lastPatByOwner = patByOwner;
-  } else {
-    lastPatByOwner = {};
-  }
-
-  await saveConfig({
-    pats,
-    pat: pats[0] ?? '',
-    patByOwner: lastPatByOwner,
-    repos: parseRepos(),
-    r2: {
-      accountId: $('r2account').value.trim(),
-      bucket: $('r2bucket').value.trim(),
-      token: $('r2token').value.trim(),
-      publicBase: $('r2public').value.trim(),
-    },
-    ai: {
-      apiKey: $('aikey').value.trim(),
-      baseUrl: $('aibase').value.trim() || 'https://api.anthropic.com/v1',
-      model: $('aimodel').value.trim() || 'claude-sonnet-5',
-    },
-  });
-  updateR2Status(await getConfig());
-  renderOrgLinks();
-  $('saved').textContent = 'saved ✓';
-  setTimeout(() => ($('saved').textContent = ''), 2000);
 });
