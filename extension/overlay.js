@@ -350,24 +350,30 @@
       redraw();
     }
 
+    // Window-level capture: the canvas isn't focusable, so key events never
+    // enter the shadow tree — catch them before the page does. The handler
+    // detaches itself when this panel is gone (close or recrop).
     let clipboardMark = null;
-    root.addEventListener('keydown', (e) => {
+    const keyHandler = (e) => {
+      if (!panel.isConnected) { window.removeEventListener('keydown', keyHandler, true); return; }
       const t = e.composedPath()[0];
       if (t?.tagName === 'INPUT' || t?.tagName === 'TEXTAREA' || t?.tagName === 'SELECT') return;
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selected >= 0) { e.preventDefault(); removeSelected(); }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selected >= 0 && strokes[selected]) {
-        e.preventDefault();
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selected >= 0) {
+        e.preventDefault(); e.stopPropagation();
+        removeSelected();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'c' && selected >= 0 && strokes[selected]) {
+        e.preventDefault(); e.stopPropagation();
         clipboardMark = structuredClone(strokes[selected]);
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && clipboardMark && canvas) {
-        e.preventDefault();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'v' && clipboardMark && canvas) {
+        e.preventDefault(); e.stopPropagation();
         const off = Math.max(14, canvas.width / 50);
         strokes.push(translated(clipboardMark, off, off));
         selected = strokes.length - 1;
         delBtn.hidden = false;
         redraw();
       }
-    });
+    };
+    window.addEventListener('keydown', keyHandler, true);
 
     panel.addEventListener('click', async (e) => {
       const btn = e.target.closest('button');
