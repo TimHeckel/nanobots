@@ -13,6 +13,7 @@ const $ = (id) => document.getElementById(id);
 (async function boot() {
   const cfg = await getConfig();
   $('pat').value = cfg.pat;
+  $('pat-orgs').value = Object.entries(cfg.patByOwner ?? {}).map(([o, t]) => `${o}=${t}`).join('\n');
   $('repos').value = cfg.repos.join('\n');
   $('r2account').value = cfg.r2.accountId;
   $('r2bucket').value = cfg.r2.bucket;
@@ -63,6 +64,16 @@ $('gh-loadrepos').addEventListener('click', async () => {
   }
 });
 
+// ── R2 tabs ──────────────────────────────────────────────────────────────────
+
+for (const tab of document.querySelectorAll('.r2tab')) {
+  tab.addEventListener('click', () => {
+    for (const t of document.querySelectorAll('.r2tab')) t.classList.toggle('active', t === tab);
+    $('r2tab-quick').hidden = tab.dataset.tab !== 'quick';
+    $('r2tab-manual').hidden = tab.dataset.tab !== 'manual';
+  });
+}
+
 // ── "set up R2 for me" ───────────────────────────────────────────────────────
 
 $('r2-setup').addEventListener('click', async () => {
@@ -97,6 +108,11 @@ $('save').addEventListener('click', async () => {
   } catch { /* invalid URL or user declined — save proceeds; calls will surface it */ }
   await saveConfig({
     pat: $('pat').value.trim(),
+    patByOwner: Object.fromEntries(
+      $('pat-orgs').value.split('\n')
+        .map((line) => line.split('=').map((s) => s.trim()))
+        .filter(([o, t]) => o && t),
+    ),
     repos: $('repos').value.split('\n').map((s) => s.trim()).filter(Boolean),
     r2: {
       accountId: $('r2account').value.trim(),

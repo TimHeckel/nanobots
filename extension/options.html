@@ -27,6 +27,9 @@
   .chip { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
     padding: 2px 10px; cursor: pointer; font-size: 12px; }
   .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .r2tab.active { border-color: var(--accent); color: var(--accent); }
+  .step { margin: 12px 0; font-size: 13px; line-height: 1.6; }
+  .step b { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -37,10 +40,14 @@
   <input id="pat" type="password" placeholder="github_pat_… or ghp_…">
   <div class="hint" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <button type="button" id="gh-connect" class="mini" hidden>connect with github</button>
-    <a href="https://github.com/settings/tokens/new?scopes=repo&description=nanobots%20extension" target="_blank">create a pre-filled token ↗</a>
-    <span>(opens GitHub with the right scope selected — Generate, copy, paste here)</span>
+    <a href="https://github.com/settings/personal-access-tokens/new?name=nanobots%20extension&description=Files%20reports%20from%20the%20nanobots%20browser%20extension&issues=write&contents=read" target="_blank">create a fine-grained token ↗</a>
+    <span>(pick your repos on that page, Generate, paste here — needs only <code>Issues: write</code> + <code>Contents: read</code>)</span>
   </div>
   <div class="hint" id="gh-status"></div>
+
+  <label for="pat-orgs">per-org tokens (optional, one per line: owner=token)</label>
+  <textarea id="pat-orgs" placeholder="SleeperHitStudio=github_pat_…&#10;Slatebox=github_pat_…" style="min-height:48px"></textarea>
+  <div class="hint">Fine-grained tokens are limited to <b>one</b> user/org each — for repos across several orgs, mint one per org here (the token above is the fallback). A classic <code>repo</code> token or GitHub sign-in spans all orgs with a single credential.</div>
 
   <label for="repos">repos (one per line, owner/repo)</label>
   <textarea id="repos" placeholder="TimHeckel/nanobots&#10;SleeperHitStudio/sleeperhit-studio"></textarea>
@@ -48,33 +55,35 @@
   <div id="repo-chips" class="hint" style="display:flex;gap:6px;flex-wrap:wrap"></div>
 
   <label>screenshot storage — Cloudflare R2</label>
-  <div class="hint">Screenshots upload to your R2 bucket and the issue embeds the link — nothing is committed to git. <b>Screenshot capture stays disabled until these four fields are filled</b>; reports file text-only in the meantime.</div>
-  <details style="margin-top:10px">
-    <summary style="cursor:pointer;color:var(--accent);font-size:13px">how to get these (≈3 minutes, free)</summary>
-    <ol class="hint" style="margin:8px 0 0 18px; line-height:1.8">
-      <li>Sign up / log in at <a href="https://dash.cloudflare.com" target="_blank">dash.cloudflare.com</a> (free account). R2's free tier — 10 GB storage, ~1M uploads/month, zero egress fees — is far more than screenshot traffic needs. Cloudflare may ask for a card to enable R2; you won't be charged within the free allowance.</li>
-      <li>Sidebar → <b>R2 Object Storage</b> → <b>Create bucket</b>, name it e.g. <code>nanobots-shots</code>. → <b>bucket</b> field.</li>
-      <li>On the bucket's <b>Settings</b> tab → Public access → <b>enable the r2.dev subdomain</b> (or connect a custom domain). Copy the URL it shows (like <code>https://pub-xxxx.r2.dev</code>) → <b>public base url</b> field. Note: anything in this bucket is publicly reachable by URL — fine for screenshots you're filing to a repo anyway.</li>
-      <li>Back on the R2 overview → <b>Manage R2 API Tokens</b> → Create token with <b>Object Read &amp; Write</b>, scoped to your bucket. Copy the <b>Token Value</b> (not the S3 keys) → <b>api token</b> field.</li>
-      <li>Your <b>account id</b> is shown on the R2 overview page (right side) or in the dashboard URL.</li>
-    </ol>
-  </details>
+  <div class="hint">Screenshots upload to your R2 bucket and the issue embeds the link — nothing is committed to git. Screenshot capture stays disabled until R2 is connected; reports file text-only in the meantime. Free: R2's free tier (10&nbsp;GB, zero egress) is far more than screenshots need — Cloudflare may ask for a card to enable R2, but you won't be charged within the allowance.</div>
+
   <div id="r2fields">
-    <label for="r2token-quick">connect cloudflare — paste an API token, we do the rest</label>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="r2token-quick" type="password" placeholder="Cloudflare API token (R2 edit — see guide above)" style="flex:1">
-      <button type="button" id="r2-setup" class="mini" style="white-space:nowrap">set up R2 for me</button>
+    <div style="display:flex;gap:4px;margin-bottom:12px">
+      <button type="button" class="mini r2tab active" data-tab="quick">connect cloudflare</button>
+      <button type="button" class="mini r2tab" data-tab="manual">manual setup</button>
     </div>
-    <div class="hint" id="r2-setup-status"></div>
-    <div class="hint" style="margin-top:10px">…or fill the four fields manually:</div>
-    <label for="r2account">account id</label>
-    <input id="r2account">
-    <label for="r2bucket">bucket</label>
-    <input id="r2bucket">
-    <label for="r2token">cloudflare api token (R2 edit)</label>
-    <input id="r2token" type="password">
-    <label for="r2public">public base url</label>
-    <input id="r2public" placeholder="https://pub-xxxx.r2.dev or https://shots.example.com">
+
+    <div id="r2tab-quick">
+      <div class="step"><b>1.</b> <a href="https://dash.cloudflare.com/?to=/:account/r2/api-tokens" target="_blank">create an R2 API token ↗</a> — <b>Create API Token</b> → permissions <b>Admin Read &amp; Write</b> (lets us create the bucket for you) → copy the <b>Token Value</b>. <span class="dim">(Free Cloudflare account works — sign up at dash.cloudflare.com first if needed.)</span></div>
+      <div class="step"><b>2.</b> paste it:
+        <input id="r2token-quick" type="password" placeholder="Cloudflare API token" style="margin-top:6px">
+      </div>
+      <div class="step"><b>3.</b> <button type="button" id="r2-setup" class="mini">set up R2 for me</button> <span class="dim">— we create the <code>nanobots-shots</code> bucket, enable its public r2.dev URL, and fill everything in.</span></div>
+      <div class="hint" id="r2-setup-status"></div>
+    </div>
+
+    <div id="r2tab-manual" hidden>
+      <div class="hint">Already have a bucket, or want a custom domain / tighter token scope? Fill the four fields yourself (dashboard → R2: create a bucket; bucket Settings → enable the r2.dev public URL; Manage R2 API Tokens → Object Read &amp; Write token; account id is on the R2 overview page).</div>
+      <label for="r2account">account id</label>
+      <input id="r2account">
+      <label for="r2bucket">bucket</label>
+      <input id="r2bucket">
+      <label for="r2token">cloudflare api token</label>
+      <input id="r2token" type="password">
+      <label for="r2public">public base url</label>
+      <input id="r2public" placeholder="https://pub-xxxx.r2.dev or https://shots.example.com">
+    </div>
+
     <div class="hint" id="r2status"></div>
   </div>
 

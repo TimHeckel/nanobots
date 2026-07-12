@@ -40,7 +40,8 @@ async function addAttachment(dataUrl) {
 
 (async function boot() {
   cfg = await getConfig();
-  if (!cfg.pat || cfg.repos.length === 0 || !cfg.ai.apiKey) {
+  const hasToken = cfg.pat || Object.keys(cfg.patByOwner ?? {}).length;
+  if (!hasToken || cfg.repos.length === 0 || !cfg.ai.apiKey) {
     addMsg('agent', 'nanobots', 'Set your GitHub token, repos, and model key in <a href="options.html">options</a> first.');
     $('send').disabled = true;
     return;

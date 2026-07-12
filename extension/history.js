@@ -25,9 +25,9 @@ const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>'
   };
   render(filed);
 
-  const { pat } = await getConfig();
-  if (pat) {
-    const live = await hydrateIssueState(pat, filed);
+  const cfg = await getConfig();
+  if (cfg.pat || Object.keys(cfg.patByOwner ?? {}).length) {
+    const live = await hydrateIssueState(cfg, filed);
     render(live);
     $('count').textContent = `${filed.length} report${filed.length === 1 ? '' : 's'} filed from this browser · ${live.filter((e) => e.state === 'open').length} still open`;
   }

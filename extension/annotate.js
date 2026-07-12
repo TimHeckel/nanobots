@@ -1,4 +1,4 @@
-import { getConfig, createIssue, logFiledIssue } from './gh.js';
+import { getConfig, createIssue, logFiledIssue, tokenFor } from './gh.js';
 import { uploadToR2, r2Configured } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -43,7 +43,7 @@ let current = null;   // in-progress mark
     document.querySelector('.toolbar').style.display = 'none';
   }
 
-  if (!cfg.pat || cfg.repos.length === 0) {
+  if ((!cfg.pat && !Object.keys(cfg.patByOwner ?? {}).length) || cfg.repos.length === 0) {
     setStatus('Set your GitHub token and repos first — opening options…', true);
     chrome.runtime.openOptionsPage();
   }
@@ -143,7 +143,7 @@ $('form').addEventListener('submit', async (e) => {
   try {
     const cfg = await getConfig();
     const nwo = $('repo').value;
-    if (!cfg.pat || !nwo) throw new Error('Missing token or repo — set them in the extension options.');
+    if (!tokenFor(cfg, nwo) || !nwo) throw new Error('Missing token or repo — set them in the extension options.');
 
     let imageMd = '';
     if (baseImage) {
@@ -165,7 +165,7 @@ $('form').addEventListener('submit', async (e) => {
       `| captured | ${pending.capturedAt} |`,
       `| via | nanobots browser extension |`,
     ].join('\n');
-    const issue = await createIssue(cfg.pat, nwo, {
+    const issue = await createIssue(tokenFor(cfg, nwo), nwo, {
       title: `[${issueType === 'bug' ? 'bug' : 'feat'}] ${$('title').value.trim()}`,
       body,
       labels,

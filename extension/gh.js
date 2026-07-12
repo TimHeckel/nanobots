@@ -3,6 +3,10 @@
 export async function getConfig() {
   const defaults = {
     pat: '',
+    // Fine-grained PATs are limited to ONE resource owner (user or org), so
+    // multi-org use needs one token per org: { "SleeperHitStudio": "github_pat_…" }.
+    // tokenFor() picks by the repo's owner, falling back to `pat`.
+    patByOwner: {},
     repos: [],
     r2: { accountId: '', bucket: '', token: '', publicBase: '' },
     // BYO model for the repo chat: any OpenAI-compatible endpoint. Default is
@@ -16,6 +20,11 @@ export async function getConfig() {
     r2: { ...defaults.r2, ...(stored.r2 ?? {}) },
     ai: { ...defaults.ai, ...(stored.ai ?? {}) },
   };
+}
+
+export function tokenFor(cfg, nwo) {
+  const owner = (nwo ?? '').split('/')[0];
+  return cfg.patByOwner?.[owner] || cfg.pat;
 }
 
 export async function saveConfig(cfg) {
@@ -105,10 +114,10 @@ export async function getFiledIssues() {
   return filed;
 }
 
-export async function hydrateIssueState(pat, entries) {
+export async function hydrateIssueState(cfg, entries) {
   return Promise.all(entries.map(async (e) => {
     try {
-      const live = await gh(pat, 'GET', `/repos/${e.nwo}/issues/${e.number}`);
+      const live = await gh(tokenFor(cfg, e.nwo), 'GET', `/repos/${e.nwo}/issues/${e.number}`);
       return { ...e, state: live.state, labels: live.labels.map((l) => l.name), comments: live.comments };
     } catch {
       return { ...e, state: 'unknown', labels: [], comments: 0 };

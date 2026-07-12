@@ -2,7 +2,7 @@
 // with client-side GitHub tools. No middleman server: the model key and the
 // GitHub PAT both stay in the browser.
 
-import { searchCode, readFile, searchIssues, listTree, defaultBranch, createIssue, logFiledIssue } from './gh.js';
+import { searchCode, readFile, searchIssues, listTree, defaultBranch, createIssue, logFiledIssue, tokenFor } from './gh.js';
 import { uploadToR2, r2Configured } from './storage.js';
 
 // OpenAI function-calling tool definitions (the compat lingua franca:
@@ -25,17 +25,18 @@ const TOOLS = [
 ].map((t) => ({ type: 'function', function: t }));
 
 async function runTool(cfg, nwo, name, input, attachments) {
-  if (name === 'search_code') return searchCode(cfg.pat, nwo, input.query);
-  if (name === 'read_file') return readFile(cfg.pat, nwo, input.path);
-  if (name === 'search_issues') return searchIssues(cfg.pat, nwo, input.query);
-  if (name === 'list_files') return listTree(cfg.pat, nwo, await defaultBranch(cfg.pat, nwo));
+  const pat = tokenFor(cfg, nwo);
+  if (name === 'search_code') return searchCode(pat, nwo, input.query);
+  if (name === 'read_file') return readFile(pat, nwo, input.path);
+  if (name === 'search_issues') return searchIssues(pat, nwo, input.query);
+  if (name === 'list_files') return listTree(pat, nwo, await defaultBranch(pat, nwo));
 
   if (name === 'file_report') {
     let imagesMd = '';
     for (const dataUrl of attachments) {
       imagesMd += `\n\n![screenshot](${await uploadToR2(cfg.r2, dataUrl)})`;
     }
-    const issue = await createIssue(cfg.pat, nwo, {
+    const issue = await createIssue(pat, nwo, {
       title: `[${input.type === 'bug' ? 'bug' : 'feat'}] ${input.title}`,
       body: `${input.body}${imagesMd}\n\n---\n_filed via nanobots extension chat_`,
       labels: ['nanobots:inbox', 'nanobots:ext', input.type === 'bug' ? 'bug' : 'enhancement'],
@@ -53,7 +54,7 @@ async function runTool(cfg, nwo, name, input, attachments) {
 // over time (better filing guidance, known duplicates, routing rules).
 export async function loadSystemPrompt(cfg, nwo) {
   try {
-    const text = await readFile(cfg.pat, nwo, '.nanobots/EXTENSION-PROMPT.md');
+    const text = await readFile(tokenFor(cfg, nwo), nwo, '.nanobots/EXTENSION-PROMPT.md');
     return text.replace(/^<!--[\s\S]*?-->\s*/, '');
   } catch {
     return `You are the repo agent for ${nwo} in the nanobots browser extension. Use your tools to answer repo questions (cite paths/issues) and to file well-specified reports with file_report after checking for duplicates with search_issues.`;
