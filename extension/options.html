@@ -65,7 +65,7 @@
   <div class="hint">Any OpenAI-compatible endpoint: Anthropic <code>https://api.anthropic.com/v1</code> · OpenAI <code>https://api.openai.com/v1</code> · Gemini <code>https://generativelanguage.googleapis.com/v1beta/openai</code> · OpenRouter <code>https://openrouter.ai/api/v1</code> · local Ollama <code>http://localhost:11434/v1</code>.</div>
   <label for="aimodel">model</label>
   <input id="aimodel" placeholder="claude-sonnet-5">
-  <div class="hint">The agent needs <b>vision + function calling</b> — vision to read your screenshots, tools to search the repo and file reports. Solid picks: <code>claude-sonnet-5</code> (default) · via OpenRouter: <code>xiaomi/mimo-v2.5</code> (~$0.1/M, the budget standout), <code>stepfun/step-3.7-flash</code>, <code>minimax/minimax-m3</code>, <code>google/gemini-2.5-flash</code>. Text-only models (DeepSeek, Hy3, GLM) can chat and file, but can't see images.</div>
+  <div class="hint">Use a <b>multimodal model that supports tool calling</b> — vision lets the agent actually read your screenshots when filing reports; tools let it search the repo and file. Text-only models can still chat and file, but can't see images.</div>
 
   <button id="save">save</button><span id="saved"></span>
 </main>

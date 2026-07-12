@@ -126,7 +126,7 @@ async function send() {
     });
   } catch (e) {
     const hint = turnAttachments.length && /image|vision|multimodal|content type/i.test(e.message)
-      ? '<br><span class="dim">Your model may not support images — use a multimodal one (claude-sonnet-5, gpt-4o, gemini-flash). Screenshots still attach to filed reports either way.</span>'
+      ? '<br><span class="dim">Your model may not support images — switch to a multimodal model to let the agent read screenshots. They still attach to filed reports either way.</span>'
       : '';
     addMsg('agent err', 'nanobots', `<span class="err">${esc(e.message)}</span>${hint}`);
     history.pop(); // drop the failed user turn so retry is clean
