@@ -1,19 +1,28 @@
-import { getConfig, saveConfig, GITHUB_OAUTH_CLIENT_ID, deviceFlowStart, deviceFlowPoll, listMyRepos } from './gh.js';
+import { getConfig, saveConfig, GITHUB_OAUTH_CLIENT_ID, deviceFlowStart, deviceFlowPoll, reposForToken, isFineGrained } from './gh.js';
 import { r2Configured, r2AutoSetup } from './storage.js';
-
-function updateR2Status(cfg) {
-  const el = document.getElementById('r2status');
-  el.innerHTML = r2Configured(cfg.r2)
-    ? '<span style="color:var(--accent)">✓ R2 connected — screenshot capture enabled</span>'
-    : 'screenshot capture disabled — fill all four fields above';
-}
 
 const $ = (id) => document.getElementById(id);
 
+let lastPatByOwner = {}; // owner → token, rebuilt by discovery
+
+function updateR2Status(cfg) {
+  const el = $('r2status');
+  el.innerHTML = r2Configured(cfg.r2)
+    ? '<span style="color:var(--accent)">✓ R2 connected — screenshot capture enabled</span>'
+    : 'screenshot capture disabled — connect cloudflare above';
+}
+
+const parsePats = () => $('pats').value.split('\n').map((s) => s.trim()).filter(Boolean);
+const parseRepos = () => $('repos').value.split('\n').map((s) => s.trim()).filter(Boolean);
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+
 (async function boot() {
   const cfg = await getConfig();
-  $('pat').value = cfg.pat;
-  $('pat-orgs').value = Object.entries(cfg.patByOwner ?? {}).map(([o, t]) => `${o}=${t}`).join('\n');
+  const pats = cfg.pats?.length
+    ? cfg.pats
+    : [...new Set([cfg.pat, ...Object.values(cfg.patByOwner ?? {})])].filter(Boolean);
+  $('pats').value = pats.join('\n');
   $('repos').value = cfg.repos.join('\n');
   $('r2account').value = cfg.r2.accountId;
   $('r2bucket').value = cfg.r2.bucket;
@@ -22,10 +31,58 @@ const $ = (id) => document.getElementById(id);
   $('aikey').value = cfg.ai.apiKey;
   $('aibase').value = cfg.ai.baseUrl;
   $('aimodel').value = cfg.ai.model;
+  lastPatByOwner = cfg.patByOwner ?? {};
   updateR2Status(cfg);
   $('gh-connect').hidden = !GITHUB_OAUTH_CLIENT_ID;
   renderOrgLinks();
 })();
+
+// ── token → repo discovery ───────────────────────────────────────────────────
+// Each token is asked what it can reach; fine-grained grants are exact, classic
+// tokens are capped to recent repos. Fine-grained wins owner routing conflicts.
+
+async function derive(pats, onStatus) {
+  const patByOwner = {};
+  const discovered = [];
+  const failures = [];
+  const ordered = [...pats].sort((a, b) => Number(isFineGrained(a)) - Number(isFineGrained(b)));
+  for (const token of ordered) {
+    onStatus?.(`checking token …${token.slice(-4)}`);
+    try {
+      const names = await reposForToken(token);
+      const usable = isFineGrained(token) ? names : names.slice(0, 15);
+      for (const n of usable) patByOwner[n.split('/')[0]] = token;
+      discovered.push(...usable);
+    } catch (e) {
+      failures.push(`…${token.slice(-4)}: ${e.message}`);
+    }
+  }
+  return { patByOwner, discovered: [...new Set(discovered)], failures };
+}
+
+$('gh-discover').addEventListener('click', async () => {
+  const pats = parsePats();
+  if (!pats.length) { $('gh-status').textContent = 'paste at least one token first'; return; }
+  const { patByOwner, discovered, failures } = await derive(pats, (m) => { $('gh-status').textContent = m; });
+  lastPatByOwner = patByOwner;
+  $('repos').value = [...new Set([...parseRepos(), ...discovered])].join('\n');
+  $('gh-status').innerHTML = [
+    `<span style="color:var(--accent)">✓ ${discovered.length} repos across ${Object.keys(patByOwner).length} owner(s) — prune the list, then save</span>`,
+    ...failures.map((f) => `<span class="err">${f}</span>`),
+  ].join('<br>');
+  renderOrgLinks();
+});
+
+// ── per-org token minting links (owners without a routed token get ↗) ────────
+
+function renderOrgLinks() {
+  const owners = [...new Set(parseRepos().map((r) => r.split('/')[0]).filter(Boolean))];
+  $('org-links').innerHTML = !owners.length ? '' : 'per-org tokens: ' + owners.map((o) => {
+    const url = `https://github.com/settings/personal-access-tokens/new?name=nanobots%20(${encodeURIComponent(o)})&target_name=${encodeURIComponent(o)}&issues=write&contents=read&description=Files%20reports%20from%20the%20nanobots%20browser%20extension`;
+    return `<a href="${url}" target="_blank">${o}${lastPatByOwner[o] ? ' ✓' : ' ↗'}</a>`;
+  }).join(' · ');
+}
+$('repos').addEventListener('input', renderOrgLinks);
 
 // ── "connect with github" (OAuth device flow) ────────────────────────────────
 
@@ -35,53 +92,10 @@ $('gh-connect').addEventListener('click', async () => {
     const d = await deviceFlowStart();
     status.innerHTML = `Enter code <b style="color:var(--accent);font-size:16px">${d.user_code}</b> at <a href="${d.verification_uri}" target="_blank">${d.verification_uri}</a> — waiting…`;
     const token = await deviceFlowPoll(d.device_code, d.interval ?? 5, () => { status.textContent += '.'; });
-    $('pat').value = token;
-    status.innerHTML = '<span style="color:var(--accent)">✓ connected — token filled in (hit save)</span>';
+    $('pats').value = [...new Set([...parsePats(), token])].join('\n');
+    status.innerHTML = '<span style="color:var(--accent)">✓ connected — token added; click "discover repos"</span>';
   } catch (e) {
     status.innerHTML = `<span class="err">${e.message}</span>`;
-  }
-});
-
-// ── per-org token creation links (derived from the repos list) ───────────────
-// Fine-grained prefill supports target_name, so each org gets a ready-made
-// creation link with the owner + permissions pre-selected.
-
-function renderOrgLinks() {
-  const owners = [...new Set(
-    $('repos').value.split('\n').map((s) => s.trim().split('/')[0]).filter(Boolean),
-  )];
-  const configured = new Set(
-    $('pat-orgs').value.split('\n').map((l) => l.split('=')[0].trim()).filter(Boolean),
-  );
-  $('org-links').innerHTML = owners.length < 2 ? '' : 'mint per-org tokens: ' + owners.map((o) => {
-    const url = `https://github.com/settings/personal-access-tokens/new?name=nanobots%20(${encodeURIComponent(o)})&target_name=${encodeURIComponent(o)}&issues=write&contents=read&description=Files%20reports%20from%20the%20nanobots%20browser%20extension`;
-    return `<a href="${url}" target="_blank">${o}${configured.has(o) ? ' ✓' : ' ↗'}</a>`;
-  }).join(' · ');
-}
-$('repos').addEventListener('input', renderOrgLinks);
-$('pat-orgs').addEventListener('input', renderOrgLinks);
-
-// ── "load my repos" chips ────────────────────────────────────────────────────
-
-$('gh-loadrepos').addEventListener('click', async () => {
-  const pat = $('pat').value.trim();
-  if (!pat) { $('gh-status').textContent = 'paste or connect a token first'; return; }
-  $('repo-chips').textContent = 'loading…';
-  try {
-    const repos = await listMyRepos(pat);
-    const chosen = () => new Set($('repos').value.split('\n').map((s) => s.trim()).filter(Boolean));
-    $('repo-chips').innerHTML = repos
-      .filter((r) => !chosen().has(r))
-      .map((r) => `<span class="chip" data-repo="${r}">+ ${r}</span>`).join('');
-    for (const chip of $('repo-chips').querySelectorAll('.chip')) {
-      chip.addEventListener('click', () => {
-        $('repos').value = [...chosen(), chip.dataset.repo].join('\n');
-        chip.remove();
-        renderOrgLinks();
-      });
-    }
-  } catch (e) {
-    $('repo-chips').innerHTML = `<span class="err">${e.message}</span>`;
   }
 });
 
@@ -100,7 +114,7 @@ for (const tab of document.querySelectorAll('.r2tab')) {
 $('r2-setup').addEventListener('click', async () => {
   const status = $('r2-setup-status');
   const token = $('r2token-quick').value.trim() || $('r2token').value.trim();
-  if (!token) { status.textContent = 'paste a Cloudflare API token first (guide above)'; return; }
+  if (!token) { status.textContent = 'paste a Cloudflare API token first (step 1)'; return; }
   const bucket = $('r2bucket').value.trim() || 'nanobots-shots';
   try {
     const result = await r2AutoSetup(token, bucket, (msg) => { status.textContent = msg; }, $('r2account').value);
@@ -108,13 +122,15 @@ $('r2-setup').addEventListener('click', async () => {
     $('r2bucket').value = result.bucket;
     $('r2token').value = result.token;
     $('r2public').value = result.publicBase;
-    status.innerHTML = '<span style="color:var(--accent)">✓ all four fields filled — hit save</span>';
+    status.innerHTML = '<span style="color:var(--accent)">✓ all set — hit save</span>';
   } catch (e) {
     status.innerHTML = e.message === 'NEED_ACCOUNT_ID'
-      ? '<span class="err">Couldn\'t auto-detect your account — paste your account id in the field below (it\'s on the R2 overview page / dashboard URL), then click again.</span>'
+      ? '<span class="err">Couldn\'t auto-detect your account — paste your account id on the manual tab (it\'s on the R2 overview page / dashboard URL), then click again.</span>'
       : `<span class="err">${e.message}</span>`;
   }
 });
+
+// ── save ─────────────────────────────────────────────────────────────────────
 
 $('save').addEventListener('click', async () => {
   // Arbitrary OpenAI-compatible hosts need a runtime permission grant
@@ -127,14 +143,21 @@ $('save').addEventListener('click', async () => {
       if (!has) await chrome.permissions.request({ origins: [origin] });
     }
   } catch { /* invalid URL or user declined — save proceeds; calls will surface it */ }
+
+  const pats = parsePats();
+  // Re-derive routing silently so edits to the token list can't leave stale routes.
+  if (pats.length) {
+    const { patByOwner } = await derive(pats);
+    if (Object.keys(patByOwner).length) lastPatByOwner = patByOwner;
+  } else {
+    lastPatByOwner = {};
+  }
+
   await saveConfig({
-    pat: $('pat').value.trim(),
-    patByOwner: Object.fromEntries(
-      $('pat-orgs').value.split('\n')
-        .map((line) => line.split('=').map((s) => s.trim()))
-        .filter(([o, t]) => o && t),
-    ),
-    repos: $('repos').value.split('\n').map((s) => s.trim()).filter(Boolean),
+    pats,
+    pat: pats[0] ?? '',
+    patByOwner: lastPatByOwner,
+    repos: parseRepos(),
     r2: {
       accountId: $('r2account').value.trim(),
       bucket: $('r2bucket').value.trim(),
@@ -143,11 +166,12 @@ $('save').addEventListener('click', async () => {
     },
     ai: {
       apiKey: $('aikey').value.trim(),
-      baseUrl: $('aibase').value.trim() || 'https://api.anthropic.com',
+      baseUrl: $('aibase').value.trim() || 'https://api.anthropic.com/v1',
       model: $('aimodel').value.trim() || 'claude-sonnet-5',
     },
   });
   updateR2Status(await getConfig());
+  renderOrgLinks();
   $('saved').textContent = 'saved ✓';
   setTimeout(() => ($('saved').textContent = ''), 2000);
 });

@@ -86,6 +86,15 @@ export async function deviceFlowPoll(deviceCode, intervalSec, onTick) {
   throw new Error('sign-in timed out');
 }
 
+// Repos a token can actually reach. For fine-grained PATs this is exactly the
+// granted set; for classic tokens it's everything accessible (callers cap it).
+export async function reposForToken(token) {
+  const r = await gh(token, 'GET', '/user/repos?per_page=100&sort=pushed&affiliation=owner,collaborator,organization_member');
+  return r.map((x) => x.full_name);
+}
+
+export const isFineGrained = (token) => token.startsWith('github_pat_');
+
 export async function listMyRepos(pat) {
   const r = await gh(pat, 'GET', '/user/repos?sort=pushed&per_page=30&type=owner');
   const member = await gh(pat, 'GET', '/user/repos?sort=pushed&per_page=30&affiliation=organization_member').catch(() => []);

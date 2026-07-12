@@ -36,24 +36,19 @@
 <main>
   <h1>nano<span class="bot">bots</span> — options</h1>
 
-  <label for="pat">github token</label>
-  <input id="pat" type="password" placeholder="github_pat_… or ghp_…">
+  <label for="pats">github tokens (one per line — paste as many as you like)</label>
+  <textarea id="pats" placeholder="github_pat_…  (fine-grained, one per org)&#10;github_pat_…&#10;ghp_…  (classic works too)" style="min-height:64px"></textarea>
   <div class="hint" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button type="button" id="gh-discover" class="mini">discover repos</button>
     <button type="button" id="gh-connect" class="mini" hidden>connect with github</button>
-    <a href="https://github.com/settings/personal-access-tokens/new?name=nanobots%20extension&description=Files%20reports%20from%20the%20nanobots%20browser%20extension&issues=write&contents=read" target="_blank">create a fine-grained token ↗</a>
-    <span>(pick your repos on that page, Generate, paste here — needs only <code>Issues: write</code> + <code>Contents: read</code>)</span>
+    <a href="https://github.com/settings/personal-access-tokens/new?name=nanobots%20extension&description=Files%20reports%20from%20the%20nanobots%20browser%20extension&issues=write&contents=read" target="_blank">mint a fine-grained token ↗</a>
   </div>
+  <div class="hint">Each fine-grained token (<code>Issues: write</code> + <code>Contents: read</code>) is pinned to one user/org and its chosen repos — paste one per org and <b>discover repos</b> reads what each can reach, filling the list below and routing every call to the right token automatically. Classic tokens work too (capped to recent repos — prune below). Stored locally only.</div>
   <div class="hint" id="gh-status"></div>
-
-  <label for="pat-orgs">per-org tokens (optional, one per line: owner=token)</label>
-  <textarea id="pat-orgs" placeholder="SleeperHitStudio=github_pat_…&#10;Slatebox=github_pat_…" style="min-height:48px"></textarea>
-  <div class="hint">Fine-grained tokens are limited to <b>one</b> user/org each — for repos across several orgs, mint one per org here (the token above is the fallback). A classic <code>repo</code> token or GitHub sign-in spans all orgs with a single credential.</div>
   <div class="hint" id="org-links" style="display:flex;gap:8px;flex-wrap:wrap"></div>
 
-  <label for="repos">repos (one per line, owner/repo)</label>
+  <label for="repos">repos (one per line, owner/repo — auto-filled by discover, prune freely)</label>
   <textarea id="repos" placeholder="TimHeckel/nanobots&#10;SleeperHitStudio/sleeperhit-studio"></textarea>
-  <div class="hint"><button type="button" id="gh-loadrepos" class="mini">load my repos</button> <span>fetches your recent repos — click to add</span></div>
-  <div id="repo-chips" class="hint" style="display:flex;gap:6px;flex-wrap:wrap"></div>
 
   <label>screenshot storage — Cloudflare R2</label>
   <div class="hint">Screenshots upload to your R2 bucket and the issue embeds the link — nothing is committed to git. Screenshot capture stays disabled until R2 is connected; reports file text-only in the meantime. Free: R2's free tier (10&nbsp;GB, zero egress) is far more than screenshots need — Cloudflare may ask for a card to enable R2, but you won't be charged within the allowance.</div>
