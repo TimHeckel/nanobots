@@ -11,12 +11,14 @@ chrome.action.onClicked.addListener(async (tab) => {
   } catch { /* chrome:// pages etc. */ }
 
   const cfg = await getConfig();
+  const { lastRepo = '' } = await chrome.storage.local.get('lastRepo');
   const payload = {
     kind: 'nanobots-open',
     shot,
     url: tab.url ?? '',
     title: tab.title ?? '',
     repos: cfg.repos,
+    lastRepo,
     r2on: r2Configured(cfg.r2),
     configured: Boolean((cfg.pat || Object.keys(cfg.patByOwner ?? {}).length) && cfg.repos.length),
   };
@@ -83,5 +85,6 @@ async function fileReport({ nwo, title, note, type, image, page, pageTitle }) {
     nwo, number: issue.number, title: issue.title, url: issue.html_url,
     type, page, filedAt: new Date().toISOString(),
   });
+  await chrome.storage.local.set({ lastRepo: nwo });
   return { ok: true, url: issue.html_url, number: issue.number };
 }

@@ -51,6 +51,8 @@ let current = null;   // in-progress mark
     chrome.runtime.openOptionsPage();
   }
   $('repo').innerHTML = cfg.repos.map((r) => `<option>${r}</option>`).join('');
+  const { lastRepo } = await chrome.storage.local.get('lastRepo');
+  if (lastRepo && cfg.repos.includes(lastRepo)) $('repo').value = lastRepo;
 })();
 
 // ── drawing ──────────────────────────────────────────────────────────────────

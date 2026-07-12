@@ -45,6 +45,7 @@ async function runTool(cfg, nwo, name, input, attachments) {
       nwo, number: issue.number, title: issue.title, url: issue.html_url,
       type: input.type, page: '(chat)', filedAt: new Date().toISOString(),
     });
+    await chrome.storage.local.set({ lastRepo: nwo });
     return { filed: true, number: issue.number, url: issue.html_url };
   }
   throw new Error(`unknown tool ${name}`);

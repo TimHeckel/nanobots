@@ -47,6 +47,8 @@ async function addAttachment(dataUrl) {
     return;
   }
   $('repo').innerHTML = cfg.repos.map((r) => `<option>${esc(r)}</option>`).join('');
+  const { lastRepo } = await chrome.storage.local.get('lastRepo');
+  if (lastRepo && cfg.repos.includes(lastRepo)) $('repo').value = lastRepo;
   $('repo').addEventListener('change', resetForRepo);
   await resetForRepo();
 
