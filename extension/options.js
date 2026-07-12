@@ -124,12 +124,52 @@ async function persist() {
   $('aimodel').value = cfg.ai.model;
   lastPatByOwner = cfg.patByOwner ?? {};
   $('gh-connect').hidden = !GITHUB_OAUTH_CLIENT_ID;
+  // Reflect the saved base URL as a provider selection (without overwriting
+  // the saved model); unknown base → Manual with fields shown.
+  const match = Object.entries(PROVIDERS).find(([, p]) => p && p.base === cfg.ai.baseUrl);
+  selectProvider(match ? match[0] : 'Manual', { fill: false });
   renderOrgLinks();
   // Land on the first incomplete step; fully configured → review.
   goto(stepDone(1, cfg) ? (stepDone(2, cfg) ? (stepDone(3, cfg) ? 4 : 3) : 2) : 1);
 })();
 
 $('pats').addEventListener('input', () => { tokensDirty = true; });
+
+// ── model provider presets ───────────────────────────────────────────────────
+// Picking a provider fills base URL + a multimodal default model; Manual
+// reveals the base-url field. $('aibase')/$('aimodel') stay the source of truth.
+
+const PROVIDERS = {
+  Anthropic: { base: 'https://api.anthropic.com/v1', model: 'claude-sonnet-5', keys: 'https://console.anthropic.com/settings/keys' },
+  OpenAI: { base: 'https://api.openai.com/v1', model: 'gpt-5.4-mini', keys: 'https://platform.openai.com/api-keys' },
+  Google: { base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash', keys: 'https://aistudio.google.com/apikey' },
+  Grok: { base: 'https://api.x.ai/v1', model: 'grok-4', keys: 'https://console.x.ai' },
+  OpenRouter: { base: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-sonnet-5', keys: 'https://openrouter.ai/settings/keys' },
+  Manual: null,
+};
+
+function selectProvider(name, { fill = true } = {}) {
+  for (const b of document.querySelectorAll('#providers button')) {
+    b.classList.toggle('selected', b.dataset.p === name);
+  }
+  const preset = PROVIDERS[name];
+  $('manual-fields').hidden = Boolean(preset);
+  if (preset) {
+    $('key-link').innerHTML = `<a href="${preset.keys}" target="_blank">get a${'AEIOU'.includes(name[0]) ? 'n' : ''} ${name} key ↗</a>`;
+    if (fill) {
+      $('aibase').value = preset.base;
+      $('aimodel').value = preset.model;
+    }
+  } else {
+    $('key-link').innerHTML = '';
+  }
+}
+
+$('providers').innerHTML = Object.keys(PROVIDERS)
+  .map((p) => `<button type="button" class="mini" data-p="${p}">${p}</button>`).join('');
+for (const b of document.querySelectorAll('#providers button')) {
+  b.addEventListener('click', () => selectProvider(b.dataset.p));
+}
 
 // ── token → repo discovery ───────────────────────────────────────────────────
 

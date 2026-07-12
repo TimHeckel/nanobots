@@ -34,6 +34,7 @@
   button.mini { background: var(--panel); border: 1px solid var(--border); color: var(--text);
     border-radius: 6px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
   button.mini:hover { border-color: var(--accent); color: var(--accent); }
+  button.mini.selected { border-color: var(--accent); color: var(--accent); }
   a { color: var(--cyan); }
   .hint { color: var(--dim); font-size: 12.5px; margin-top: 8px; line-height: 1.55; }
   .status { font-size: 13px; margin-top: 10px; min-height: 18px; }
@@ -144,19 +145,23 @@
   <!-- ── step 3: model ──────────────────────────────────────────────────── -->
   <section data-step="3">
     <h2>Chat agent model</h2>
-    <p class="sub">Powers the repo chat: it searches your code and issues, reads your screenshots, and files reports for you. Skip for now — capture &amp; annotate work without it.</p>
+    <p class="sub">This is where filing gets smart: the agent searches your code and issues, reads your screenshots, dedupe-checks, and files reports for you.</p>
+
+    <label>provider</label>
+    <div class="row" id="providers" style="margin-top:4px"></div>
 
     <label for="aikey">api key</label>
     <input id="aikey" type="password" placeholder="your provider's API key">
-    <label for="aibase">base url (any OpenAI-compatible endpoint)</label>
-    <input id="aibase" placeholder="https://api.anthropic.com/v1">
+    <div class="hint" id="key-link"></div>
+
+    <div id="manual-fields" hidden>
+      <label for="aibase">base url (any OpenAI-compatible endpoint)</label>
+      <input id="aibase" placeholder="https://api.anthropic.com/v1">
+      <div class="hint">e.g. local Ollama <code>http://localhost:11434/v1</code>, or any provider's OpenAI-compatible endpoint.</div>
+    </div>
     <label for="aimodel">model</label>
     <input id="aimodel" placeholder="claude-sonnet-5">
-    <div class="hint">Best experience: a <b>multimodal</b> model with tool calling — vision is how the agent reads screenshots while filing. Text-only models still chat and file; they just can't see images.</div>
-    <details>
-      <summary>endpoint examples</summary>
-      <div class="hint">Anthropic <code>https://api.anthropic.com/v1</code> · OpenAI <code>https://api.openai.com/v1</code> · Gemini <code>https://generativelanguage.googleapis.com/v1beta/openai</code> · OpenRouter <code>https://openrouter.ai/api/v1</code> · local Ollama <code>http://localhost:11434/v1</code></div>
-    </details>
+    <div class="hint">Pre-filled with a sensible multimodal default — vision is how the agent reads screenshots while filing. Swap it for any model your provider offers.</div>
   </section>
 
   <!-- ── step 4: review ─────────────────────────────────────────────────── -->
