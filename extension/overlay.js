@@ -301,12 +301,22 @@
       if (s.tool === 'pen') { s.points.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); }
       else if (s.tool === 'rect') { const r = bounds(s); g.strokeRect(r.x, r.y, r.w, r.h); }
       else if (s.tool === 'text') { g.font = `bold ${s.size}px ui-sans-serif, system-ui`; g.fillText(s.text, s.x, s.y); }
-      else { const [a, b, c2, d] = s.box; g.moveTo(a, b); g.lineTo(c2, d); g.stroke();
-        const an = Math.atan2(d - b, c2 - a), h = g.lineWidth * 4;
-        g.beginPath(); g.moveTo(c2, d);
-        g.lineTo(c2 - h * Math.cos(an - 0.4), d - h * Math.sin(an - 0.4));
-        g.lineTo(c2 - h * Math.cos(an + 0.4), d - h * Math.sin(an + 0.4));
-        g.closePath(); g.fill(); }
+      else {
+        // shaft stops at the head's base so the round line cap never pokes
+        // through the tip; only the filled triangle forms the point
+        const [a, b, c2, d] = s.box;
+        const an = Math.atan2(d - b, c2 - a);
+        const h = g.lineWidth * 4.5;
+        g.moveTo(a, b);
+        g.lineTo(c2 - h * Math.cos(an), d - h * Math.sin(an));
+        g.stroke();
+        g.beginPath();
+        g.moveTo(c2, d);
+        g.lineTo(c2 - h * 1.15 * Math.cos(an - 0.32), d - h * 1.15 * Math.sin(an - 0.32));
+        g.lineTo(c2 - h * 1.15 * Math.cos(an + 0.32), d - h * 1.15 * Math.sin(an + 0.32));
+        g.closePath();
+        g.fill();
+      }
     }
 
     function redraw() {
