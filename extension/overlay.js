@@ -44,8 +44,9 @@
         .dot { width: 18px; height: 18px; border-radius: 50%; padding: 0; border: 2px solid transparent; flex-shrink: 0; }
         .dot.on { border-color: #fff; }
         .canvas-wrap { position: relative; }
-        .txtin { position: absolute; background: rgba(4,6,9,.6); border: 1px dashed currentColor;
-          border-radius: 4px; padding: 2px 6px; font-weight: 700; outline: none; min-width: 60px; }
+        .txtin { position: absolute; width: 8ch; margin: 0; background: rgba(4,6,9,.6);
+          border: 1px dashed currentColor; border-radius: 4px; padding: 1px 6px;
+          font-weight: 700; outline: none; }
         button { background: #11151b; border: 1px solid #1e242e; color: #c9d1d9; border-radius: 6px;
           padding: 5px 12px; cursor: pointer; font: inherit; font-size: 12.5px; }
         button.on { border-color: #4ade80; color: #4ade80; }
@@ -255,10 +256,12 @@
       const scale = rect.width / canvas.width;
       const inp = document.createElement('input');
       inp.className = 'txtin';
-      inp.style.left = (x * scale) + 'px';
-      inp.style.top = (y * scale) + 'px';
+      // keep the input on-canvas and grow it with the content
+      inp.style.left = Math.min(x * scale, rect.width - 90) + 'px';
+      inp.style.top = Math.min(y * scale, rect.height - 28) + 'px';
       inp.style.color = color;
       inp.style.font = `700 ${Math.max(12, fontPx() * scale)}px ui-sans-serif, system-ui`;
+      inp.addEventListener('input', () => { inp.style.width = Math.max(8, inp.value.length + 2) + 'ch'; });
       wrap.appendChild(inp);
       setTimeout(() => inp.focus(), 0);
       const commit = () => {
