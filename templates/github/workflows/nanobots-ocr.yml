@@ -1,0 +1,60 @@
+# nanobots:engine-owned v0.1 — re-rendered by `nanobots update`
+# Required, always installed — every nanobots:built PR gets reviewed before merge, no
+# opt-out. Runs as a plain Actions job, deliberately NOT inside the Daytona sandbox — OCR
+# only reads a diff and calls an LLM, so the isolation an ephemeral runner already gives
+# you is enough. See .nanobots/RUNTIMES.md "OCR review gate" for why.
+#
+# Secrets: OCR_LLM_URL, OCR_LLM_TOKEN, OCR_LLM_MODEL — your inference provider's
+# OpenAI-compatible endpoint, key, and model ID. Scope the key to this workflow only if
+# your provider supports per-key spend limits.
+name: Nanobots OCR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: nanobots-ocr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+      GH_PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install OCR {{OCR_VERSION}}
+        run: |
+          set -euo pipefail
+          curl -fsSL -o ocr "https://github.com/alibaba/open-code-review/releases/download/{{OCR_VERSION}}/ocr-linux-amd64"
+          chmod +x ocr
+
+      - name: Review exact PR head
+        env:
+          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
+          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
+          OCR_LLM_PROTOCOL: openai
+          OCR_NO_UPDATE: '1'
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.event.pull_request.base.ref }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          HOME="$(mktemp -d)" XDG_CONFIG_HOME="$(mktemp -d)" \
+            ./ocr review --from "$BASE" --to "$HEAD" --format json --audience agent \
+            > ocr-findings.json || true
+
+      - name: Parse findings, post sticky comment, gate on blocking severities
+        run: node .nanobots/ocr-review.mjs ocr-findings.json "${{ github.event.pull_request.head.sha }}"

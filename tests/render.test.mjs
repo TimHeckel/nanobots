@@ -10,8 +10,10 @@ const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates
 const values = {
   OWNER: 'acme', REPO: 'widgets', BOARD: 'Nanobots', HUMAN_LABEL: 'summon-human',
   WIP_CAP: '2', DEFAULT_BRANCH: 'main',
-  GATES_INLINE: '`npm test`', GATES_LIST: '   - `npm test`',
+  GATES_LIST: '   - `npm test`',
   HARD_GATES_LIST: '  - payments', INSTALL_DATE: '2026-07-01',
+  DAYTONA_SNAPSHOT: 'provider default', DAYTONA_TARGET: 'us',
+  OCR_VERSION: 'v1.7.12', OCR_BLOCKING_SEVERITIES: 'critical, high',
 };
 
 function* walk(dir) {
@@ -39,7 +41,7 @@ for (const file of walk(TEMPLATES)) {
 }
 
 // Ownership expectations
-const engineOwned = ['LOOP-PROMPT.md', 'WORKER-PROMPT.md', 'RUNTIMES.md', 'run-cycle.sh'];
+const engineOwned = ['LOOP-PROMPT.md', 'WORKER-PROMPT.md', 'RUNTIMES.md', 'run-cycle.sh', 'daytona-worker.mjs', 'ocr-review.mjs'];
 const repoOwned = ['TRIAGE.md', 'RECIPES.md', 'LEARNINGS.md'];
 for (const f of engineOwned) {
   assert.ok(readFileSync(join(TEMPLATES, 'nanobots', f), 'utf8').slice(0, 200).includes('engine-owned'), `${f} should be engine-owned`);

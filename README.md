@@ -1,10 +1,10 @@
 # nanobots
 
 **Self-improving agent loops for any GitHub repo.** An outer loop triages, prioritizes,
-dispatches, reviews, and *learns*; nanobot workers claim cards and ship PRs. GitHub is the
-only state store — issues are the intake, a Projects v2 board is the kanban, PRs are the
-audit trail, and a pinned issue is the heartbeat. When the bots are out of their depth,
-they `summon-human`.
+dispatches, reviews, and *learns*; nanobot workers claim cards and build in a disposable
+[Daytona](https://daytona.io) sandbox, then ship PRs. GitHub is the only state store —
+issues are the intake, a Projects v2 board is the kanban, PRs are the audit trail, and a
+pinned issue is the heartbeat. When the bots are out of their depth, they `summon-human`.
 
 Inspired by [Autoresearch/Introspection](https://www.latent.space/p/autoresearch-introspection):
 the durable product isn't the code, it's the loop that maintains it — with humans as a
@@ -33,15 +33,14 @@ npx nanobots-sh init        # or: curl -fsSL nanobots.sh/install | sh
 ```
 
 `init` asks ~6 questions (test commands, hard-gate areas, WIP cap — with answers
-auto-detected from your repo where possible; **no model/API key needed to install**),
-then:
+auto-detected from your repo where possible; **no API key needed to install**), then:
 
 1. renders the loop into `.nanobots/` (prompts, triage rubric, recipes, learnings log,
-   runner script, `config.json`),
+   runner script, the Daytona worker controller, `config.json`),
 2. writes GitHub workflows + issue intake forms,
 3. scaffolds GitHub state via `gh`: the project board, Priority/Size fields, labels,
    and a pinned status issue,
-4. prints the two manual steps GitHub's API can't do, plus the secrets checklist.
+4. prints the manual steps GitHub's API can't do, plus the secrets checklist.
 
 After `init` the repo is **fully self-contained** — markdown prompts, one shell script,
 plain workflows. No runtime dependency on this package. Your repo's rubric and recipes
@@ -52,25 +51,40 @@ repo and draft repo-specific recipes and gates into `.nanobots/SUGGESTIONS.md`.
 
 ## Run it
 
-The loop is stateless: "running" = something executes one cycle on a cadence. Run either
-role anywhere — see `.nanobots/RUNTIMES.md` after install.
+The **outer loop** is stateless and runtime-agnostic — it never touches product code, so
+run it wherever's convenient:
 
 | Where | How |
 |---|---|
-| Laptop (interactive) | `/loop` in Claude Code with `.nanobots/LOOP-PROMPT.md` (outer) or `WORKER-PROMPT.md` |
+| Laptop (interactive) | `/loop` in Claude Code with `.nanobots/LOOP-PROMPT.md` |
 | VM / your own box | `npx nanobots run outer` (or `bash .nanobots/run-cycle.sh outer`) on a systemd/launchd timer |
 | GitHub Actions | the installed `nanobots-outer.yml` cron (set `NANOBOTS_OUTER_ENABLED=1`) |
-| Sandbox cloud (Daytona/E2B/…) | same script + two env vars; a ~20-line launcher when you need per-item isolation |
+
+The **worker** always builds inside a disposable [Daytona](https://daytona.io) sandbox —
+that's not a runtime choice, it's how nanobots keeps write credentials and arbitrary
+build/test commands off your laptop and CI runners. `npx nanobots run worker` (from a
+laptop, a VM cron, or the installed `nanobots-worker.yml` Actions cron — the trigger
+location doesn't matter) claims the next approved item, provisions the sandbox, builds,
+opens the PR, and deletes the sandbox when it's done. Run `npx nanobots-sh verify daytona`
+once you've set `DAYTONA_API_KEY`, before turning the worker cron on. See
+`.nanobots/RUNTIMES.md` after install for the full contract and security model.
 
 **Billing is an env var, not a feature.** `CLAUDE_CODE_OAUTH_TOKEN` runs everything on a
 Claude Pro/Max **subscription** (mint once: `claude setup-token`). `ANTHROPIC_API_KEY` is
 metered. Any Anthropic-compatible provider works — e.g. DeepSeek via
 `ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic`. Mix per runtime: cheap model
-workers on a VM, frontier model for the outer loop's judgment.
+workers, frontier model for the outer loop's judgment.
 
-**Workers are swappable at the PR seam.** A worker is anything that reads an issue's
-work-spec and opens a PR with `Closes #N` — Claude Code (ours), GitHub Copilot's coding
-agent (assign the issue), Codex, OpenHands. The board can't tell the difference.
+**Workers are swappable inside the sandbox.** Claude Code is the shipped implementation;
+a worker is anything that reads an issue's work-spec and opens a PR with `Closes #N`, so
+Copilot's coding agent, Codex, or OpenHands can run inside the same sandbox contract.
+
+**Every PR gets an OCR review — required, not optional.** `nanobots:built` PRs get a
+bounded [Open Code Review](https://github.com/alibaba/open-code-review) pass on the exact
+PR head, run as a normal Actions job — not inside Daytona, since it only reads a diff and
+calls an LLM. Critical/high findings block merge until addressed or a human overrides.
+Isolated execution without an independent review of the result is only half the safety
+story; this is the other half.
 
 ## How the learning works
 
@@ -82,20 +96,20 @@ The loop's policy documents are its weights; GitHub history is the training log.
 ## Requirements
 
 - `gh` CLI authenticated, with the `project` scope (`gh auth refresh -s project`)
-- The [Claude GitHub App](https://github.com/apps/claude) on the repo (`claude /install-github-app`)
-  — only needed for the Actions execution paths
-- Two secrets for Actions mode: `CLAUDE_CODE_OAUTH_TOKEN`, and `PROJECTS_PAT` — a
-  **classic** PAT (`project` + `repo`) from a **human** account. Two hard-won facts baked
-  into the design: the default `GITHUB_TOKEN` cannot touch org Projects v2 at all, and
-  claude-code-action refuses runs initiated by bot actors, so dispatch comments must post
-  as a human.
+- A [Daytona](https://daytona.io) account and API key — required, not optional. Workers
+  always build in a Daytona sandbox; there's no local/VM worker mode.
+- Secrets: `CLAUDE_CODE_OAUTH_TOKEN` (or another model credential), `PROJECTS_PAT` — a
+  **classic** PAT (`project` + `repo`) from a **human** account (the default `GITHUB_TOKEN`
+  cannot touch org Projects v2 at all), `DAYTONA_API_KEY`, and an OpenAI-compatible
+  inference endpoint/key for OCR: `OCR_LLM_URL` / `OCR_LLM_TOKEN` / `OCR_LLM_MODEL`.
 
 ## Commands
 
 ```bash
 npx nanobots-sh init [--smart] [--no-github] [--yes]   # scaffold a repo
 npx nanobots-sh update                                  # re-render engine-owned files only
-npx nanobots-sh run <outer|worker>                      # one headless cycle
+npx nanobots-sh run <outer|worker>                      # one headless cycle (worker = Daytona sandbox)
+npx nanobots-sh verify daytona                           # connection + lifecycle proof
 ```
 
 `update` never touches repo-owned files (TRIAGE.md, RECIPES.md, LEARNINGS.md,

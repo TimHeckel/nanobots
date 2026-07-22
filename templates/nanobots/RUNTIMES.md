@@ -1,42 +1,119 @@
-<!-- nanobots:engine-owned v0.1 — re-rendered by `nanobots update`; put repo policy in TRIAGE.md/RECIPES.md/config.json instead -->
-# Runtimes — run either loop anywhere
+<!-- nanobots:engine-owned v0.2 — re-rendered by `nanobots update`; put repo policy in TRIAGE.md/RECIPES.md/config.json instead -->
+# Runtimes — outer loop anywhere, worker always in Daytona
 
-Design stance: **no adapters, one contract.** GitHub is the only coordination surface, so
-an execution location is just "something that starts the same one-shot process with two
-credentials." Never add location-specific logic to the loop itself.
+Design stance: **one adapter, not a matrix.** The outer loop never touches product code, so
+it stays a "run the same one-shot process with two credentials" contract and can run
+anywhere. The worker touches product code — writes files, runs arbitrary project commands,
+pushes branches — so it always runs inside a disposable [Daytona](https://daytona.io)
+sandbox. That's not a launcher option among several; it's the only worker runtime nanobots
+supports. Trading "runs anywhere" for "runs isolated, every time" is the deliberate
+tradeoff: no laptop or CI runner ever holds your repo's write credentials for longer than
+one sandboxed run, and a runaway build/test command can't touch anything outside the box.
 
-## The runtime contract
+## Outer loop contract (unchanged, runs anywhere)
 
-A loop runtime is any process that:
+A process that:
 
 1. has the repo checked out (or clones it),
 2. has `GH_TOKEN` — classic PAT, scopes `project` + `repo` (must belong to a **human**
    account: claude-code-action refuses bot actors on dispatch),
-3. has ONE model credential:
-   - `CLAUDE_CODE_OAUTH_TOKEN` — Claude **subscription** billing. Mint once with
-     `claude setup-token`; works headless anywhere.
-   - `ANTHROPIC_API_KEY` — metered API billing (or Bedrock/Vertex via provider env).
-   - `ANTHROPIC_AUTH_TOKEN` + `ANTHROPIC_BASE_URL` + `ANTHROPIC_MODEL` — any
-     Anthropic-compatible provider (see "Swapping the brain").
-4. runs **one cycle for one role and exits**:
-   - `outer` → `.nanobots/LOOP-PROMPT.md`
-   - `worker` → `.nanobots/WORKER-PROMPT.md`
+3. has ONE model credential (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, or
+   `ANTHROPIC_AUTH_TOKEN` + `_BASE_URL` + `_MODEL` — see "Swapping the brain"),
+4. runs `.nanobots/LOOP-PROMPT.md` for **one cycle** and exits.
 
-Cadence always lives OUTSIDE the process (interactive `/loop`, systemd timer, Actions
-cron, sandbox scheduler). One-shot + board-is-truth means any number of runtimes coexist;
-the claim protocol (move card → comment → re-read) arbitrates workers.
+| Where | How |
+|---|---|
+| Laptop (interactive) | `/loop` in Claude Code with `.nanobots/LOOP-PROMPT.md` |
+| VM / your own box | `.nanobots/run-cycle.sh outer` on a systemd/launchd timer |
+| GitHub Actions | the installed `nanobots-outer.yml` cron |
 
-## Launcher matrix
+Recommended cadence: every 20-30 min. A cycle with nothing to triage or review is cheap —
+it reads the board and exits.
 
-| Location | Outer loop | Worker | Notes |
-|---|---|---|---|
-| Laptop (interactive) | `/loop` + LOOP-PROMPT | `/loop` + WORKER-PROMPT | Default; you're supervising |
-| VM / own box (headless) | `run-cycle.sh outer` on a timer | `run-cycle.sh worker` on a timer | The "always running" workhorse; dedicated box → `NANOBOTS_SKIP_PERMISSIONS=1` acceptable |
-| GitHub Actions | `nanobots-outer.yml` (cron) | `@claude` dispatch (inner workflow) | Zero-ops floor |
-| Sandbox cloud (Daytona / E2B / Modal) | same script in a sandbox | same | Contract already runs there (CLI + env vars); write the ~20-line launcher when per-item isolation or burst parallelism is actually needed |
+## Worker contract (always Daytona)
 
-Recommended cadences: outer 30 min, worker 5 min (a worker cycle with an empty Ready
-column costs almost nothing — it reads the board and exits).
+`.nanobots/run-cycle.sh worker` (or `npx nanobots-sh run worker`) no longer executes the
+worker locally. It runs `.nanobots/daytona-worker.mjs`, which:
+
+1. reads `.nanobots/config.json` for the Daytona snapshot/target and the plan-approval
+   policy;
+2. finds the top **Ready** item that is not `{{HUMAN_LABEL}}` and, if
+   `approval.requireVersionedStart` is on (the default), has an unexpired
+   `/nanobots start <plan-hash>` approval from a collaborator matching the current plan
+   comment — see the Dispatch step in `.nanobots/LOOP-PROMPT.md`;
+3. claims it (move to In Progress, comment with the run ID) and re-reads to confirm no one
+   else's claim beat it;
+4. creates a Daytona sandbox from snapshot `{{DAYTONA_SNAPSHOT}}` in target
+   `{{DAYTONA_TARGET}}`, labeled `nanobots-{{OWNER}}-{{REPO}}-<issue>-<attempt>`;
+5. clones the repo into it and runs `.nanobots/WORKER-PROMPT.md` headless inside the
+   sandbox (same `claude -p` invocation `run-cycle.sh` used to run locally — it just runs
+   there now);
+6. the sandboxed agent commits, pushes, and opens the PR itself (see "Security model"
+   below for why, and what that costs);
+7. deletes the sandbox in a `finally` block — always, success or failure. A run that dies
+   mid-cycle leaves no sandbox behind; the claim is visible on the board for the outer
+   loop's stall check to recycle if nothing else happened.
+
+You can invoke `run worker` from a laptop, a VM timer, or a scheduled Actions job — the
+*trigger* location doesn't matter anymore, because the actual work always happens inside
+the sandbox, not on the machine that dispatched it. Pick whichever trigger location is
+convenient; `npx nanobots-sh run worker` on a cron (systemd, launchd, or an Actions
+workflow you add yourself) all work identically.
+
+## Security model
+
+Daytona buys isolation for the *build*, not zero-trust GitHub publication. Being upfront
+about the shape of the tradeoff:
+
+**Controller-side, never enters the sandbox:**
+- `DAYTONA_API_KEY` — used only to create/exec/delete the sandbox from the triggering
+  process.
+- The model credential, unless you're running a subscription token that's fine to scope
+  per-run (see below).
+
+**Sandbox-side, for the duration of one run only:**
+- `GH_TOKEN` — the same classic PAT the outer loop uses, injected into that one sandbox's
+  environment so the agent can push and open the PR directly. This is a deliberate
+  simplification versus a fully mediated "controller performs every git/GitHub mutation,
+  model never touches a token" design: nanobots has no hosted control plane or GitHub App
+  to mint short-lived, repo-scoped installation tokens, and building one is disproportionate
+  to what a scaffolder should carry. The mitigation is the sandbox itself — the token lives
+  only inside a disposable environment that's destroyed within minutes of the run ending,
+  never written to a shared machine, and never logged (see redaction rules below).
+- The model credential (whichever one the triggering process was given).
+- Nothing else. No production database URL, no cloud credentials, no other repo's secrets.
+
+**If your repo can't accept that tradeoff** (e.g. the PAT has access to other repos too),
+scope a dedicated PAT to just this repo, or wire up a GitHub App installation token
+yourself and inject it in place of `GH_TOKEN` in `daytona-worker.mjs` — the script has one
+clearly marked injection point.
+
+## OCR review gate (required, not inside Daytona)
+
+`nanobots init`/`update` always render `.github/workflows/nanobots-ocr.yml` alongside the
+Daytona worker — this is the second non-optional piece, for the same reason Daytona is
+required: without it there's no independent review to act on before merge. It runs as a
+**normal GitHub Actions job** on `nanobots:built` PRs — deliberately *not* inside the
+Daytona sandbox. OCR only reads a diff
+and calls an LLM; it doesn't need arbitrary code execution, so the ordinary isolation an
+Actions runner already gives you (ephemeral, one job, secrets scoped to that job) is
+sufficient, and skipping a second sandbox avoids inventing a relay service just to keep a
+model key out of a box that was already going to be destroyed.
+
+The workflow pins [Alibaba Open Code Review](https://github.com/alibaba/open-code-review)
+at `{{OCR_VERSION}}`, reviews the exact PR head SHA (never a branch name — a new commit
+invalidates the prior review), and posts one sticky comment plus a `nanobots/ocr` check.
+Blocking severities default to `{{OCR_BLOCKING_SEVERITIES}}`; anything at or above those
+holds the PR — the outer loop won't merge until the check is green on the *current* head.
+
+## Disposable database (optional, per-repo)
+
+Never point a worker at a shared dev/staging/production database. If your gates need a
+real one, set `daytona.databaseBootstrap` in `.nanobots/config.json` to a list of shell
+commands `daytona-worker.mjs` runs inside the sandbox before the gates — e.g. start a
+container, load a fixture, run a proof query. It's your repo's choice of engine and
+fixture; nanobots doesn't ship a default. Loopback-only; nothing outside the sandbox ever
+sees the connection string.
 
 ## Board cheat-sheet (`gh` ≥2.80)
 
@@ -81,26 +158,29 @@ export ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
 export ANTHROPIC_AUTH_TOKEN=sk-<deepseek-key>
 export ANTHROPIC_MODEL=deepseek-chat
 export ANTHROPIC_SMALL_FAST_MODEL=deepseek-chat
-bash .nanobots/run-cycle.sh worker
+npx nanobots-sh run worker
 ```
 
-Same prompts, same claims, same PRs — the board can't tell. Recommended split: cheap
-models for **workers** (start on `Size: S` items; widen if the merge rate holds — the PR
-gates catch their misses), a frontier model for the **outer loop**, where triage/merge/
-distill judgment compounds.
+Same prompts, same claims, same PRs, same sandbox — the board can't tell. Recommended
+split: cheap models for **workers** (start on `Size: S` items; widen if the merge rate
+holds — the PR gates and OCR (if enabled) catch their misses), a frontier model for the
+**outer loop**, where triage/merge/distill judgment compounds.
 
 ## Worker engine is swappable
 
-A "worker" is anything that can read the issue's work-spec comment and open a PR with
-`Closes #N` + label `nanobots:built`. Claude Code is the shipped implementation; a
-developer with a Copilot subscription can assign the issue to Copilot's coding agent
-instead — the board can't tell the difference and the outer loop reviews the PR the same
-way. Codex/OpenHands likewise. The contract IS the adapter.
+A "worker" is anything that can read the issue's work-spec comment, run inside the
+sandbox `daytona-worker.mjs` provisions, and open a PR with `Closes #N`. Claude Code is
+the shipped implementation; a developer with a Copilot subscription can assign the issue
+to Copilot's coding agent instead if they'd rather skip the Daytona path for one item —
+the outer loop reviews the resulting PR the same way either way.
 
 ## Hard rules
 
 - No location-specific branches in prompts beyond capability degradation (the Actions
   outer run models this: "no local/prod access → escalate instead").
-- Secrets never in the repo; each runtime carries its own two env vars.
-- A runtime that dies mid-cycle needs no cleanup: unfinished claims are visible on the
-  board and the outer loop's stall check (>48h, no PR) recycles them.
+- Secrets never in the repo; the outer loop's two env vars, plus `DAYTONA_API_KEY` on
+  whatever triggers `run worker`.
+- A sandbox is deleted in `daytona-worker.mjs`'s `finally` block, always — a runtime that
+  dies mid-cycle leaves no sandbox behind and no cleanup debt.
+- Logs shown in GitHub comments are sanitized: no tokens, no `Authorization`/cookie
+  headers, no raw unbounded terminal output.

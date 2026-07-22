@@ -3,12 +3,13 @@
 // Zero-dependency scaffolder: after `init`, the target repo is self-contained.
 
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, chmodSync, cpSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, cpSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import readline from 'node:readline/promises';
 
-const VERSION = '0.1.0';
+const PKG = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8'));
+const VERSION = PKG.version;
 const TEMPLATES = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 
 const c = {
@@ -54,21 +55,7 @@ function detect() {
     }
   }
 
-  // Existing @claude workflow?
-  let hasClaudeWorkflow = false;
-  const wfDir = join(root, '.github', 'workflows');
-  if (existsSync(wfDir)) {
-    for (const f of readdirSync(wfDir)) {
-      if (!/\.ya?ml$/.test(f)) continue;
-      const body = readFileSync(join(wfDir, f), 'utf8');
-      if (body.includes('claude-code-action') && body.includes('issue_comment')) {
-        hasClaudeWorkflow = true;
-        break;
-      }
-    }
-  }
-
-  return { root, owner, repo, defaultBranch, gates, hasClaudeWorkflow };
+  return { root, owner, repo, defaultBranch, gates };
 }
 
 // ── rendering ────────────────────────────────────────────────────────────────
@@ -88,10 +75,13 @@ function templateValues(cfg) {
     HUMAN_LABEL: cfg.humanLabel,
     WIP_CAP: String(cfg.wipCap),
     DEFAULT_BRANCH: cfg.defaultBranch,
-    GATES_INLINE: cfg.gates.map((g) => `\`${g}\``).join(', ') || '(none configured)',
     GATES_LIST: cfg.gates.map((g) => `   - \`${g}\``).join('\n') || '   - (no gates configured — add some to .nanobots/config.json)',
     HARD_GATES_LIST: cfg.hardGates.map((g) => `  - ${g}`).join('\n') || '  - (none configured)',
     INSTALL_DATE: new Date().toISOString().slice(0, 10),
+    DAYTONA_SNAPSHOT: cfg.daytona?.snapshot || 'provider default',
+    DAYTONA_TARGET: cfg.daytona?.target || 'us',
+    OCR_VERSION: cfg.ocr?.version || 'v1.7.12',
+    OCR_BLOCKING_SEVERITIES: (cfg.ocr?.blockingSeverities || ['critical', 'high']).join(', '),
   };
 }
 
@@ -101,9 +91,19 @@ const ENGINE_OWNED = [
   { src: 'nanobots/WORKER-PROMPT.md', dest: '.nanobots/WORKER-PROMPT.md' },
   { src: 'nanobots/RUNTIMES.md', dest: '.nanobots/RUNTIMES.md' },
   { src: 'nanobots/run-cycle.sh', dest: '.nanobots/run-cycle.sh', exec: true },
+  { src: 'nanobots/daytona-worker.mjs', dest: '.nanobots/daytona-worker.mjs' },
+  { src: 'nanobots/ocr-review.mjs', dest: '.nanobots/ocr-review.mjs' },
+  { src: 'github/workflows/nanobots-ocr.yml', dest: '.github/workflows/nanobots-ocr.yml' },
   { src: 'github/ISSUE_TEMPLATE/feature-request.yml', dest: '.github/ISSUE_TEMPLATE/feature-request.yml' },
   { src: 'github/ISSUE_TEMPLATE/bug-report.yml', dest: '.github/ISSUE_TEMPLATE/bug-report.yml' },
   { src: 'github/ISSUE_TEMPLATE/chore-tech-debt.yml', dest: '.github/ISSUE_TEMPLATE/chore-tech-debt.yml' },
+];
+// Rendered only when the matching config flag is on (still engine-owned once present).
+// OCR's PR-triggered workflow is unconditional (see ENGINE_OWNED above) — it needs no
+// cron, so there's no "local" alternative the way outer/worker have one.
+const CONDITIONAL_ENGINE_OWNED = [
+  { src: 'github/workflows/nanobots-outer.yml', dest: '.github/workflows/nanobots-outer.yml', when: (cfg) => cfg.actionsEnabled },
+  { src: 'github/workflows/nanobots-worker.yml', dest: '.github/workflows/nanobots-worker.yml', when: (cfg) => cfg.actionsEnabled },
 ];
 const REPO_OWNED = [
   { src: 'nanobots/TRIAGE.md', dest: '.nanobots/TRIAGE.md' },
@@ -234,7 +234,7 @@ async function cmdInit(flags) {
       'production infrastructure',
       'destructive data operations',
     ],
-    outerWorkflow: true,
+    actionsEnabled: true,
   };
 
   let answers = { ...defaults };
@@ -249,7 +249,7 @@ async function cmdInit(flags) {
       .split(',').map((s) => s.trim()).filter((s) => s && s !== 'none detected');
     answers.hardGates = (await ask('Hard-gate areas (never auto-worked), comma-separated?', defaults.hardGates.join(', ')))
       .split(',').map((s) => s.trim()).filter(Boolean);
-    answers.outerWorkflow = /^y/i.test(await ask('Install the scheduled outer-loop Action?', 'Y/n') || 'y');
+    answers.actionsEnabled = /^y/i.test(await ask('Install the scheduled outer-loop + worker Actions?', 'Y/n') || 'y');
     rl.close();
   }
 
@@ -263,21 +263,33 @@ async function cmdInit(flags) {
     wipCap: answers.wipCap,
     gates: answers.gates,
     hardGates: answers.hardGates,
-    innerWorkflowManaged: !d.hasClaudeWorkflow,
-    outerWorkflowEnabled: answers.outerWorkflow,
+    actionsEnabled: answers.actionsEnabled,
+    daytona: {
+      snapshot: null,
+      target: 'us',
+      autoDeleteMinutes: 60,
+      databaseBootstrap: [],
+    },
+    ocr: {
+      version: 'v1.7.12',
+      blockingSeverities: ['critical', 'high'],
+      maxRounds: 2,
+    },
+    approval: {
+      requireVersionedStart: true,
+    },
+    mergePolicy: {
+      autoMergeNonProduction: false,
+      protectedBranches: [d.defaultBranch],
+    },
   };
   const values = templateValues(cfg);
 
   // Render
   for (const entry of ENGINE_OWNED) writeRendered(d.root, entry, values, { overwrite: true });
   for (const entry of REPO_OWNED) writeRendered(d.root, entry, values, { overwrite: false });
-  if (cfg.outerWorkflowEnabled) {
-    writeRendered(d.root, { src: 'github/workflows/nanobots-outer.yml', dest: '.github/workflows/nanobots-outer.yml' }, values, { overwrite: true });
-  }
-  if (cfg.innerWorkflowManaged) {
-    writeRendered(d.root, { src: 'github/workflows/nanobots-inner.yml', dest: '.github/workflows/nanobots-inner.yml' }, values, { overwrite: true });
-  } else {
-    say('existing @claude workflow detected — not installing nanobots-inner.yml.');
+  for (const entry of CONDITIONAL_ENGINE_OWNED) {
+    if (entry.when(cfg)) writeRendered(d.root, entry, values, { overwrite: true });
   }
 
   const cfgPath = join(d.root, '.nanobots', 'config.json');
@@ -310,13 +322,17 @@ async function cmdInit(flags) {
   console.log(`  1. Project → Workflows (GitHub UI): enable "Auto-add to project" with filter:`);
   console.log(`       is:issue is:open label:nanobots:inbox   (repo: ${cfg.owner}/${cfg.repo})`);
   console.log(`     set "Item added to project" → Status: Inbox; verify "Issue closed"/"PR merged" → Done.`);
-  console.log(`  2. Secrets for Actions mode (skip if only running locally):`);
+  console.log(`  2. Secrets (all required — workers always build in a Daytona sandbox, and every PR gets an OCR review):`);
   console.log(`       CLAUDE_CODE_OAUTH_TOKEN  (claude setup-token)`);
   console.log(`       PROJECTS_PAT             (CLASSIC PAT: project + repo scopes, human account)`);
-  console.log(`       gh variable set NANOBOTS_OUTER_ENABLED --body 1 --repo ${cfg.owner}/${cfg.repo}`);
-  if (cfg.innerWorkflowManaged) {
-    console.log(`  3. Install the Claude GitHub App if missing: run \`/install-github-app\` in claude.`);
+  console.log(`       DAYTONA_API_KEY          (daytona.io → API keys — controller-side only, never enters the sandbox)`);
+  console.log(`       OCR_LLM_URL, OCR_LLM_TOKEN, OCR_LLM_MODEL  (your inference provider, OpenAI-compatible — runs in nanobots-ocr.yml on every PR)`);
+  if (cfg.actionsEnabled) {
+    console.log(`  3. Enable the Actions crons:`);
+    console.log(`       gh variable set NANOBOTS_OUTER_ENABLED --body 1 --repo ${cfg.owner}/${cfg.repo}`);
+    console.log(`       gh variable set NANOBOTS_WORKER_ENABLED --body 1 --repo ${cfg.owner}/${cfg.repo}`);
   }
+  console.log(`\n  Run \`npx nanobots-sh verify daytona\` once DAYTONA_API_KEY is set, before enabling the worker cron.`);
   if (coords) console.log(`\n  Board: https://github.com/orgs/${cfg.owner}/projects/${coords.projectNumber} (user account: check your projects tab)`);
   console.log(`\nStart the loop:  /loop in Claude Code with .nanobots/LOOP-PROMPT.md`);
   console.log(`             or:  npx nanobots-sh run outer\n`);
@@ -329,13 +345,42 @@ function cmdUpdate() {
   const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
   const values = templateValues(cfg);
   for (const entry of ENGINE_OWNED) writeRendered(d.root, entry, values, { overwrite: true });
-  if (cfg.outerWorkflowEnabled) {
-    writeRendered(d.root, { src: 'github/workflows/nanobots-outer.yml', dest: '.github/workflows/nanobots-outer.yml' }, values, { overwrite: true });
-  }
-  if (cfg.innerWorkflowManaged) {
-    writeRendered(d.root, { src: 'github/workflows/nanobots-inner.yml', dest: '.github/workflows/nanobots-inner.yml' }, values, { overwrite: true });
+  for (const entry of CONDITIONAL_ENGINE_OWNED) {
+    if (entry.when(cfg)) writeRendered(d.root, entry, values, { overwrite: true });
   }
   say('engine-owned files re-rendered. Repo-owned files (TRIAGE, RECIPES, LEARNINGS, config) untouched.');
+}
+
+// ── verify ───────────────────────────────────────────────────────────────────
+
+async function cmdVerify(target) {
+  if (target !== 'daytona') die('usage: nanobots verify daytona');
+  const apiKey = process.env.DAYTONA_API_KEY;
+  if (!apiKey) die('DAYTONA_API_KEY not set');
+  const base = process.env.DAYTONA_API_URL || 'https://app.daytona.io/api';
+  const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+
+  say('authenticating to Daytona...');
+  const listRes = await fetch(`${base}/sandbox`, { headers });
+  if (!listRes.ok) die(`connection failed: ${listRes.status} ${await listRes.text().catch(() => '')}`.slice(0, 300));
+  say('connection ok.');
+
+  say('creating a tagged proof sandbox...');
+  const createRes = await fetch(`${base}/sandbox`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ labels: { purpose: 'nanobots-verify' }, autoStopInterval: 5, autoDeleteInterval: 10 }),
+  });
+  if (!createRes.ok) die(`sandbox create failed: ${createRes.status} ${await createRes.text().catch(() => '')}`.slice(0, 300));
+  const sandbox = await createRes.json();
+  say(`sandbox ${sandbox.id} created.`);
+
+  say('deleting proof sandbox...');
+  const delRes = await fetch(`${base}/sandbox/${sandbox.id}`, { method: 'DELETE', headers });
+  if (!delRes.ok) warn(`cleanup failed for ${sandbox.id} — check the Daytona dashboard and delete it manually.`);
+  else say('deleted.');
+
+  say(`${c.cyan('daytona: ready')} — connection + lifecycle proof passed.`);
 }
 
 function cmdExtension() {
@@ -387,6 +432,9 @@ switch (command) {
   case 'extension':
     cmdExtension();
     break;
+  case 'verify':
+    await cmdVerify(args[args.indexOf('verify') + 1]);
+    break;
   case 'version':
     console.log(VERSION);
     break;
@@ -396,7 +444,8 @@ ${c.cyan('nanobots')} v${VERSION} — self-improving agent loops for any GitHub 
 
   nanobots init [--smart] [--no-github] [--yes]   scaffold this repo
   nanobots update                                  re-render engine-owned files
-  nanobots run <outer|worker>                      one headless cycle
+  nanobots run <outer|worker>                      one headless cycle (worker = Daytona sandbox)
+  nanobots verify daytona                          connection + lifecycle proof before enabling the worker cron
   nanobots extension                               copy the browser extension here (+ load steps)
   nanobots version
 

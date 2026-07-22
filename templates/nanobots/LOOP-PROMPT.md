@@ -28,16 +28,28 @@ disagree with them, propose an edit — don't silently deviate.
 3. **Triage.** Apply TRIAGE.md to every Inbox item: dedupe, classify, score, write the
    work-spec comment, set Priority/Size, move to Ready/Backlog/Blocked. Respect the hard
    gates — `{{HUMAN_LABEL}}` items get an escalation comment per the escalation recipe,
-   never dispatch.
+   never dispatch. If `.nanobots/config.json` has `approval.requireVersionedStart` on (the
+   default), items moving to Ready also get a **versioned plan**: post a `Plan ready`
+   comment with scope, out-of-scope, acceptance criteria, the gate commands, and a short
+   hash of that comment's normalized content. A worker will not claim the item until a
+   collaborator replies `/nanobots start <hash>` with the current hash — a stale hash (the
+   issue changed since) doesn't count, and requires a fresh plan + fresh approval. If
+   approval is off, Ready alone is enough to claim.
 
 4. **Review outcomes.** For each In Progress / In Review item:
-   - PR open + CI green + review clean → verify the acceptance criteria against the diff.
-     Merge S/M items that pass; L items or gated areas → request human review, move to
-     Verify.
-   - CI red or review found real issues → one specific, actionable comment on the PR
-     mentioning `@claude` with what to fix; leave In Progress.
-   - Stalled >48h with no PR → comment asking the worker to report state; if already asked
-     last cycle, move back to Ready and note the failure in LEARNINGS.
+   - PR open + CI green + OCR clean on the current head → verify the
+     acceptance criteria against the diff. Merge S/M items that pass; L items, hard-gate
+     areas, or anything touching `mergePolicy.protectedBranches` → request human review,
+     move to Verify. Re-fetch the PR head immediately before merging — a stale head means
+     a new commit landed after review; treat it as unreviewed and wait for the fresh check.
+   - CI red, OCR found blocking findings, or your own read of the diff found real issues →
+     one specific, actionable comment on the PR (`file:line — what to fix`, one per
+     finding) and move the item back to **Ready** so the next worker run remediates it
+     within the original scope; leave a note on the issue that this is round N of
+     remediation. If it's still failing after 3 rounds, escalate with `{{HUMAN_LABEL}}`
+     instead of looping forever.
+   - Stalled >48h with no PR → comment asking for state; if already asked last cycle, move
+     back to Ready and note the failure in LEARNINGS.
 
 5. **Learn.** For every item that reached Done (or died) since the last cycle, append a
    LEARNINGS.md entry. If ~10 undistilled entries have accumulated, run a distill pass:
@@ -51,15 +63,13 @@ disagree with them, propose an edit — don't silently deviate.
    extension agent picks the new guidance up on its next chat. This is how the intake
    itself self-improves.
 
-6. **Dispatch.** While In Progress count < {{WIP_CAP}} and Ready is non-empty: take the
-   top Ready item (Priority, then smallest Size) and post the dispatch comment on its
-   issue:
-   - `@claude` + the work spec (acceptance criteria, test expectations)
-   - the matching recipe from RECIPES.md, pasted inline
-   - any LEARNINGS lessons tagged for the touched subsystem
-   - "Open a PR with `Closes #N`. Gates before pushing: {{GATES_INLINE}}."
-   Move the item to In Progress. (If a local/VM worker already claimed it, it won't be in
-   Ready — claims move cards first.)
+6. **Dispatch.** Workers pull, they aren't pushed to: `.nanobots/daytona-worker.mjs`
+   (triggered by the scheduled `nanobots-worker.yml` cron, or run manually) claims the top
+   approved Ready item itself, respecting the same {{WIP_CAP}} you see on the board. This
+   step is a check, not an action: confirm In Progress isn't stuck above {{WIP_CAP}} (a
+   worker crash mid-run can leave a stale claim — see step 4) and that every Ready item
+   with an approved plan is actually claimable (not missing a recipe, not silently blocked
+   on something). Nothing to post here in the normal case.
 
 7. **Report.** Comment on the Nanobots Status issue: items moved (with issue numbers),
    dispatches, merges, escalations awaiting a human, lessons learned, and what next cycle
@@ -69,8 +79,10 @@ disagree with them, propose an edit — don't silently deviate.
 
 - Never write or push product code from this session; workers own code. (Docs-only commits
   to `.nanobots/*` and the agent instructions file during Learn are the one exception.)
-- Never merge anything touching a hard-gate area (see TRIAGE.md) — those wait for a human
-  regardless of CI.
+- Never merge anything touching a hard-gate area (see TRIAGE.md) or a protected branch —
+  those wait for a human regardless of CI/OCR.
+- Never merge against a stale PR head — always re-verify the current head SHA matches what
+  CI/OCR actually reviewed, immediately before merging.
 - Every action you take must be visible on GitHub (comment, label, board move). No private
   state.
 - If GitHub state contradicts these docs (e.g. board fields renamed), trust GitHub, finish
