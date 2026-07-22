@@ -21,9 +21,10 @@
 // See .nanobots/RUNTIMES.md "Security model" for what does and doesn't enter the sandbox,
 // and why the sandbox — not a separate relay — holds the GitHub token for this one run.
 
-import { execSync, spawnSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+import { createSandbox as daytonaCreateSandbox, execInSandbox as daytonaExecInSandbox, deleteSandbox as daytonaDeleteSandbox, redact } from './daytona-client.mjs';
 
 const c = {
   cyan: (s) => `\x1b[1;36m${s}\x1b[0m`,
@@ -65,24 +66,7 @@ const MODEL_ENV = Object.fromEntries(
     .map((k) => [k, process.env[k]]),
 );
 
-const DAYTONA_API = process.env.DAYTONA_API_URL || 'https://app.daytona.io/api';
 const RUN_ID = randomUUID();
-
-async function daytonaApi(method, path, body) {
-  const res = await fetch(`${DAYTONA_API}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${DAYTONA_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Daytona API ${method} ${path} -> ${res.status}: ${text.slice(0, 400)}`);
-  }
-  return res.status === 204 ? null : res.json();
-}
 
 // ── GitHub board helpers (same conventions as .nanobots/RUNTIMES.md) ───────────
 
@@ -172,47 +156,27 @@ function claim(number, projectNumber, statusField) {
   return true;
 }
 
-// ── Daytona sandbox lifecycle ───────────────────────────────────────────────────
+// ── Daytona sandbox lifecycle (shared helpers in daytona-client.mjs) ───────────
 
 async function createSandbox(number) {
-  const labels = {
-    owner: cfg.owner, repo: cfg.repo, issue: String(number), run: RUN_ID,
-  };
-  const body = {
-    snapshot: daytona.snapshot || undefined,
-    target: daytona.target || 'us',
+  const labels = { owner: cfg.owner, repo: cfg.repo, issue: String(number), run: RUN_ID };
+  say(`creating sandbox for #${number} (snapshot=${daytona.snapshot || 'provider default'}, target=${daytona.target || 'us'})...`);
+  return daytonaCreateSandbox(DAYTONA_API_KEY, {
     labels,
-    autoStopInterval: 15,
+    snapshot: daytona.snapshot,
+    target: daytona.target,
     autoDeleteInterval: daytona.autoDeleteMinutes ?? 60,
-  };
-  say(`creating sandbox for #${number} (snapshot=${body.snapshot ?? 'provider default'}, target=${body.target})...`);
-  const sandbox = await daytonaApi('POST', '/sandbox', body);
-  return sandbox.id;
+  });
 }
 
-async function execInSandbox(sandboxId, command, { cwd, timeout = 900, env } = {}) {
-  const result = await daytonaApi('POST', `/sandbox/${sandboxId}/toolbox/process/execute`, {
-    command, cwd, timeout, env,
-  });
-  return result; // { exitCode, result: <stdout+stderr> }
+async function execInSandbox(sandboxId, command, opts = {}) {
+  return daytonaExecInSandbox(DAYTONA_API_KEY, sandboxId, command, opts);
 }
 
 async function deleteSandbox(sandboxId) {
   if (!sandboxId) return;
-  try {
-    await daytonaApi('DELETE', `/sandbox/${sandboxId}`);
-    say(`sandbox ${sandboxId} deleted.`);
-  } catch (err) {
-    warn(`sandbox ${sandboxId} delete failed: ${err.message} — check the Daytona dashboard, provider auto-delete is a backstop only.`);
-  }
-}
-
-// Redact anything that looks like a credential before it ever reaches a GitHub comment.
-function redact(text) {
-  return (text ?? '')
-    .replace(/gh[pousr]_[A-Za-z0-9]{20,}/g, '[redacted-github-token]')
-    .replace(/(authorization|bearer|cookie)\s*:\s*\S+/gi, '$1: [redacted]')
-    .slice(0, 4000);
+  const ok = await daytonaDeleteSandbox(DAYTONA_API_KEY, sandboxId, { onWarn: warn });
+  if (ok) say(`sandbox ${sandboxId} deleted.`);
 }
 
 // ── main ─────────────────────────────────────────────────────────────────────

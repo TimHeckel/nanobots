@@ -41,7 +41,11 @@ for (const file of walk(TEMPLATES)) {
 }
 
 // Ownership expectations
-const engineOwned = ['LOOP-PROMPT.md', 'WORKER-PROMPT.md', 'RUNTIMES.md', 'run-cycle.sh', 'daytona-worker.mjs', 'ocr-review.mjs'];
+const engineOwned = [
+  'LOOP-PROMPT.md', 'WORKER-PROMPT.md', 'RUNTIMES.md', 'run-cycle.sh',
+  'daytona-client.mjs', 'daytona-worker.mjs',
+  'ocr-autofix-lib.mjs', 'open-code-review-report.mjs', 'ocr-autofix-worker.mjs', 'ocr-autofix-controller.mjs',
+];
 const repoOwned = ['TRIAGE.md', 'RECIPES.md', 'LEARNINGS.md'];
 for (const f of engineOwned) {
   assert.ok(readFileSync(join(TEMPLATES, 'nanobots', f), 'utf8').slice(0, 200).includes('engine-owned'), `${f} should be engine-owned`);

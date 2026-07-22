@@ -94,17 +94,93 @@ clearly marked injection point.
 Daytona worker — this is the second non-optional piece, for the same reason Daytona is
 required: without it there's no independent review to act on before merge. It runs as a
 **normal GitHub Actions job** on `nanobots:built` PRs — deliberately *not* inside the
-Daytona sandbox. OCR only reads a diff
-and calls an LLM; it doesn't need arbitrary code execution, so the ordinary isolation an
-Actions runner already gives you (ephemeral, one job, secrets scoped to that job) is
-sufficient, and skipping a second sandbox avoids inventing a relay service just to keep a
-model key out of a box that was already going to be destroyed.
+Daytona sandbox. OCR only reads a diff and calls an LLM; it doesn't need arbitrary code
+execution, so the ordinary isolation an Actions runner already gives you (ephemeral, one
+job, secrets scoped to that job) is sufficient, and skipping a second sandbox avoids
+inventing a relay service just to keep a model key out of a box that was already going to
+be destroyed.
 
-The workflow pins [Alibaba Open Code Review](https://github.com/alibaba/open-code-review)
-at `{{OCR_VERSION}}`, reviews the exact PR head SHA (never a branch name — a new commit
-invalidates the prior review), and posts one sticky comment plus a `nanobots/ocr` check.
-Blocking severities default to `{{OCR_BLOCKING_SEVERITIES}}`; anything at or above those
-holds the PR — the outer loop won't merge until the check is green on the *current* head.
+The workflow checks out the PR's **base** commit first, `persist-credentials: false` — the
+review/autofix scripts that judge a PR always come from the trusted base, never from the
+PR's own head, so a PR can't rewrite the code that reviews it. It pins
+[Alibaba Open Code Review](https://github.com/alibaba/open-code-review) at
+`{{OCR_VERSION}}`, reviews the exact PR head SHA (never a branch name — a new commit
+invalidates the prior review), and submits a real PR review — inline comments plus
+`APPROVE`/`REQUEST_CHANGES` (or `COMMENT` if `OCR_AUTO_REVIEW_EVENTS=false`) — bound to that
+SHA, plus a sticky summary comment. Blocking severities default to
+`{{OCR_BLOCKING_SEVERITIES}}`; anything at or above those fails the job, which **is** the
+`nanobots/ocr` check — the outer loop won't merge until it's green on the *current* head.
+The full finding list (fingerprinted, uncapped) is also written to a report artifact —
+that's what the autofix responder below reads.
+
+### Surgical autofix responder (opt-in — the one write-capable OCR piece)
+
+Set `OCR_AUTOFIX_ENABLED=true` (a GitHub Actions **variable**, not `config.json`) and every
+eligible `nanobots:built` PR gets its blocking findings evaluated by a second model, which
+proposes **exact, atomic text replacements** — never free-form patches or shell commands —
+validated mechanically before anything touches a file. This is optional because it's the
+one place besides the worker itself where something writes code; review alone (above) is
+always on regardless.
+
+**Eligible** means: same-repository PR (never a fork), not a draft, labeled
+`nanobots:built`, base branch not in `mergePolicy.protectedBranches`, and under the round
+cap (`OCR_AUTOFIX_MAX_ROUNDS`, default 3, tracked in a sticky `nanobots:ocr-responder-state`
+comment so reruns on the same head are idempotent — see `.nanobots/ocr-autofix-controller.mjs`).
+Protected paths (`.github/**`, `.nanobots/**`, lockfiles, and anything your `config.json`
+`ocr.autofix.protectedPaths` adds) always come back `needs_human`, never a patch — same for
+anything the model itself isn't confident about.
+
+Flow, in order: the controller (Actions runner) resolves eligibility and the fixer model
+config, provisions one disposable Daytona sandbox, clones the exact reviewed SHA into it,
+hands it a bounded input (findings + policy + caps, never secrets beyond the fixer
+credential), and the **worker inside that sandbox** — `.nanobots/ocr-autofix-worker.mjs` —
+groups findings by file, builds bounded excerpts (no whole-file sends, no file-size gate:
+large files just mean more/bigger excerpts), calls the fixer model, validates every
+proposed replacement (exact match, unique in the complete original file, inside a permitted
+excerpt, no overlaps — see `.nanobots/ocr-autofix-lib.mjs`), applies a file's edits
+atomically (one invalid edit rejects that whole file's batch), runs your configured gates,
+and — only if gates pass and the remote head still matches what it started from — pushes
+**exactly one repair commit**. The controller then replies to and resolves the `fixed`/
+`false_positive` review threads (evidence attached), leaves `needs_human` threads open, and
+explicitly dispatches the next OCR round for the new head (a bot-authored push doesn't
+recursively trigger workflows, so this is deliberate, not automatic).
+
+### Autofix credential placement (the threat boundary that matters)
+
+| Credential | Where | Never here |
+|---|---|---|
+| `DAYTONA_API_KEY` | Actions controller only | the sandbox |
+| `OCR_LLM_TOKEN` (reviewer) | the review step's env only | the autofix step's env, the sandbox |
+| `OCR_AUTOFIX_TOKEN` (fixer, falls back to `OCR_LLM_TOKEN`) | injected into the remediation sandbox for one run | anywhere durable |
+| GitHub push credential | the Actions job's own `github.token`, embedded in the sandbox's git remote URL for one run | outside that one clone |
+
+The push credential is deliberately the workflow's own scoped, ephemeral `github.token` —
+not a separate PAT — which GitHub already refuses to use against fork PRs, so "same-repo
+only" is enforced by GitHub itself, not by application logic alone. It's still injected into
+a disposable sandbox for the run's duration (same tradeoff as the worker's `GH_TOKEN`, see
+"Security model" above), destroyed with the sandbox seconds later.
+
+### Model configuration reference
+
+Reviewer and fixer resolve **independently**; DeepSeek V4 Flash is the shared no-override
+default for both. Precedence: `workflow_dispatch` input → GitHub variable/secret →
+`config.json` policy → safe default.
+
+| GitHub variable | Default | Meaning |
+|---|---|---|
+| `OCR_LLM_URL` | `https://api.deepseek.com/chat/completions` | reviewer endpoint |
+| `OCR_LLM_MODEL` | `deepseek-v4-flash` | reviewer model |
+| `OCR_AUTOFIX_MODEL` | falls back to `OCR_LLM_MODEL`, then the default | fixer model |
+| `OCR_AUTOFIX_URL` | falls back to `OCR_LLM_URL`, then the default | fixer endpoint |
+| `OCR_AUTOFIX_ENABLED` | `false` unless exactly `true` | the one write-capable switch |
+| `OCR_AUTOFIX_MAX_ROUNDS` | `3` (or `config.json` `ocr.maxRounds`) | autonomous round cap per PR |
+| `OCR_AUTOFIX_MAX_FINDINGS` / `_MAX_FILES` / `_MAX_CHANGED_LINES` | `80` / `20` / `250` | per-round caps |
+| `OCR_AUTOFIX_CONTEXT_LINES` / `_MAX_EXCERPT_CHARS` | `80` / `24000` | excerpt bounds sent to the model |
+| `OCR_AUTOFIX_VALIDATION_COMMAND` | your `config.json` gates | trusted maintainer override |
+
+Secrets: `OCR_LLM_TOKEN` (required for review), `OCR_AUTOFIX_TOKEN` (optional, falls back to
+`OCR_LLM_TOKEN`). URLs must be HTTPS; model IDs are validated for shape only, never against
+a hardcoded list, since they're endpoint-specific.
 
 ## Disposable database (optional, per-repo)
 
@@ -163,8 +239,10 @@ npx nanobots-sh run worker
 
 Same prompts, same claims, same PRs, same sandbox — the board can't tell. Recommended
 split: cheap models for **workers** (start on `Size: S` items; widen if the merge rate
-holds — the PR gates and OCR (if enabled) catch their misses), a frontier model for the
-**outer loop**, where triage/merge/distill judgment compounds.
+holds — the PR gates and OCR catch their misses), a frontier model for the **outer loop**,
+where triage/merge/distill judgment compounds. The OCR reviewer/fixer models are configured
+separately (see "Model configuration reference" above) — they don't have to match whatever
+runs the outer loop or workers.
 
 ## Worker engine is swappable
 
@@ -178,9 +256,14 @@ the outer loop reviews the resulting PR the same way either way.
 
 - No location-specific branches in prompts beyond capability degradation (the Actions
   outer run models this: "no local/prod access → escalate instead").
-- Secrets never in the repo; the outer loop's two env vars, plus `DAYTONA_API_KEY` on
-  whatever triggers `run worker`.
-- A sandbox is deleted in `daytona-worker.mjs`'s `finally` block, always — a runtime that
-  dies mid-cycle leaves no sandbox behind and no cleanup debt.
+- Secrets never in the repo; the outer loop's two env vars, `DAYTONA_API_KEY` on whatever
+  triggers `run worker`, and `OCR_LLM_TOKEN` (+ optional `OCR_AUTOFIX_TOKEN`) on the OCR
+  workflow only.
+- A sandbox is deleted in `daytona-worker.mjs`'s / `ocr-autofix-controller.mjs`'s `finally`
+  block, always — a runtime that dies mid-cycle leaves no sandbox behind and no cleanup
+  debt. Provider auto-delete is a backstop, never the primary cleanup path.
 - Logs shown in GitHub comments are sanitized: no tokens, no `Authorization`/cookie
   headers, no raw unbounded terminal output.
+- A failed or malformed OCR review, a failed autofix validation, or a stale head never
+  counts as clean — see `.nanobots/open-code-review-report.mjs` and
+  `.nanobots/ocr-autofix-worker.mjs`.

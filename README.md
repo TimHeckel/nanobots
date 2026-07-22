@@ -82,9 +82,23 @@ Copilot's coding agent, Codex, or OpenHands can run inside the same sandbox cont
 **Every PR gets an OCR review — required, not optional.** `nanobots:built` PRs get a
 bounded [Open Code Review](https://github.com/alibaba/open-code-review) pass on the exact
 PR head, run as a normal Actions job — not inside Daytona, since it only reads a diff and
-calls an LLM. Critical/high findings block merge until addressed or a human overrides.
-Isolated execution without an independent review of the result is only half the safety
-story; this is the other half.
+calls an LLM. It submits a real GitHub review (inline comments + approve/request-changes)
+and writes a fingerprinted, machine-readable report. Critical/high findings block merge
+until addressed or a human overrides. Isolated execution without an independent review of
+the result is only half the safety story; this is the other half.
+
+**Optional: a surgical autofix responder.** Set `OCR_AUTOFIX_ENABLED=true` and eligible
+PRs (same-repo, non-draft, `nanobots:built`) get their blocking findings evaluated by a
+second model that proposes exact, atomic text replacements — never free-form patches or
+shell commands — validated mechanically (unique match in the real file, inside what the
+model was actually shown, no overlaps) before anything touches a file. The fix runs inside
+its own disposable Daytona sandbox, same as the worker; if your gates pass and the PR head
+hasn't moved, it pushes one repair commit, resolves the threads it fixed, and triggers a
+fresh OCR round — capped at 3 rounds per PR by default. Anything the model isn't sure
+about, or that touches a protected path (`.github/**`, `.nanobots/**`, lockfiles, auth,
+migrations, infra), comes back `needs_human` instead of a patch. Reviewer and fixer models
+are configured independently — DeepSeek V4 Flash is the shared default for both if you
+don't override either.
 
 ## How the learning works
 
@@ -102,6 +116,9 @@ The loop's policy documents are its weights; GitHub history is the training log.
   **classic** PAT (`project` + `repo`) from a **human** account (the default `GITHUB_TOKEN`
   cannot touch org Projects v2 at all), `DAYTONA_API_KEY`, and an OpenAI-compatible
   inference endpoint/key for OCR: `OCR_LLM_URL` / `OCR_LLM_TOKEN` / `OCR_LLM_MODEL`.
+- Optional, only for the autofix responder: `OCR_AUTOFIX_ENABLED=true` plus
+  `OCR_AUTOFIX_MODEL` / `OCR_AUTOFIX_URL` / `OCR_AUTOFIX_TOKEN` (each falls back to the
+  matching `OCR_LLM_*` reviewer setting, so a one-provider setup needs nothing extra).
 
 ## Commands
 

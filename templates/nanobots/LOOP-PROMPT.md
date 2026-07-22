@@ -36,18 +36,34 @@ disagree with them, propose an edit — don't silently deviate.
    issue changed since) doesn't count, and requires a fresh plan + fresh approval. If
    approval is off, Ready alone is enough to claim.
 
-4. **Review outcomes.** For each In Progress / In Review item:
-   - PR open + CI green + OCR clean on the current head → verify the
-     acceptance criteria against the diff. Merge S/M items that pass; L items, hard-gate
-     areas, or anything touching `mergePolicy.protectedBranches` → request human review,
-     move to Verify. Re-fetch the PR head immediately before merging — a stale head means
-     a new commit landed after review; treat it as unreviewed and wait for the fresh check.
-   - CI red, OCR found blocking findings, or your own read of the diff found real issues →
-     one specific, actionable comment on the PR (`file:line — what to fix`, one per
-     finding) and move the item back to **Ready** so the next worker run remediates it
-     within the original scope; leave a note on the issue that this is round N of
-     remediation. If it's still failing after 3 rounds, escalate with `{{HUMAN_LABEL}}`
-     instead of looping forever.
+4. **Review outcomes.** For each In Progress / In Review item, read the PR's checks and the
+   `nanobots:ocr-responder-state` comment (if present) to tell these OCR states apart —
+   they need different reactions, not one generic "CI red, do something":
+   - **OCR still running** (no conclusion on the current head yet) → leave it, check again
+     next cycle.
+   - **Clean on the current head** (OCR check green) + CI green → verify the acceptance
+     criteria against the diff. Merge S/M items that pass; L items, hard-gate areas, or
+     anything touching `mergePolicy.protectedBranches` → request human review, move to
+     Verify. Re-fetch the PR head immediately before merging — a stale head means a new
+     commit landed after review; treat it as unreviewed and wait for the fresh check. An
+     autofix summary is evidence, not a merge gate by itself — CI and OCR must both be
+     green on the *exact current head* regardless of what the responder reported.
+   - **Blocking, and the responder-state comment shows a round in progress** (`status` is
+     not yet terminal, or a fresh round was just dispatched) → do **not** dispatch a normal
+     worker to "fix" this PR too; the surgical responder owns this round. Leave it and
+     re-check next cycle.
+   - **Blocking, responder stopped with `needs_human` findings or hit the round cap**
+     (`OCR_AUTOFIX_MAX_ROUNDS`, default 3) → the responder already did what it safely
+     could. Post one comment summarizing what's left unresolved and why (protected path,
+     model uncertainty, round cap), apply `{{HUMAN_LABEL}}`, move to Blocked.
+   - **Blocking, `validation_failed`** (the repair broke a gate) → post the exact failing
+     gate from the state comment, apply `{{HUMAN_LABEL}}`, move to Blocked — do not retry
+     automatically past what the responder itself already bounded.
+   - **Blocking and no autofix ran at all** (autofix disabled, or a plain review-only
+     issue) → one specific, actionable comment on the PR (`file:line — what to fix`, one
+     per finding) and move the item back to **Ready** so the next worker run remediates it
+     within the original scope; note this is round N of remediation. Still failing after 3
+     rounds → escalate with `{{HUMAN_LABEL}}` instead of looping forever.
    - Stalled >48h with no PR → comment asking for state; if already asked last cycle, move
      back to Ready and note the failure in LEARNINGS.
 

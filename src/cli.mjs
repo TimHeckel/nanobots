@@ -91,8 +91,12 @@ const ENGINE_OWNED = [
   { src: 'nanobots/WORKER-PROMPT.md', dest: '.nanobots/WORKER-PROMPT.md' },
   { src: 'nanobots/RUNTIMES.md', dest: '.nanobots/RUNTIMES.md' },
   { src: 'nanobots/run-cycle.sh', dest: '.nanobots/run-cycle.sh', exec: true },
+  { src: 'nanobots/daytona-client.mjs', dest: '.nanobots/daytona-client.mjs' },
   { src: 'nanobots/daytona-worker.mjs', dest: '.nanobots/daytona-worker.mjs' },
-  { src: 'nanobots/ocr-review.mjs', dest: '.nanobots/ocr-review.mjs' },
+  { src: 'nanobots/ocr-autofix-lib.mjs', dest: '.nanobots/ocr-autofix-lib.mjs' },
+  { src: 'nanobots/open-code-review-report.mjs', dest: '.nanobots/open-code-review-report.mjs' },
+  { src: 'nanobots/ocr-autofix-worker.mjs', dest: '.nanobots/ocr-autofix-worker.mjs' },
+  { src: 'nanobots/ocr-autofix-controller.mjs', dest: '.nanobots/ocr-autofix-controller.mjs' },
   { src: 'github/workflows/nanobots-ocr.yml', dest: '.github/workflows/nanobots-ocr.yml' },
   { src: 'github/ISSUE_TEMPLATE/feature-request.yml', dest: '.github/ISSUE_TEMPLATE/feature-request.yml' },
   { src: 'github/ISSUE_TEMPLATE/bug-report.yml', dest: '.github/ISSUE_TEMPLATE/bug-report.yml' },
@@ -273,7 +277,13 @@ async function cmdInit(flags) {
     ocr: {
       version: 'v1.7.12',
       blockingSeverities: ['critical', 'high'],
-      maxRounds: 2,
+      maxRounds: 3,
+      autofix: {
+        // Narrows the autofix responder's protected-surface list beyond the built-in
+        // defaults (.github/**, .nanobots/**, lockfiles, etc. — see RUNTIMES.md). Repo
+        // policy can only narrow eligibility further, never widen past the built-ins.
+        protectedPaths: [],
+      },
     },
     approval: {
       requireVersionedStart: true,
@@ -318,19 +328,27 @@ async function cmdInit(flags) {
   }
 
   // Checklist
+  const nwo = `${cfg.owner}/${cfg.repo}`;
   console.log(`\n${c.cyan('Done.')} Remaining manual steps:\n`);
   console.log(`  1. Project → Workflows (GitHub UI): enable "Auto-add to project" with filter:`);
-  console.log(`       is:issue is:open label:nanobots:inbox   (repo: ${cfg.owner}/${cfg.repo})`);
+  console.log(`       is:issue is:open label:nanobots:inbox   (repo: ${nwo})`);
   console.log(`     set "Item added to project" → Status: Inbox; verify "Issue closed"/"PR merged" → Done.`);
-  console.log(`  2. Secrets (all required — workers always build in a Daytona sandbox, and every PR gets an OCR review):`);
-  console.log(`       CLAUDE_CODE_OAUTH_TOKEN  (claude setup-token)`);
-  console.log(`       PROJECTS_PAT             (CLASSIC PAT: project + repo scopes, human account)`);
-  console.log(`       DAYTONA_API_KEY          (daytona.io → API keys — controller-side only, never enters the sandbox)`);
-  console.log(`       OCR_LLM_URL, OCR_LLM_TOKEN, OCR_LLM_MODEL  (your inference provider, OpenAI-compatible — runs in nanobots-ocr.yml on every PR)`);
+  console.log(`  2. Required — outer loop + worker (Daytona is not optional):`);
+  console.log(`       gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo ${nwo}   (claude setup-token)`);
+  console.log(`       gh secret set PROJECTS_PAT --repo ${nwo}              (CLASSIC PAT: project + repo scopes, human account)`);
+  console.log(`       gh secret set DAYTONA_API_KEY --repo ${nwo}           (daytona.io → API keys — controller-side only, never enters the sandbox)`);
+  console.log(`  3. Required — OCR review (every nanobots:built PR, no opt-out):`);
+  console.log(`       gh secret set OCR_LLM_TOKEN --repo ${nwo}`);
+  console.log(`       gh variable set OCR_LLM_URL --body https://api.deepseek.com/chat/completions --repo ${nwo}`);
+  console.log(`       gh variable set OCR_LLM_MODEL --body deepseek-v4-flash --repo ${nwo}`);
+  console.log(`  4. Optional — surgical autofix responder (writes code, only inside Daytona; leave unset to stay review-only):`);
+  console.log(`       gh secret set OCR_AUTOFIX_TOKEN --repo ${nwo}        (falls back to OCR_LLM_TOKEN if unset)`);
+  console.log(`       gh variable set OCR_AUTOFIX_MODEL --body deepseek-v4-flash --repo ${nwo}   (falls back to OCR_LLM_MODEL)`);
+  console.log(`       gh variable set OCR_AUTOFIX_ENABLED --body true --repo ${nwo}`);
   if (cfg.actionsEnabled) {
-    console.log(`  3. Enable the Actions crons:`);
-    console.log(`       gh variable set NANOBOTS_OUTER_ENABLED --body 1 --repo ${cfg.owner}/${cfg.repo}`);
-    console.log(`       gh variable set NANOBOTS_WORKER_ENABLED --body 1 --repo ${cfg.owner}/${cfg.repo}`);
+    console.log(`  5. Enable the Actions crons:`);
+    console.log(`       gh variable set NANOBOTS_OUTER_ENABLED --body 1 --repo ${nwo}`);
+    console.log(`       gh variable set NANOBOTS_WORKER_ENABLED --body 1 --repo ${nwo}`);
   }
   console.log(`\n  Run \`npx nanobots-sh verify daytona\` once DAYTONA_API_KEY is set, before enabling the worker cron.`);
   if (coords) console.log(`\n  Board: https://github.com/orgs/${cfg.owner}/projects/${coords.projectNumber} (user account: check your projects tab)`);

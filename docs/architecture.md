@@ -29,6 +29,13 @@ deliberate signal source — not a bottleneck. Inspired by
 7. **Every PR gets reviewed, always.** OCR runs on every `nanobots:built` PR, not just the
    ones a repo opted into. Isolated execution without an independent review of what came
    out of it is only half the safety story — this is the other, non-optional half.
+8. **The one opt-in write path is bounded, atomic, and re-verified at every step.** The
+   surgical autofix responder (`OCR_AUTOFIX_ENABLED`) is optional because it's the second
+   place — besides the worker — that writes code. Everything about it is narrower than the
+   worker: only exact, mechanically-validated text replacements (never free-form patches or
+   shell commands), only for findings OCR already flagged, only inside its own disposable
+   Daytona sandbox, capped at 3 rounds per PR, and re-checked against the live PR head
+   before every push and before every thread resolution.
 
 ## GitHub surface mapping
 
@@ -42,8 +49,9 @@ deliberate signal source — not a bottleneck. Inspired by
 | Dispatch | Pull, not push: `.nanobots/daytona-worker.mjs` claims the top approved Ready item itself, from a scheduled cron or a manual run |
 | Execution | A disposable Daytona sandbox per item — see `.nanobots/RUNTIMES.md` |
 | Execution audit | Branch + PR per item, linked `Closes #N`, label `nanobots:built` |
-| Review gate | Every `nanobots:built` PR gets a bounded [Open Code Review](https://github.com/alibaba/open-code-review) pass, run as a normal Actions job on the exact PR head — required, no opt-out |
-| Human gates | `summon-human` label + assignment; PR review for L-sized items, protected branches, and hard-gate areas |
+| Review gate | Every `nanobots:built` PR gets a bounded [Open Code Review](https://github.com/alibaba/open-code-review) pass — inline review comments + approve/request-changes, fingerprinted machine-readable report — run as a normal Actions job on the exact PR head — required, no opt-out |
+| Autofix (optional) | `nanobots:ocr-responder-state` sticky comment tracks round count/status per PR; eligible findings get exact replacements from a disposable Daytona remediation sandbox, one repair commit per round, threads resolved with evidence |
+| Human gates | `summon-human` label + assignment; PR review for L-sized items, protected branches, hard-gate areas, and anything autofix marks `needs_human` |
 | Learning | `.nanobots/LEARNINGS.md` (append-only) → distilled into TRIAGE/RECIPES/instructions |
 | Loop heartbeat | Pinned **Nanobots Status** issue — one short report per cycle |
 
@@ -93,3 +101,20 @@ See [research/](research/) for the full reports.
 - **Watch list**: GitHub Agentic Workflows (`gh-aw`) as a possible outer-workflow
   replacement; Claude Code Routines as a laptop-free hosted runtime; the pi-autoresearch
   keep/revert pattern for metric-gated work (perf, bundle size, coverage).
+- **The autofix responder's push credential is the workflow's own `github.token`, not a
+  PAT.** Unlike the worker (which needs the board-wide `PROJECTS_PAT` since it operates
+  across the whole repo's Projects v2 state), autofix only ever needs to push to one
+  same-repo PR branch — a scope GitHub's own ephemeral, job-scoped token already covers,
+  and which GitHub itself refuses to grant against fork PRs. That's a stronger boundary
+  than application logic re-deriving "same repo only" itself, and it comes for free.
+- **Autofix's review/report/controller scripts are checked out from the PR's base commit,
+  never its head.** A PR that could rewrite the code judging it would defeat the whole
+  review; the workflow resolves PR metadata via `gh pr view` before checkout so nothing
+  trusted ever runs from PR-controlled source, with `persist-credentials: false` on that
+  checkout since nothing there needs to push.
+- **Exact-replacement patches, not agent-driven file edits.** The autofix worker is
+  deliberately not "run another coding agent in a loop" — it's a single bounded call per
+  file that returns structured dispositions and literal `oldText`/`newText` pairs, checked
+  mechanically (unique in the real file, inside a shown excerpt, no overlaps) before
+  anything is written. Cheaper, auditable, and it can't invent scope the finding didn't ask
+  for.

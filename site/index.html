@@ -211,6 +211,10 @@ flowchart LR
       <p>Every <code>nanobots:built</code> PR gets a bounded Open Code Review pass on the exact head SHA, run as a normal Actions job — required, not optional. Critical/high findings hold the merge.</p>
     </div>
     <div class="card">
+      <h3>surgical autofix <span class="dim">(optional)</span></h3>
+      <p>Set <code>OCR_AUTOFIX_ENABLED=true</code> and eligible findings get exact, mechanically-validated text replacements from a second disposable Daytona sandbox — one repair commit per round, capped at 3 rounds, protected paths always come back <code>needs_human</code>.</p>
+    </div>
+    <div class="card">
       <h3>learning</h3>
       <p>Every finished item appends to <code>LEARNINGS.md</code>; distill passes promote durable lessons into the rubric and recipes. The policy docs are the loop's weights; GitHub history is the training log.</p>
     </div>
