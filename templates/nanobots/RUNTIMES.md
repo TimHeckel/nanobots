@@ -21,6 +21,12 @@ A process that:
    `ANTHROPIC_AUTH_TOKEN` + `_BASE_URL` + `_MODEL` — see "Swapping the brain"),
 4. runs `.nanobots/LOOP-PROMPT.md` for **one cycle** and exits.
 
+**Running in GitHub Actions additionally requires the [Claude Code GitHub App](https://github.com/apps/claude)
+installed on the repository.** `nanobots-outer.yml` uses `anthropics/claude-code-action`, which
+refuses to run without it — every cycle fails with "Claude Code is not installed on this
+repository" no matter how the secrets are set. Laptop and VM runs do not need it, since they
+invoke the `claude` CLI directly.
+
 | Where | How |
 |---|---|
 | Laptop (interactive) | `/loop` in Claude Code with `.nanobots/LOOP-PROMPT.md` |

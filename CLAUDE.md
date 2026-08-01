@@ -76,7 +76,9 @@ board is the kanban, PRs are the audit trail, a pinned issue is the heartbeat:
 
 ## Requirements for the installed loop
 
-`gh` authenticated with the `project` scope; a Daytona account + `DAYTONA_API_KEY`
+the [Claude Code GitHub App](https://github.com/apps/claude) installed on the repo (required
+for the Actions outer loop — `claude-code-action` fails without it); `gh` authenticated with
+the `project` scope; a Daytona account + `DAYTONA_API_KEY`
 (required — there is no local worker mode); a **classic** `PROJECTS_PAT` (project + repo + read:org,
 human account — the default `GITHUB_TOKEN` cannot touch org Projects v2); and the OCR
 inference endpoint (`OCR_LLM_*`).
