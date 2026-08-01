@@ -78,13 +78,31 @@ if (APP.partial) {
   // believes the App is live while the PAT is silently doing the work.
   warn(`GitHub App partially configured (missing: ${APP.missing.join(', ')}) — treating as UNCONFIGURED and falling back to GH_TOKEN.`);
 }
+// A custom engine brings its own credential, so the Claude-specific check only applies to the
+// default engine. Billing is the credential you supply, never a mode: CLAUDE_CODE_OAUTH_TOKEN
+// is a subscription, ANTHROPIC_API_KEY is metered, and another provider's key is another
+// engine entirely. See RUNTIMES.md "Worker engine is swappable".
+const WORKER_CMD = process.env.NANOBOTS_WORKER_CMD || '';
 const MODEL_CREDS = ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN']
   .filter((k) => process.env[k]);
-if (MODEL_CREDS.length === 0) die('need CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY, or ANTHROPIC_AUTH_TOKEN');
-// Anthropic-compatible provider swap (see RUNTIMES.md "Swapping the brain") rides along
-// with ANTHROPIC_AUTH_TOKEN if set — forward it into the sandbox too.
+if (!WORKER_CMD && MODEL_CREDS.length === 0) {
+  die('need CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY, or ANTHROPIC_AUTH_TOKEN (or set NANOBOTS_WORKER_CMD to use a different engine)');
+}
+// Extra credentials a custom engine needs, named in NANOBOTS_WORKER_ENV (comma-separated).
+// An explicit allowlist, not a blanket forward: the sandbox must never inherit the
+// controller's whole environment — DAYTONA_API_KEY and the App private key live there.
+const EXTRA_ENV = (process.env.NANOBOTS_WORKER_ENV || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+const FORBIDDEN_FORWARD = new Set([
+  'DAYTONA_API_KEY', 'NANOBOTS_GITHUB_APP_PRIVATE_KEY', 'NANOBOTS_GITHUB_APP_ID',
+  'NANOBOTS_GITHUB_APP_INSTALLATION_ID',
+]);
+for (const k of EXTRA_ENV) {
+  if (FORBIDDEN_FORWARD.has(k)) die(`refusing to forward ${k} into the sandbox — it is controller-only (see RUNTIMES.md "Security model")`);
+}
 const MODEL_ENV = Object.fromEntries(
-  [...MODEL_CREDS, 'ANTHROPIC_BASE_URL', 'ANTHROPIC_MODEL', 'ANTHROPIC_SMALL_FAST_MODEL']
+  [...MODEL_CREDS, 'ANTHROPIC_BASE_URL', 'ANTHROPIC_MODEL', 'ANTHROPIC_SMALL_FAST_MODEL',
+    ...(WORKER_CMD ? ['NANOBOTS_WORKER_CMD'] : []), ...EXTRA_ENV]
     .filter((k) => process.env[k])
     .map((k) => [k, process.env[k]]),
 );

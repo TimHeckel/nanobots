@@ -21,6 +21,14 @@ A process that:
    `ANTHROPIC_AUTH_TOKEN` + `_BASE_URL` + `_MODEL` — see "Swapping the brain"),
 4. runs `.nanobots/LOOP-PROMPT.md` for **one cycle** and exits.
 
+**In GitHub Actions, `claude-code-action` needs a GitHub credential passed as its
+`github_token` INPUT** — not as a `GH_TOKEN` env var. With no input token it falls back to
+requiring the [Claude Code GitHub App](https://github.com/apps/claude) and fails every run
+with "Claude Code is not installed on this repository", which reads like a missing
+prerequisite but is really a wiring mistake. `nanobots-outer.yml` passes `PROJECTS_PAT` as
+that input, so the App is **not** required. Installing the App instead is a valid
+alternative. Laptop and VM runs are unaffected — they invoke the CLI directly.
+
 | Where | How |
 |---|---|
 | Laptop (interactive) | `/loop` in Claude Code with `.nanobots/LOOP-PROMPT.md` |
@@ -350,6 +358,26 @@ separately (see "Model configuration reference" above) — they don't have to ma
 runs the outer loop or workers.
 
 ## Worker engine is swappable
+
+Claude Code is the shipped default, not a requirement. A worker is anything that reads a
+work-spec and opens a PR with `Closes #N`, so Codex, Copilot's coding agent, OpenHands,
+aider, or a local model server all satisfy the same contract.
+
+Bind it with two repo **variables** (no code changes):
+
+| Variable | Meaning |
+|---|---|
+| `NANOBOTS_WORKER_CMD` | Shell command to run instead of `claude -p`. Gets the prompt on **stdin** and at `$NANOBOTS_PROMPT_FILE`, with the repo checked out as the working directory. |
+| `NANOBOTS_WORKER_ENV` | Comma-separated names of extra secrets to forward into the sandbox (e.g. `OPENAI_API_KEY`). |
+
+**Billing is the credential you supply, not a mode.** `CLAUDE_CODE_OAUTH_TOKEN` runs the
+default engine on a Claude Pro/Max **subscription**; `ANTHROPIC_API_KEY` runs it **metered**;
+any other provider's key runs a different engine entirely. Nothing else changes.
+
+`NANOBOTS_WORKER_ENV` is an explicit allowlist, never a blanket forward — the sandbox must
+not inherit the controller's environment. Naming `DAYTONA_API_KEY` or any
+`NANOBOTS_GITHUB_APP_*` value is refused outright: those are controller-only, and a worker
+that could read the App private key could mint its own credentials.
 
 A "worker" is anything that can read the issue's work-spec comment, run inside the
 sandbox `daytona-worker.mjs` provisions, and open a PR with `Closes #N`. Claude Code is

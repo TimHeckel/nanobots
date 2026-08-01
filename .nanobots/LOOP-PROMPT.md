@@ -30,8 +30,19 @@ disagree with them, propose an edit — don't silently deviate.
    gates — `summon-human` items get an escalation comment per the escalation recipe,
    never dispatch. If `.nanobots/config.json` has `approval.requireVersionedStart` on (the
    default), items moving to Ready also get a **versioned plan**: post a `Plan ready`
-   comment with scope, out-of-scope, acceptance criteria, the gate commands, and a short
-   hash of that comment's normalized content. A worker will not claim the item until a
+   comment with scope, out-of-scope, acceptance criteria, and the gate commands, and end
+   that comment with this **exact** machine-readable marker on its own final line:
+
+   ```
+   <!-- nanobots:plan issue=<N> hash=<12 lowercase hex chars> -->
+   ```
+
+   where the hash is the first 12 hex characters of the sha256 of everything above the
+   marker. **The marker is mandatory and its shape is not negotiable** —
+   `daytona-worker.mjs` finds the plan with a literal regex, so a plan comment that only
+   mentions the hash in prose can never be claimed, no matter how many approvals it
+   collects. Write the marker even if you also state the hash in human-readable text.
+   A worker will not claim the item until a
    collaborator replies `/nanobots start <hash>` with the current hash — a stale hash (the
    issue changed since) doesn't count, and requires a fresh plan + fresh approval. If
    approval is off, Ready alone is enough to claim.
@@ -99,8 +110,8 @@ disagree with them, propose an edit — don't silently deviate.
 
 6. **Dispatch.** Workers pull, they aren't pushed to: `.nanobots/daytona-worker.mjs`
    (triggered by the scheduled `nanobots-worker.yml` cron, or run manually) claims the top
-   approved Ready item itself, respecting the same 2 you see on the board. This
-   step is a check, not an action: confirm In Progress isn't stuck above 2 (a
+   approved Ready item itself, respecting the same 1 you see on the board. This
+   step is a check, not an action: confirm In Progress isn't stuck above 1 (a
    worker crash mid-run can leave a stale claim — see step 4) and that every Ready item
    with an approved plan is actually claimable (not missing a recipe, not silently blocked
    on something). Nothing to post here in the normal case.
