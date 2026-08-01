@@ -19,6 +19,32 @@ Entry format:
 
 ---
 
+## 2026-08-01 — `main` CI red turned out to be a transient DeepSeek flake, not a regression
+- **Outcome:** n/a (a policy judgment call during Sync, not a dispatched item; filed #5 to
+  propose hardening the rule)
+- **What worked / what didn't:** Cycle 3's Sync step found `main` CI red on head `a2c7e14`
+  (only the `onboarding-agent` job, `fetch failed` calling the live DeepSeek endpoint).
+  LOOP-PROMPT.md says red CI becomes a P0 Inbox item immediately — a literal read means
+  file it now. Instead: checked the last 14 CI runs on `main` (all green), checked that
+  `a2c7e14`'s diff (CI/workflow/docs only) doesn't plausibly touch the onboarding agent's
+  fetch path, then ran `gh run rerun --failed` on the same commit with no code change — it
+  came back green. That combination (single external-API-dependent job, network-shaped
+  error, unrelated diff, clean rerun) is strong evidence of a live-endpoint blip, not a
+  regression. Filing a P0 at that point would have paged the maintainer about an issue that
+  had already resolved itself.
+- **Lesson:** `tests/init-agent.e2e.mjs` (tier 1, `docs/e2e-harness.md`) deliberately calls
+  a **real** external endpoint on every push, so it will occasionally flake for reasons that
+  have nothing to do with the commit under test. A rule with no room for that judgment call
+  will eventually cry wolf on every DeepSeek hiccup. Per LOOP-PROMPT.md's own instruction
+  ("if you disagree, propose an edit — don't silently deviate"), did not just skip the P0
+  filing silently: opened issue #5 proposing a narrowed rule (one confirming rerun before
+  P0, only when the sole red job is external-API-shaped and the diff doesn't explain it),
+  hard-gated to `summon-human` since it touches `templates/**`. The actual red-CI event this
+  cycle was still handled by hand immediately (investigated within the same cycle, confirmed
+  green) — the escalation is about hardening the *policy*, not about leaving this instance
+  unresolved.
+- **Applies to:** triage | prompt
+
 ## 2026-08-01 — #2 plan comment was missing the mandatory machine-readable marker
 - **Outcome:** n/a (caught during cycle 2's review-outcomes read, not a dispatched item;
   issue #2 is still Ready, not yet Done)
