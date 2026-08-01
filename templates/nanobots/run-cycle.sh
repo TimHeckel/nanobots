@@ -52,9 +52,33 @@ else
   PERM_ARGS+=(--permission-mode acceptEdits)
 fi
 
-exec claude -p "$(cat "$PROMPT_FILE")
+# The agent gets the prompt plus the one-shot contract. Written to a file so any engine can
+# read it, however it prefers to take input.
+RENDERED_PROMPT="$(cat "$PROMPT_FILE")
 
 You are running headless (one-shot). Execute exactly one cycle, then exit — do not
-schedule wakeups; the host timer is the cadence." \
+schedule wakeups; the host timer is the cadence."
+
+# ── swappable engine ─────────────────────────────────────────────────────────
+# Claude Code is the shipped default, not a requirement. A worker is anything that reads a
+# work-spec and opens a PR with `Closes #N`, so Codex, Copilot's coding agent, OpenHands,
+# aider, or a local model server all fit the same contract.
+#
+# Set NANOBOTS_WORKER_CMD to any shell command. It runs with:
+#   $NANOBOTS_PROMPT_FILE — path to the rendered prompt (also piped on stdin)
+#   the repo checked out at the working directory
+#   whatever credentials you listed in NANOBOTS_WORKER_ENV (see RUNTIMES.md)
+# Billing is the credential you supply, not a mode: CLAUDE_CODE_OAUTH_TOKEN for a Claude
+# subscription, ANTHROPIC_API_KEY for metered, or any provider's key for another engine.
+if [ -n "${NANOBOTS_WORKER_CMD:-}" ]; then
+  RENDERED_FILE="$(mktemp)"
+  printf '%s' "$RENDERED_PROMPT" > "$RENDERED_FILE"
+  export NANOBOTS_PROMPT_FILE="$RENDERED_FILE"
+  echo "[run-cycle] engine: custom (NANOBOTS_WORKER_CMD)" >&2
+  # shellcheck disable=SC2086
+  printf '%s' "$RENDERED_PROMPT" | exec sh -c "$NANOBOTS_WORKER_CMD"
+fi
+
+exec claude -p "$RENDERED_PROMPT" \
   "${PERM_ARGS[@]}" \
   --output-format text
