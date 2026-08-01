@@ -27,8 +27,18 @@ const MARKER = '<!-- nanobots:ocr:sticky -->';
 
 // ── library (pure) ───────────────────────────────────────────────────────────
 
-export function parseOcrOutput(rawText) {
+// `exitCode` is the OCR binary's own exit status when the caller captured it. It is the only
+// way to tell two very different empty outputs apart:
+//   exit 0 + empty  → OCR ran fine and found nothing REVIEWABLE (e.g. a docs/YAML-only diff).
+//                     Treating that as a failure blocks every documentation PR forever.
+//   nonzero + empty → OCR did not run (bad config, bootstrap failure). Must stay blocking.
+// When the exit code is unknown we keep the old, conservative behaviour and block, because a
+// review that might not have happened must never read as clean.
+export function parseOcrOutput(rawText, { exitCode = null } = {}) {
   if (!rawText || !rawText.trim()) {
+    if (exitCode === 0) {
+      return { findings: [], parseError: null, noReviewableChanges: true };
+    }
     return { findings: [], parseError: 'OCR produced no findings output (bootstrap or run failure)' };
   }
   let parsed;
@@ -37,19 +47,26 @@ export function parseOcrOutput(rawText) {
   } catch (err) {
     return { findings: [], parseError: `malformed findings JSON: ${err.message}` };
   }
-  const list = Array.isArray(parsed) ? parsed : (parsed.findings ?? null);
+  // OCR's own JSON uses `comments[]` with `path`/`start_line`; older/agent shapes used
+  // `findings[]` with `file`/`line`. Accept both — reading only `findings`/`file` silently
+  // dropped every real finding and reported a clean review, which is the worst possible
+  // failure for a gate whose entire job is to block.
+  const list = Array.isArray(parsed)
+    ? parsed
+    : (parsed.findings ?? parsed.comments ?? null);
   if (!Array.isArray(list)) {
-    return { findings: [], parseError: 'findings JSON has no findings array' };
+    return { findings: [], parseError: 'findings JSON has neither a findings nor a comments array' };
   }
   const findings = list
-    .filter((f) => f && typeof f.file === 'string' && SEVERITIES.includes(f.severity))
+    .filter((f) => f && typeof (f.file ?? f.path) === 'string' && SEVERITIES.includes(f.severity))
     .map((f) => {
+      const line = [f.line, f.start_line, f.startLine].find(Number.isInteger);
       const finding = {
-        file: String(f.file).slice(0, 300),
-        line: Number.isInteger(f.line) ? f.line : 0,
+        file: String(f.file ?? f.path).slice(0, 300),
+        line: Number.isInteger(line) ? line : 0,
         category: String(f.category ?? 'other').slice(0, 40),
         severity: f.severity,
-        content: String(f.content ?? '').slice(0, 500),
+        content: String(f.content ?? f.message ?? '').slice(0, 500),
       };
       return { ...finding, fingerprint: fingerprintFinding(finding) };
     })
@@ -144,7 +161,11 @@ async function main() {
   const maxSummaryComments = Number(process.env.OCR_MAX_SUMMARY_COMMENTS ?? 20);
 
   const rawText = existsSync(findingsPath) ? readFileSync(findingsPath, 'utf8') : '';
-  const { findings, parseError } = parseOcrOutput(rawText);
+  // OCR_EXIT_CODE lets us distinguish "ran fine, nothing reviewable" from "never ran".
+  const rawExit = process.env.OCR_EXIT_CODE;
+  const exitCode = rawExit === undefined || rawExit === '' ? null : Number(rawExit);
+  const { findings, parseError, noReviewableChanges } = parseOcrOutput(rawText, { exitCode });
+  if (noReviewableChanges) console.log('OCR exited 0 with no output — no reviewable changes in this diff.');
   const report = buildReport({
     findings, parseError, headSha,
     blockingSeverities: cfg.ocr?.blockingSeverities, autoReviewEventsEnabled,
@@ -155,8 +176,12 @@ async function main() {
 
   // Sticky summary (update in place if present).
   const summary = formatSummaryComment(report);
+  // `gh pr view --json comments` returns GraphQL node IDs (IC_kwD…), but the REST endpoint
+  // below needs the NUMERIC database id. Passing the node ID 404s and takes the whole review
+  // down with it, so read the comments through the REST API where the `id` already is
+  // numeric. (`.url` is not usable either — it is the HTML url, not the API one.)
   const existingId = shTry(
-    `gh pr view ${PR} --repo ${NWO} --json comments --jq '[.comments[] | select(.body | startswith("${MARKER}"))] | .[0].id // empty'`,
+    `gh api repos/${NWO}/issues/${PR}/comments --paginate --jq '[.[] | select(.body | startswith("${MARKER}"))] | .[0].id // empty'`,
   );
   if (existingId) {
     shStdin(`gh api repos/${NWO}/issues/comments/${existingId} -X PATCH --input -`, JSON.stringify({ body: summary }));

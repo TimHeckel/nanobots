@@ -67,7 +67,12 @@ jobs:
       - name: Checkout trusted base
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.pr.outputs.base_sha }}
+          # The BASE BRANCH TIP, not base_sha. base_sha is the commit the PR branched from,
+          # so the reviewer ran whatever .nanobots/ scripts existed back then — every engine
+          # fix landed on the default branch was invisible to it, and a long-lived branch was
+          # reviewed by permanently stale tooling. The tip is equally trusted (it is the
+          # default branch, never PR-authored code) and is always the current engine.
+          ref: ${{ steps.pr.outputs.base_ref }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -89,9 +94,9 @@ jobs:
 
       - name: Review exact PR head
         env:
-          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_URL: ${{ vars.OCR_LLM_URL || secrets.OCR_LLM_URL }}
           OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
-          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
+          OCR_LLM_MODEL: ${{ vars.OCR_LLM_MODEL || secrets.OCR_LLM_MODEL }}
           OCR_LLM_EXTRA_BODY: ${{ vars.OCR_LLM_EXTRA_BODY }}
           OCR_LLM_PROTOCOL: openai
           OCR_CONCURRENCY: ${{ vars.OCR_CONCURRENCY }}
@@ -99,11 +104,25 @@ jobs:
           OCR_NO_UPDATE: '1'
         run: |
           set -euo pipefail
+          # URL and MODEL are non-sensitive and `init` sets them as VARIABLES. Reading them
+          # from secrets yielded empty strings, so the binary ran with no endpoint and died
+          # in milliseconds — silently, because stdout was redirected into the findings file.
+          : "${OCR_LLM_URL:?OCR_LLM_URL is empty - set it as a repo VARIABLE (init does) or a secret}"
+          : "${OCR_LLM_MODEL:?OCR_LLM_MODEL is empty - set it as a repo VARIABLE (init does) or a secret}"
+          : "${OCR_LLM_TOKEN:?OCR_LLM_TOKEN is empty - set it as a repo SECRET}"
           HOME="$(mktemp -d)" XDG_CONFIG_HOME="$(mktemp -d)" \
             ./ocr review --from "origin/${{ steps.pr.outputs.base_ref }}" --to "${{ steps.pr.outputs.head_sha }}" \
             --format json --audience agent \
             --concurrency "${OCR_CONCURRENCY:-3}" --timeout "${OCR_TASK_TIMEOUT:-20}" \
-            > ocr-findings.json || true
+            > ocr-findings.json 2> ocr-stderr.log && echo 0 > ocr-exit.txt || echo $? > ocr-exit.txt
+          # The exit code is the ONLY way to tell "ran fine, nothing reviewable" (exit 0 with
+          # empty output — a docs-only diff does this) from "never ran" (nonzero). Without it
+          # every documentation PR is blocked forever by a review that never had work to do.
+          echo "ocr exit: $(cat ocr-exit.txt)  bytes: $(wc -c < ocr-findings.json)"
+          if [ ! -s ocr-findings.json ] || ! grep -q "[^[:space:]]" ocr-findings.json; then
+            echo "::warning::OCR wrote no findings JSON; its stderr follows"
+            tail -40 ocr-stderr.log || true
+          fi
 
       - name: Parse findings, post review, write report artifact, gate on blocking severities
         id: report
@@ -113,6 +132,7 @@ jobs:
           OCR_MAX_INLINE_COMMENTS: ${{ vars.OCR_MAX_INLINE_COMMENTS }}
           OCR_MAX_SUMMARY_COMMENTS: ${{ vars.OCR_MAX_SUMMARY_COMMENTS }}
         run: |
+          export OCR_EXIT_CODE="$(cat ocr-exit.txt 2>/dev/null || echo)"
           node .nanobots/open-code-review-report.mjs ocr-findings.json "${{ steps.pr.outputs.head_sha }}" ocr-report.json
         continue-on-error: true
 
@@ -145,8 +165,8 @@ jobs:
           OCR_AUTOFIX_URL: ${{ vars.OCR_AUTOFIX_URL }}
           OCR_AUTOFIX_EXTRA_BODY: ${{ vars.OCR_AUTOFIX_EXTRA_BODY }}
           OCR_AUTOFIX_TOKEN: ${{ secrets.OCR_AUTOFIX_TOKEN }}
-          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
-          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_MODEL: ${{ vars.OCR_LLM_MODEL || secrets.OCR_LLM_MODEL }}
+          OCR_LLM_URL: ${{ vars.OCR_LLM_URL || secrets.OCR_LLM_URL }}
           OCR_LLM_EXTRA_BODY: ${{ vars.OCR_LLM_EXTRA_BODY }}
           OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
           OCR_AUTOFIX_MAX_ROUNDS: ${{ vars.OCR_AUTOFIX_MAX_ROUNDS }}
