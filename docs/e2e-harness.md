@@ -46,7 +46,7 @@ consumer via npm. So the gates below are not optional.
 ### Required secrets/variables on this repo
 
 ```bash
-gh secret set PROJECTS_PAT              # classic PAT, project + repo, human account
+gh secret set PROJECTS_PAT              # classic PAT, project + repo + read:org, human account
 gh secret set DAYTONA_API_KEY
 gh secret set CLAUDE_CODE_OAUTH_TOKEN   # or ANTHROPIC_API_KEY
 gh secret set OCR_LLM_TOKEN

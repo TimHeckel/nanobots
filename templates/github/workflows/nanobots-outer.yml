@@ -3,7 +3,7 @@ name: Nanobots Outer Loop (scheduled)
 
 # Keeps the loop alive when no local session is running. Enable by setting the
 # repo variable NANOBOTS_OUTER_ENABLED=1 and the PROJECTS_PAT secret (CLASSIC
-# PAT, scopes: project + repo, from a HUMAN account — the default GITHUB_TOKEN
+# PAT, scopes: project + repo + read:org, from a HUMAN account — the default GITHUB_TOKEN
 # cannot reach org Projects v2, fine-grained PATs are flaky on the Projects
 # GraphQL API, and dispatch comments from bot actors are refused by
 # claude-code-action). Disable by unsetting the variable.

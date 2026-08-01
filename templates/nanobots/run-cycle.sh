@@ -10,7 +10,7 @@
 #   worker-inline  internal: what daytona-worker.mjs execs INSIDE the sandbox.
 #                  Don't call this directly outside a sandbox.
 #
-# Env:   GH_TOKEN (classic PAT: project+repo, human account)
+# Env:   GH_TOKEN (classic PAT: project+repo+read:org, human account)
 #        One model credential:
 #          CLAUDE_CODE_OAUTH_TOKEN  (Claude subscription)
 #          ANTHROPIC_API_KEY        (Claude metered API)

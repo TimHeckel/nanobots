@@ -6,7 +6,7 @@
 // `node .nanobots/daytona-worker.mjs` works the same way if you want to run it by hand.
 //
 // Env:
-//   GH_TOKEN          classic PAT, scopes project+repo, human account (same one the
+//   GH_TOKEN          classic PAT, scopes project+repo+read:org, human account (same one the
 //                      outer loop uses). Controller-side; also the sandbox credential
 //                      ONLY when no GitHub App is configured (documented fallback).
 //   DAYTONA_API_KEY   controller-side only; never enters the sandbox

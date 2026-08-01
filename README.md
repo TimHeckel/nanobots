@@ -147,7 +147,7 @@ The loop's policy documents are its weights; GitHub history is the training log.
 - A [Daytona](https://daytona.io) account and API key — required, not optional. Workers
   always build in a Daytona sandbox; there's no local/VM worker mode.
 - Secrets: `CLAUDE_CODE_OAUTH_TOKEN` (or another model credential), `PROJECTS_PAT` — a
-  **classic** PAT (`project` + `repo`) from a **human** account (the default `GITHUB_TOKEN`
+  **classic** PAT (`project` + `repo` + `read:org`) from a **human** account (the default `GITHUB_TOKEN`
   cannot touch org Projects v2 at all), `DAYTONA_API_KEY`, and an OpenAI-compatible
   inference endpoint/key for OCR: `OCR_LLM_URL` / `OCR_LLM_TOKEN` / `OCR_LLM_MODEL`.
 - Optional, only for the autofix responder: `OCR_AUTOFIX_ENABLED=true` plus

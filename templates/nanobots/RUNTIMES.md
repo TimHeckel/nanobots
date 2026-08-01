@@ -15,7 +15,7 @@ one sandboxed run, and a runaway build/test command can't touch anything outside
 A process that:
 
 1. has the repo checked out (or clones it),
-2. has `GH_TOKEN` — classic PAT, scopes `project` + `repo` (must belong to a **human**
+2. has `GH_TOKEN` — classic PAT, scopes `project` + `repo` + `read:org` (must belong to a **human**
    account: claude-code-action refuses bot actors on dispatch),
 3. has ONE model credential (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, or
    `ANTHROPIC_AUTH_TOKEN` + `_BASE_URL` + `_MODEL` — see "Swapping the brain"),

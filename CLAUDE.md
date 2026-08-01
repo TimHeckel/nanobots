@@ -77,6 +77,6 @@ board is the kanban, PRs are the audit trail, a pinned issue is the heartbeat:
 ## Requirements for the installed loop
 
 `gh` authenticated with the `project` scope; a Daytona account + `DAYTONA_API_KEY`
-(required — there is no local worker mode); a **classic** `PROJECTS_PAT` (project + repo,
+(required — there is no local worker mode); a **classic** `PROJECTS_PAT` (project + repo + read:org,
 human account — the default `GITHUB_TOKEN` cannot touch org Projects v2); and the OCR
 inference endpoint (`OCR_LLM_*`).
