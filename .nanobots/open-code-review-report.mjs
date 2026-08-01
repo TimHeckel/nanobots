@@ -75,6 +75,16 @@ export function parseOcrOutput(rawText, { exitCode = null } = {}) {
   return { findings, parseError: null };
 }
 
+// An unset repo VARIABLE arrives as an empty string, not undefined — so `?? default` never
+// fires, and `Number('')` is 0 rather than NaN. That silently capped the summary and inline
+// comments at zero: a PR with two CRITICAL findings displayed "no findings" to the human
+// reading it while still blocking the merge for reasons nobody could see. Anything that is
+// not a positive finite number falls back to the default.
+export function positiveIntEnv(raw, dflt) {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : dflt;
+}
+
 export function severityCounts(findings) {
   return Object.fromEntries(SEVERITIES.map((s) => [s, findings.filter((f) => f.severity === s).length]));
 }
@@ -157,8 +167,8 @@ async function main() {
   const NWO = process.env.GH_REPOSITORY;
   const PR = process.env.GH_PR_NUMBER;
   const autoReviewEventsEnabled = process.env.OCR_AUTO_REVIEW_EVENTS !== 'false';
-  const maxInlineComments = Number(process.env.OCR_MAX_INLINE_COMMENTS ?? 10);
-  const maxSummaryComments = Number(process.env.OCR_MAX_SUMMARY_COMMENTS ?? 20);
+  const maxInlineComments = positiveIntEnv(process.env.OCR_MAX_INLINE_COMMENTS, 10);
+  const maxSummaryComments = positiveIntEnv(process.env.OCR_MAX_SUMMARY_COMMENTS, 20);
 
   const rawText = existsSync(findingsPath) ? readFileSync(findingsPath, 'utf8') : '';
   // OCR_EXIT_CODE lets us distinguish "ran fine, nothing reviewable" from "never ran".
