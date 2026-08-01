@@ -67,6 +67,24 @@ disagree with them, propose an edit — don't silently deviate.
    - Stalled >48h with no PR → comment asking for state; if already asked last cycle, move
      back to Ready and note the failure in LEARNINGS.
 
+   **If the PR is part of a stack** (only when `stacks.enabled` is on in
+   `.nanobots/config.json`): when a lower layer merges, GitHub **automatically rebases and
+   retargets every PR above it**, which changes their head SHAs with no human action and no
+   worker involvement. nanobots reviews *the exact head SHA*, so a stack merge silently
+   invalidates the OCR review on every layer above. Therefore, for each PR above a layer that
+   merged this cycle:
+   - Compare the head SHA the OCR conclusion was recorded against with the PR's **current**
+     head SHA. Mismatch ⇒ the review describes a different tree ⇒ treat the PR as
+     **unreviewed** and a **hard block** on merge. Do not reason about whether a workflow
+     "should have" re-fired — compare the SHAs and believe them.
+   - Re-dispatch OCR for that PR (`gh workflow run nanobots-ocr.yml -f pr_number=N`) unless a
+     run is already in progress on the current head, and wait for it before considering merge.
+   - If the automatic rebase **conflicted**, GitHub leaves the PR in a conflicted state.
+     Apply `{{HUMAN_LABEL}}`, move the item to Blocked, and post which layer conflicted.
+     **Never dispatch a worker or an agent to resolve a restack conflict** — it will re-apply
+     or discard already-merged work, and that is the failure mode most likely to lose work
+     silently.
+
 5. **Learn.** For every item that reached Done (or died) since the last cycle, append a
    LEARNINGS.md entry. If ~10 undistilled entries have accumulated, run a distill pass:
    promote durable lessons into TRIAGE.md / RECIPES.md / the repo's agent instructions
@@ -98,7 +116,20 @@ disagree with them, propose an edit — don't silently deviate.
 - Never merge anything touching a hard-gate area (see TRIAGE.md) or a protected branch —
   those wait for a human regardless of CI/OCR.
 - Never merge against a stale PR head — always re-verify the current head SHA matches what
-  CI/OCR actually reviewed, immediately before merging.
+  CI/OCR actually reviewed, immediately before merging. This is what makes stacks safe: an
+  automatic rebase moves the head without anyone touching the PR.
+- **Identify a PR by head ref _and_ head repository**, never the branch name alone. A fork's
+  PR can carry the identical branch name as a deterministic automation branch; matching on
+  the ref alone lets the loop comment on, close, or merge a stranger's work.
+  (`gh pr view N --json headRefName,headRepositoryOwner,isCrossRepository`.)
+- **Never trust a PR number a worker reported.** Read the PR back and confirm its head ref
+  and head repository belong to this run before acting on it — otherwise the loop acts on
+  whatever PR that number happens to name.
+- **Stacks (only when `stacks.enabled`):** you own stack topology; workers never do. Workers
+  get one branch and one PR and stay unaware of stacks — all `gh stack` commands run from the
+  outer loop / controller, never inside the sandbox. That is also where the PR-capable
+  credential lives; the sandbox's token deliberately cannot restructure PRs. Respect
+  `stacks.maxDepth` — a deeper request is a signal to re-split the work, not to stack harder.
 - Every action you take must be visible on GitHub (comment, label, board move). No private
   state.
 - If GitHub state contradicts these docs (e.g. board fields renamed), trust GitHub, finish

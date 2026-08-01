@@ -93,6 +93,7 @@ const ENGINE_OWNED = [
   { src: 'nanobots/run-cycle.sh', dest: '.nanobots/run-cycle.sh', exec: true },
   { src: 'nanobots/daytona-client.mjs', dest: '.nanobots/daytona-client.mjs' },
   { src: 'nanobots/daytona-worker.mjs', dest: '.nanobots/daytona-worker.mjs' },
+  { src: 'nanobots/github-app-auth.mjs', dest: '.nanobots/github-app-auth.mjs' },
   { src: 'nanobots/ocr-autofix-lib.mjs', dest: '.nanobots/ocr-autofix-lib.mjs' },
   { src: 'nanobots/open-code-review-report.mjs', dest: '.nanobots/open-code-review-report.mjs' },
   { src: 'nanobots/ocr-autofix-worker.mjs', dest: '.nanobots/ocr-autofix-worker.mjs' },
@@ -148,7 +149,7 @@ function scaffoldGitHub(cfg) {
 
   const scopes = shTry('gh auth status') ?? '';
   if (!scopes.includes('project')) {
-    die("gh token missing the 'project' scope. Run: gh auth refresh -s project");
+    throw new Error("gh token missing the 'project' scope. Run: gh auth refresh -s project");
   }
 
   // Project
@@ -221,11 +222,8 @@ function scaffoldGitHub(cfg) {
 
 // ── commands ─────────────────────────────────────────────────────────────────
 
-async function cmdInit(flags) {
-  const d = detect();
-  if (!d.owner) die('could not parse owner/repo from the origin remote');
-
-  const defaults = {
+function defaultAnswers(d) {
+  return {
     board: 'Nanobots',
     humanLabel: 'summon-human',
     wipCap: 2,
@@ -240,120 +238,280 @@ async function cmdInit(flags) {
     ],
     actionsEnabled: true,
   };
+}
 
-  let answers = { ...defaults };
-  if (!flags.yes) {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const ask = async (q, dflt) => (await rl.question(`${q} ${c.dim(`[${dflt}]`)} `)).trim() || dflt;
-    console.log(`\n${c.cyan('nanobots init')} — ${d.owner}/${d.repo} (${d.defaultBranch})\n`);
-    answers.board = await ask('Board name?', defaults.board);
-    answers.humanLabel = await ask('Human-gate label?', defaults.humanLabel);
-    answers.wipCap = parseInt(await ask('Max items in progress at once (WIP cap)?', String(defaults.wipCap)), 10) || 2;
-    answers.gates = (await ask('Gate commands, comma-separated?', defaults.gates.join(', ') || 'none detected'))
-      .split(',').map((s) => s.trim()).filter((s) => s && s !== 'none detected');
-    answers.hardGates = (await ask('Hard-gate areas (never auto-worked), comma-separated?', defaults.hardGates.join(', ')))
-      .split(',').map((s) => s.trim()).filter(Boolean);
-    answers.actionsEnabled = /^y/i.test(await ask('Install the scheduled outer-loop + worker Actions?', 'Y/n') || 'y');
-    rl.close();
-  }
-
-  const cfg = {
+function buildConfig(d, answers) {
+  const a = { ...defaultAnswers(d), ...answers };
+  return {
     version: VERSION,
     owner: d.owner,
     repo: d.repo,
     defaultBranch: d.defaultBranch,
-    board: answers.board,
-    humanLabel: answers.humanLabel,
-    wipCap: answers.wipCap,
-    gates: answers.gates,
-    hardGates: answers.hardGates,
-    actionsEnabled: answers.actionsEnabled,
-    daytona: {
-      snapshot: null,
-      target: 'us',
-      autoDeleteMinutes: 60,
-      databaseBootstrap: [],
-    },
+    board: a.board,
+    humanLabel: a.humanLabel,
+    wipCap: a.wipCap,
+    gates: a.gates,
+    hardGates: a.hardGates,
+    actionsEnabled: a.actionsEnabled,
+    daytona: { snapshot: null, target: 'us', autoDeleteMinutes: 60, databaseBootstrap: [] },
     ocr: {
       version: 'v1.7.12',
       blockingSeverities: ['critical', 'high'],
       maxRounds: 3,
-      autofix: {
-        // Narrows the autofix responder's protected-surface list beyond the built-in
-        // defaults (.github/**, .nanobots/**, lockfiles, etc. — see RUNTIMES.md). Repo
-        // policy can only narrow eligibility further, never widen past the built-ins.
-        protectedPaths: [],
-      },
+      // Narrows the autofix responder's protected-surface list beyond the built-in
+      // defaults (.github/**, .nanobots/**, lockfiles, etc. — see RUNTIMES.md). Repo
+      // policy can only narrow eligibility further, never widen past the built-ins.
+      autofix: { protectedPaths: [] },
     },
-    approval: {
-      requireVersionedStart: true,
+    approval: { requireVersionedStart: true },
+    // GitHub's native stacked PRs (public preview since 2026-07-30) via the `gh-stack`
+    // extension. Default OFF: while the feature is in preview and subject to change, an
+    // upstream behavior shift should not be able to strand the loop. See RUNTIMES.md.
+    stacks: {
+      enabled: false,
+      // Not a restack-cost limit — that's GitHub's problem now. This caps review
+      // comprehension and the blast radius when the bottom layer has to change.
+      maxDepth: 3,
     },
-    mergePolicy: {
-      autoMergeNonProduction: false,
-      protectedBranches: [d.defaultBranch],
-    },
+    mergePolicy: { autoMergeNonProduction: false, protectedBranches: [d.defaultBranch] },
   };
-  const values = templateValues(cfg);
+}
 
-  // Render
+function renderScaffold(d, cfg) {
+  const values = templateValues(cfg);
   for (const entry of ENGINE_OWNED) writeRendered(d.root, entry, values, { overwrite: true });
   for (const entry of REPO_OWNED) writeRendered(d.root, entry, values, { overwrite: false });
   for (const entry of CONDITIONAL_ENGINE_OWNED) {
     if (entry.when(cfg)) writeRendered(d.root, entry, values, { overwrite: true });
   }
-
   const cfgPath = join(d.root, '.nanobots', 'config.json');
   if (!existsSync(cfgPath)) {
     writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
     say('wrote .nanobots/config.json');
   }
+  return cfgPath;
+}
 
-  // GitHub state
-  let coords = null;
-  if (!flags.noGithub) {
-    coords = scaffoldGitHub(cfg);
-  } else {
-    say('--no-github: skipped board/label scaffolding.');
+// ── daytona proof (shared by `verify daytona` and the onboarding agent) ────────
+
+async function daytonaProof(apiKey) {
+  const base = process.env.DAYTONA_API_URL || 'https://app.daytona.io/api';
+  const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
+
+  const listRes = await fetch(`${base}/sandbox`, { headers });
+  if (!listRes.ok) throw new Error(`connection failed: ${listRes.status} ${(await listRes.text().catch(() => '')).slice(0, 200)}`);
+
+  const createRes = await fetch(`${base}/sandbox`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ labels: { purpose: 'nanobots-verify' }, autoStopInterval: 5, autoDeleteInterval: 10 }),
+  });
+  if (!createRes.ok) throw new Error(`sandbox create failed: ${createRes.status} ${(await createRes.text().catch(() => '')).slice(0, 200)}`);
+  const sandbox = await createRes.json();
+
+  const delRes = await fetch(`${base}/sandbox/${sandbox.id}`, { method: 'DELETE', headers });
+  const cleaned = delRes.ok;
+  return { sandboxId: sandbox.id, cleaned };
+}
+
+// ── the onboarding agent ───────────────────────────────────────────────────────
+// nanobots has no interactive install path other than this. `init` boots an agent on
+// the same OpenAI-compatible endpoint the repo already needs for OCR review, and that
+// agent drives the whole setup — config, scaffold, GitHub state, secrets, verification —
+// conversationally, through the tools below. (Hidden `--headless` scaffolds from defaults
+// for CI/self-tests; it is deliberately absent from the help text.)
+
+// Terminal line reader with optional masking for secret values (zero-dependency).
+function promptLine(query, { secret = false } = {}) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+    if (!secret) {
+      rl.question(query, (v) => { rl.close(); resolve(v); });
+      return;
+    }
+    const onData = () => process.stdout.write(`\x1b[2K\x1b[200D${query}${'*'.repeat(rl.line.length)}`);
+    process.stdin.on('data', onData);
+    rl.question(query, (v) => { process.stdin.removeListener('data', onData); rl.close(); process.stdout.write('\n'); resolve(v); });
+  });
+}
+
+async function llmChat({ url, token, model, messages, tools }) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, messages, tools, tool_choice: 'auto', temperature: 0.2 }),
+  });
+  if (!res.ok) throw new Error(`LLM ${res.status}: ${(await res.text().catch(() => '')).slice(0, 300)}`);
+  const data = await res.json();
+  const msg = data.choices?.[0]?.message;
+  if (!msg) throw new Error(`LLM returned no message: ${JSON.stringify(data).slice(0, 300)}`);
+  return msg;
+}
+
+const ONBOARDING_TOOLS = [
+  { type: 'function', function: { name: 'message_user', description: 'Say something to the user in the terminal. This is your ONLY channel for user-facing text — never put it in plain content.', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } } },
+  { type: 'function', function: { name: 'ask_user', description: 'Ask the user a question and return their typed answer. Set secret:true for tokens/keys (input is masked).', parameters: { type: 'object', properties: { question: { type: 'string' }, secret: { type: 'boolean' } }, required: ['question'] } } },
+  { type: 'function', function: { name: 'render_scaffold', description: 'Write the .nanobots/ prompts, workflows, and config.json into the repo. Call once after gathering config.', parameters: { type: 'object', properties: { board: { type: 'string' }, humanLabel: { type: 'string' }, wipCap: { type: 'integer' }, gates: { type: 'array', items: { type: 'string' } }, hardGates: { type: 'array', items: { type: 'string' } }, actionsEnabled: { type: 'boolean' } }, required: ['board', 'humanLabel', 'wipCap', 'gates', 'hardGates', 'actionsEnabled'] } } },
+  { type: 'function', function: { name: 'check_gh', description: 'Report gh auth status and whether the token has the project scope needed for Projects v2.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'scaffold_github', description: 'Create the project board, Status/Priority/Size fields, labels, and pinned status issue. Requires render_scaffold first.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'set_secret', description: 'Set a GitHub Actions secret (encrypted) on this repo via gh. Use for tokens/keys.', parameters: { type: 'object', properties: { name: { type: 'string' }, value: { type: 'string' } }, required: ['name', 'value'] } } },
+  { type: 'function', function: { name: 'set_variable', description: 'Set a GitHub Actions variable (plaintext) on this repo via gh. Use for URLs, model IDs, enable flags.', parameters: { type: 'object', properties: { name: { type: 'string' }, value: { type: 'string' } }, required: ['name', 'value'] } } },
+  { type: 'function', function: { name: 'verify_daytona', description: 'Prove a Daytona API key works by creating and deleting a throwaway sandbox. Call before storing the key.', parameters: { type: 'object', properties: { apiKey: { type: 'string' } }, required: ['apiKey'] } } },
+  { type: 'function', function: { name: 'finish', description: 'End onboarding with a short summary of what was configured and anything left for the user.', parameters: { type: 'object', properties: { summary: { type: 'string' } }, required: ['summary'] } } },
+];
+
+function onboardingSystemPrompt(d) {
+  const nwo = `${d.owner}/${d.repo}`;
+  return `You are the nanobots onboarding agent, running inside the \`npx nanobots-sh init\` CLI, on the user's machine, in their target git repo. Your job: get a complete, working nanobots install stood up for THIS repo, conversationally, using your tools.
+
+You cannot see the screen. Communicate ONLY through message_user (to tell the user things) and ask_user (to collect input). Never put user-facing text in plain assistant content. Be warm but concise — one or two sentences per step before you act. Never invent a token, key, or URL: always ask_user for secret values.
+
+Target repo: ${nwo} (default branch ${d.defaultBranch}). Detected gate/test commands: ${d.gates.join(', ') || 'none detected'}.
+
+Run the setup in this order:
+
+A. CONFIG — greet, name the repo, then gather (ask_user, accepting the bracketed default on empty input): board name [Nanobots]; human-gate label [summon-human]; WIP cap [2]; gate/test commands, comma-separated [the detected ones above]; hard-gate areas never auto-worked, comma-separated [payments, auth, db migrations, secrets, prod infra, destructive ops]; install the scheduled outer-loop + worker Actions crons? [yes]. Then call render_scaffold with the collected values (split comma lists into arrays).
+
+B. GITHUB STATE — call check_gh. If the token lacks the project scope, tell the user to run \`gh auth refresh -s project\` in another terminal, then ask_user to continue and re-check. Once ready, call scaffold_github.
+
+C. REQUIRED SECRETS — for each, explain what it is and how to get it, ask_user (secret:true), then set_secret:
+   • CLAUDE_CODE_OAUTH_TOKEN — model credential for the outer loop + workers; mint with \`claude setup-token\` (Claude Pro/Max subscription). If the user prefers a metered API key, set the name ANTHROPIC_API_KEY instead. Exactly one of the two is required.
+   • PROJECTS_PAT — a CLASSIC GitHub personal access token with project + repo scopes, from a human account (the default GITHUB_TOKEN cannot touch org Projects v2). github.com → Settings → Developer settings → Personal access tokens (classic).
+   • DAYTONA_API_KEY — from daytona.io → API Keys. REQUIRED; workers always build in a Daytona sandbox. Before storing it, call verify_daytona with the key; only set_secret it if the proof passes. If it fails, report the error and offer to retry.
+
+D. RECOMMENDED — PER-RUN GITHUB APP CREDENTIALS. Explain the tradeoff in two sentences, then ask whether to set it up now (skipping is fine — the PAT keeps working and they can add this later). Without an App, the sandbox holds a long-lived, org-wide PAT that can open, update, and merge PRs, which makes the outer loop's review advisory rather than authoritative. With one, the sandbox gets a short-lived, repository-scoped token per run that can clone and push and nothing else.
+   If yes, walk them through it: register a GitHub App (Settings → Developer settings → GitHub Apps → New), install it on SELECTED REPOSITORIES (this repo only, never "all repositories"), and grant exactly Contents: write and Metadata: read — and explicitly NOT Pull requests, Administration, Checks, or Statuses. Then ask_user for each and store: set_secret NANOBOTS_GITHUB_APP_ID; set_secret NANOBOTS_GITHUB_APP_INSTALLATION_ID (the number at the end of the installation's settings URL); set_secret NANOBOTS_GITHUB_APP_PRIVATE_KEY (secret:true — the whole PEM including BEGIN/END lines; if their terminal mangles multi-line paste, tell them a single line with \\n escapes works, those are restored automatically).
+   State two caveats plainly: all three values are required, and a partial setup is treated as unconfigured and silently falls back to the PAT; and \`contents: write\` is repository-wide, NOT branch-scoped — branch protection on the default branch, not the token, is what actually contains a stray push.
+   Only if they say tasks may edit .github/workflows: set_variable NANOBOTS_GITHUB_APP_WORKFLOWS=true, and warn that an org owner must grant Workflows: write on the installation FIRST, because requesting a permission the installation lacks makes EVERY token mint fail and stalls every run.
+
+E. REQUIRED OCR REVIEW — every nanobots:built PR gets a required review. Note the endpoint powering YOU is exactly what OCR needs, so the user can reuse it. Confirm each value with ask_user, then: set_secret OCR_LLM_TOKEN; set_variable OCR_LLM_URL (e.g. https://api.deepseek.com/chat/completions); set_variable OCR_LLM_MODEL (e.g. deepseek-v4-flash).
+
+F. OPTIONAL AUTOFIX — ask if they want the surgical autofix responder (writes code, only inside Daytona). If yes: set_secret OCR_AUTOFIX_TOKEN (falls back to OCR_LLM_TOKEN), set_variable OCR_AUTOFIX_MODEL and OCR_AUTOFIX_URL (fall back to OCR_LLM_*), set_variable OCR_AUTOFIX_ENABLED=true. If no, skip.
+
+G. CRONS — only if they chose to install the Actions in step A, ask whether to enable the crons now (they may prefer to watch a manual cycle first). If yes: set_variable NANOBOTS_OUTER_ENABLED=1 and NANOBOTS_WORKER_ENABLED=1.
+
+H. MANUAL STEP — message_user the one thing the GitHub API can't do: in the Project's Workflows settings, enable "Auto-add to project" with filter \`is:issue is:open label:nanobots:inbox\`, set "Item added to project" → Status: Inbox, and confirm "Issue closed"/"PR merged" → Done.
+
+I. Call finish with a concise summary: what got set, what's optional/left, and how to start the loop (\`/loop\` in Claude Code with .nanobots/LOOP-PROMPT.md, or \`npx nanobots-sh run outer\`).
+
+If any tool returns an error, tell the user plainly and offer to retry or skip. Respect skips. Keep going until the required steps are done or the user asks to stop, then finish.`;
+}
+
+async function cmdInit(flags) {
+  const d = detect();
+  if (!d.owner) die('could not parse owner/repo from the origin remote');
+
+  // Hidden non-interactive path for CI and this package's own tests.
+  if (flags.headless) {
+    const cfg = buildConfig(d, {});
+    renderScaffold(d, cfg);
+    if (!flags.noGithub) {
+      try { scaffoldGitHub(cfg); } catch (e) { die(e.message); }
+    } else {
+      say('--no-github: skipped board/label scaffolding.');
+    }
+    say('headless scaffold complete.');
+    return;
   }
 
-  // Optional model-assisted suggestions (the ONLY step that uses a model, and it's opt-in)
-  if (flags.smart) {
-    if (shTry('command -v claude')) {
-      say('running --smart repo analysis with the claude CLI (this may take a minute)...');
-      const prompt = 'Study this repository (conventions, test setup, risk areas). Write .nanobots/SUGGESTIONS.md proposing: repo-specific additions to .nanobots/TRIAGE.md hard gates, repo-specific recipes for .nanobots/RECIPES.md, and any gate commands missing from .nanobots/config.json. Suggestions only — do not modify other files.';
-      spawnSync('claude', ['-p', prompt, '--permission-mode', 'acceptEdits'], { cwd: d.root, stdio: 'inherit' });
-    } else {
-      warn('--smart requested but no `claude` CLI on PATH — skipped.');
+  const url = process.env.OCR_LLM_URL;
+  const token = process.env.OCR_LLM_TOKEN;
+  const model = process.env.OCR_LLM_MODEL;
+  if (!url || !token || !model) {
+    die(`\`nanobots init\` is an AI onboarding agent — it needs an OpenAI-compatible inference endpoint.
+It runs on the SAME provider your repo needs for the required OCR review, so this key isn't extra.
+
+Set these first, then re-run \`npx nanobots-sh init\`:
+
+  export OCR_LLM_URL=https://api.deepseek.com/chat/completions
+  export OCR_LLM_TOKEN=sk-...              # your provider key
+  export OCR_LLM_MODEL=deepseek-v4-flash
+
+Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSeek, OpenAI, Together, a local server, …).`);
+  }
+
+  console.log(`\n${c.cyan('nanobots init')} — onboarding agent for ${d.owner}/${d.repo} (${d.defaultBranch})`);
+  console.log(c.dim(`running on ${model} @ ${url}\n`));
+
+  const nwo = `${d.owner}/${d.repo}`;
+  const state = { cfg: null };
+
+  const toolImpls = {
+    message_user: async ({ text }) => { console.log(`\n${text}\n`); return 'shown'; },
+    ask_user: async ({ question, secret }) => promptLine(`${c.cyan('?')} ${question} `, { secret: !!secret }),
+    render_scaffold: async (a) => {
+      state.cfg = buildConfig(d, {
+        board: a.board, humanLabel: a.humanLabel, wipCap: parseInt(a.wipCap, 10) || 2,
+        gates: a.gates || [], hardGates: a.hardGates || [], actionsEnabled: a.actionsEnabled !== false,
+      });
+      renderScaffold(d, state.cfg);
+      return `scaffold written for ${nwo} (board "${state.cfg.board}", WIP cap ${state.cfg.wipCap}, actions ${state.cfg.actionsEnabled ? 'on' : 'off'}).`;
+    },
+    check_gh: async () => {
+      const status = shTry('gh auth status') ?? '';
+      if (!status) return 'gh is not authenticated. Run `gh auth login` (with the project scope), then retry.';
+      return `authenticated. project scope: ${status.includes('project') ? 'present' : "MISSING — run `gh auth refresh -s project`"}.`;
+    },
+    scaffold_github: async () => {
+      if (!state.cfg) return 'error: call render_scaffold first.';
+      try { const coords = scaffoldGitHub(state.cfg); return `board ready (project #${coords.projectNumber}), status issue #${coords.statusIssue}, labels + fields created.`; }
+      catch (e) { return `error: ${e.message}`; }
+    },
+    set_secret: async ({ name, value }) => {
+      if (!name || value == null) return 'error: name and value required.';
+      const r = spawnSync('gh', ['secret', 'set', name, '--repo', nwo], { input: String(value) });
+      return r.status === 0 ? `secret ${name} set.` : `error: gh secret set ${name} failed: ${(r.stderr || '').toString().slice(0, 200)}`;
+    },
+    set_variable: async ({ name, value }) => {
+      if (!name || value == null) return 'error: name and value required.';
+      const r = spawnSync('gh', ['variable', 'set', name, '--repo', nwo, '--body', String(value)]);
+      return r.status === 0 ? `variable ${name}=${value} set.` : `error: gh variable set ${name} failed: ${(r.stderr || '').toString().slice(0, 200)}`;
+    },
+    verify_daytona: async ({ apiKey }) => {
+      if (!apiKey) return 'error: apiKey required.';
+      try { const p = await daytonaProof(apiKey); return `daytona ok — created and ${p.cleaned ? 'deleted' : 'FAILED to delete'} sandbox ${p.sandboxId}.${p.cleaned ? '' : ' Check the dashboard and remove it manually.'}`; }
+      catch (e) { return `daytona verification FAILED: ${e.message}`; }
+    },
+  };
+
+  const messages = [
+    { role: 'system', content: onboardingSystemPrompt(d) },
+    { role: 'user', content: 'Begin onboarding.' },
+  ];
+
+  for (let step = 0; step < 60; step++) {
+    let msg;
+    try { msg = await llmChat({ url, token, model, messages, tools: ONBOARDING_TOOLS }); }
+    catch (e) { die(`onboarding agent call failed: ${e.message}`); }
+    messages.push(msg);
+
+    const calls = msg.tool_calls || [];
+    if (!calls.length) {
+      // Model replied in prose instead of calling a tool — surface it and let the user drive.
+      if (msg.content && msg.content.trim()) console.log(`\n${msg.content.trim()}\n`);
+      const reply = await promptLine(`${c.cyan('you:')} `);
+      if (!reply.trim() || /^(done|exit|quit|stop)$/i.test(reply.trim())) { console.log('\nonboarding ended.'); return; }
+      messages.push({ role: 'user', content: reply });
+      continue;
+    }
+
+    let finished = null;
+    for (const call of calls) {
+      const name = call.function?.name;
+      let a = {};
+      try { a = JSON.parse(call.function?.arguments || '{}'); } catch { /* tolerate empty/garbled args */ }
+      let result;
+      if (name === 'finish') { finished = a.summary || 'done'; result = 'ok'; }
+      else if (toolImpls[name]) result = await toolImpls[name](a);
+      else result = `error: unknown tool ${name}`;
+      messages.push({ role: 'tool', tool_call_id: call.id, content: typeof result === 'string' ? result : JSON.stringify(result) });
+    }
+    if (finished !== null) {
+      console.log(`\n${c.cyan('Done.')} ${finished}\n`);
+      return;
     }
   }
-
-  // Checklist
-  const nwo = `${cfg.owner}/${cfg.repo}`;
-  console.log(`\n${c.cyan('Done.')} Remaining manual steps:\n`);
-  console.log(`  1. Project → Workflows (GitHub UI): enable "Auto-add to project" with filter:`);
-  console.log(`       is:issue is:open label:nanobots:inbox   (repo: ${nwo})`);
-  console.log(`     set "Item added to project" → Status: Inbox; verify "Issue closed"/"PR merged" → Done.`);
-  console.log(`  2. Required — outer loop + worker (Daytona is not optional):`);
-  console.log(`       gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo ${nwo}   (claude setup-token)`);
-  console.log(`       gh secret set PROJECTS_PAT --repo ${nwo}              (CLASSIC PAT: project + repo scopes, human account)`);
-  console.log(`       gh secret set DAYTONA_API_KEY --repo ${nwo}           (daytona.io → API keys — controller-side only, never enters the sandbox)`);
-  console.log(`  3. Required — OCR review (every nanobots:built PR, no opt-out):`);
-  console.log(`       gh secret set OCR_LLM_TOKEN --repo ${nwo}`);
-  console.log(`       gh variable set OCR_LLM_URL --body https://api.deepseek.com/chat/completions --repo ${nwo}`);
-  console.log(`       gh variable set OCR_LLM_MODEL --body deepseek-v4-flash --repo ${nwo}`);
-  console.log(`  4. Optional — surgical autofix responder (writes code, only inside Daytona; leave unset to stay review-only):`);
-  console.log(`       gh secret set OCR_AUTOFIX_TOKEN --repo ${nwo}        (falls back to OCR_LLM_TOKEN if unset)`);
-  console.log(`       gh variable set OCR_AUTOFIX_MODEL --body deepseek-v4-flash --repo ${nwo}   (falls back to OCR_LLM_MODEL)`);
-  console.log(`       gh variable set OCR_AUTOFIX_ENABLED --body true --repo ${nwo}`);
-  if (cfg.actionsEnabled) {
-    console.log(`  5. Enable the Actions crons:`);
-    console.log(`       gh variable set NANOBOTS_OUTER_ENABLED --body 1 --repo ${nwo}`);
-    console.log(`       gh variable set NANOBOTS_WORKER_ENABLED --body 1 --repo ${nwo}`);
-  }
-  console.log(`\n  Run \`npx nanobots-sh verify daytona\` once DAYTONA_API_KEY is set, before enabling the worker cron.`);
-  if (coords) console.log(`\n  Board: https://github.com/orgs/${cfg.owner}/projects/${coords.projectNumber} (user account: check your projects tab)`);
-  console.log(`\nStart the loop:  /loop in Claude Code with .nanobots/LOOP-PROMPT.md`);
-  console.log(`             or:  npx nanobots-sh run outer\n`);
+  warn('onboarding hit its step limit — re-run `npx nanobots-sh init` to continue where the repo left off.');
 }
 
 function cmdUpdate() {
@@ -375,28 +533,14 @@ async function cmdVerify(target) {
   if (target !== 'daytona') die('usage: nanobots verify daytona');
   const apiKey = process.env.DAYTONA_API_KEY;
   if (!apiKey) die('DAYTONA_API_KEY not set');
-  const base = process.env.DAYTONA_API_URL || 'https://app.daytona.io/api';
-  const headers = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
 
-  say('authenticating to Daytona...');
-  const listRes = await fetch(`${base}/sandbox`, { headers });
-  if (!listRes.ok) die(`connection failed: ${listRes.status} ${await listRes.text().catch(() => '')}`.slice(0, 300));
-  say('connection ok.');
-
-  say('creating a tagged proof sandbox...');
-  const createRes = await fetch(`${base}/sandbox`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ labels: { purpose: 'nanobots-verify' }, autoStopInterval: 5, autoDeleteInterval: 10 }),
-  });
-  if (!createRes.ok) die(`sandbox create failed: ${createRes.status} ${await createRes.text().catch(() => '')}`.slice(0, 300));
-  const sandbox = await createRes.json();
-  say(`sandbox ${sandbox.id} created.`);
-
-  say('deleting proof sandbox...');
-  const delRes = await fetch(`${base}/sandbox/${sandbox.id}`, { method: 'DELETE', headers });
-  if (!delRes.ok) warn(`cleanup failed for ${sandbox.id} — check the Daytona dashboard and delete it manually.`);
-  else say('deleted.');
+  say('authenticating to Daytona + running a create/delete proof...');
+  let proof;
+  try { proof = await daytonaProof(apiKey); }
+  catch (e) { die(e.message); }
+  say(`sandbox ${proof.sandboxId} created.`);
+  if (proof.cleaned) say('deleted.');
+  else warn(`cleanup failed for ${proof.sandboxId} — check the Daytona dashboard and delete it manually.`);
 
   say(`${c.cyan('daytona: ready')} — connection + lifecycle proof passed.`);
 }
@@ -432,8 +576,7 @@ function cmdRun(role) {
 const args = process.argv.slice(2);
 const command = args.find((a) => !a.startsWith('-'));
 const flags = {
-  yes: args.includes('--yes') || args.includes('-y'),
-  smart: args.includes('--smart'),
+  headless: args.includes('--headless'),   // hidden: CI / self-test scaffold, no agent
   noGithub: args.includes('--no-github'),
 };
 
@@ -460,7 +603,7 @@ switch (command) {
     console.log(`
 ${c.cyan('nanobots')} v${VERSION} — self-improving agent loops for any GitHub repo
 
-  nanobots init [--smart] [--no-github] [--yes]   scaffold this repo
+  nanobots init                                    AI onboarding agent (needs OCR_LLM_URL/TOKEN/MODEL)
   nanobots update                                  re-render engine-owned files
   nanobots run <outer|worker>                      one headless cycle (worker = Daytona sandbox)
   nanobots verify daytona                          connection + lifecycle proof before enabling the worker cron

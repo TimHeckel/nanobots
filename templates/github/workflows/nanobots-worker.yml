@@ -27,6 +27,15 @@ jobs:
       GH_TOKEN: ${{ secrets.PROJECTS_PAT }}
       DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_KEY }}
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      # Optional but recommended: with all three set, the sandbox receives a per-run,
+      # repo-scoped installation token (no pull_requests permission) instead of the PAT.
+      # This job is the CONTROLLER — the private key stays here and never enters the sandbox.
+      NANOBOTS_GITHUB_APP_ID: ${{ secrets.NANOBOTS_GITHUB_APP_ID }}
+      NANOBOTS_GITHUB_APP_INSTALLATION_ID: ${{ secrets.NANOBOTS_GITHUB_APP_INSTALLATION_ID }}
+      NANOBOTS_GITHUB_APP_PRIVATE_KEY: ${{ secrets.NANOBOTS_GITHUB_APP_PRIVATE_KEY }}
+      # Opt-in only, and only after an org owner grants Workflows: write on the installation —
+      # requesting an ungranted permission makes EVERY token mint fail.
+      NANOBOTS_GITHUB_APP_WORKFLOWS: ${{ vars.NANOBOTS_GITHUB_APP_WORKFLOWS }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

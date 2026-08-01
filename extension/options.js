@@ -145,6 +145,10 @@ const PROVIDERS = {
   Google: { base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash', keys: 'https://aistudio.google.com/apikey' },
   Grok: { base: 'https://api.x.ai/v1', model: 'grok-4', keys: 'https://console.x.ai' },
   OpenRouter: { base: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-sonnet-5', keys: 'https://openrouter.ai/settings/keys' },
+  // nanobots' own shipped default — the same OpenAI-compatible provider `init` and the OCR
+  // review run on (OCR_LLM_URL / OCR_LLM_MODEL). Reuse those values here; note the chat agent
+  // reads screenshots, so pick a multimodal model if you want vision.
+  DeepSeek: { base: 'https://api.deepseek.com', model: 'deepseek-v4-flash', keys: 'https://platform.deepseek.com/api_keys' },
   Manual: null,
 };
 

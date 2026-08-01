@@ -7,8 +7,18 @@
 //
 // Env:
 //   GH_TOKEN          classic PAT, scopes project+repo, human account (same one the
-//                      outer loop uses)
+//                      outer loop uses). Controller-side; also the sandbox credential
+//                      ONLY when no GitHub App is configured (documented fallback).
 //   DAYTONA_API_KEY   controller-side only; never enters the sandbox
+//   NANOBOTS_GITHUB_APP_ID / _INSTALLATION_ID / _PRIVATE_KEY
+//                     optional but recommended. When all three are set, the sandbox gets a
+//                     per-run, repo-scoped installation token instead of the PAT — see
+//                     .nanobots/RUNTIMES.md "GitHub App credentials". Controller-side only:
+//                     the private key must NEVER be readable from inside the sandbox.
+//   NANOBOTS_GITHUB_APP_WORKFLOWS=true
+//                     opt-in; adds `workflows: write` for tasks that edit .github/workflows.
+//                     Requires an org owner to grant it on the installation FIRST — otherwise
+//                     every mint fails and every run stalls.
 //   One model credential (see .nanobots/RUNTIMES.md "Swapping the brain")
 //
 // ASSUMPTIONS ON THE DAYTONA REST API: this script calls the endpoints documented at
@@ -25,6 +35,7 @@ import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { createSandbox as daytonaCreateSandbox, execInSandbox as daytonaExecInSandbox, deleteSandbox as daytonaDeleteSandbox, redact } from './daytona-client.mjs';
+import { readAppConfig, createTokenSession, assertNoTokenInGitConfig } from './github-app-auth.mjs';
 
 const c = {
   cyan: (s) => `\x1b[1;36m${s}\x1b[0m`,
@@ -55,6 +66,18 @@ const approvalRequired = cfg.approval?.requireVersionedStart !== false;
 const DAYTONA_API_KEY = process.env.DAYTONA_API_KEY;
 if (!DAYTONA_API_KEY) die('DAYTONA_API_KEY not set — see .nanobots/RUNTIMES.md');
 if (!process.env.GH_TOKEN) die('GH_TOKEN not set — see .nanobots/RUNTIMES.md');
+
+// Sandbox credential: a per-run GitHub App installation token when the App is configured,
+// otherwise the controller's PAT (documented fallback). The App path is strictly better —
+// it is repo-scoped, expires, is revoked at the end of the run, and carries no
+// `pull_requests` permission, so the sandbox cannot open/modify/merge a PR.
+// See .nanobots/RUNTIMES.md "GitHub App credentials".
+const APP = readAppConfig(process.env);
+if (APP.partial) {
+  // Half-configured must never half-enable the path — but say so loudly, or the operator
+  // believes the App is live while the PAT is silently doing the work.
+  warn(`GitHub App partially configured (missing: ${APP.missing.join(', ')}) — treating as UNCONFIGURED and falling back to GH_TOKEN.`);
+}
 const MODEL_CREDS = ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN']
   .filter((k) => process.env[k]);
 if (MODEL_CREDS.length === 0) die('need CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY, or ANTHROPIC_AUTH_TOKEN');
@@ -210,6 +233,9 @@ async function main() {
   if (!claim(target.number, project.number, statusField)) return;
 
   let sandboxId;
+  // One session per run. Every token it issues is tracked so all of them are revoked on the
+  // way out — including any minted by a mid-run refresh, not just the first.
+  const session = APP.configured ? createTokenSession(APP, cfg.repo) : null;
   try {
     sandboxId = await createSandbox(target.number);
 
@@ -219,16 +245,31 @@ async function main() {
       if (r.exitCode !== 0) throw new Error(`database bootstrap step failed: ${step}`);
     }
 
+    say(session ? 'minting a per-run, repo-scoped installation token...' : 'using the controller PAT as the sandbox credential (no GitHub App configured)...');
+    const cloneToken = session ? await session.token() : process.env.GH_TOKEN;
+
     say('cloning repository into sandbox...');
-    const cloneCmd = `git clone --branch ${cfg.defaultBranch} https://x-access-token:${process.env.GH_TOKEN}@github.com/${NWO}.git repo`;
+    // `--no-tags` and a credential inline in the URL: git does NOT persist an inline
+    // credential to .git/config, but we verify rather than trust — see the assert below.
+    const cloneCmd = `git clone --branch ${cfg.defaultBranch} https://x-access-token:${cloneToken}@github.com/${NWO}.git repo`;
     const clone = await execInSandbox(sandboxId, cloneCmd, { timeout: 300 });
     if (clone.exitCode !== 0) throw new Error('clone failed');
 
+    // Assert the credential did not survive the clone. If it is sitting in .git/config, it
+    // outlives the run inside a sandbox filesystem and the per-run scoping is decorative.
+    const gitCfg = await execInSandbox(sandboxId, 'git config --local --list', { cwd: 'repo', timeout: 60 });
+    assertNoTokenInGitConfig(gitCfg.result ?? '', cloneToken);
+
     say('running the worker prompt inside the sandbox...');
+    // Refresh before the long build: installation tokens last an hour and a build can run
+    // longer, so the sandbox gets the newest token rather than one already partly spent.
+    const buildToken = session ? await session.refresh() : process.env.GH_TOKEN;
     const build = await execInSandbox(sandboxId, 'bash .nanobots/run-cycle.sh worker-inline', {
       cwd: 'repo',
       timeout: 60 * 45,
-      env: { GH_TOKEN: process.env.GH_TOKEN, ...MODEL_ENV },
+      // Only the scoped token crosses into the sandbox. The App id/installation/private key
+      // never do — a worker that could mint its own tokens would defeat the whole scheme.
+      env: { GH_TOKEN: buildToken, ...MODEL_ENV },
     });
 
     sh(`gh issue comment ${target.number} --repo ${NWO} --body ${JSON.stringify(
@@ -242,6 +283,16 @@ async function main() {
       `<!-- nanobots:run issue=${target.number} run=${RUN_ID} attempt=1 state=failed -->\n🤖 sandbox run failed: ${redact(err.message)}`,
     )}`);
   } finally {
+    // Revoke BEFORE the sandbox goes away, and on every exit path including failure/abort.
+    // Revocation is eventually consistent (~2–7s observed): this narrows the window, it does
+    // not close it. What actually contains a stray push is branch protection.
+    if (session) {
+      for (const r of await session.revokeAll()) {
+        if (r.revoked) say(`installation token revoked (${r.status}).`);
+        // 403 is NOT proof of revocation — GitHub returns it for rate limiting too.
+        else warn(`installation token revocation FAILED: ${r.reason ?? r.status} — it may stay live until it expires.`);
+      }
+    }
     await deleteSandbox(sandboxId);
   }
 }

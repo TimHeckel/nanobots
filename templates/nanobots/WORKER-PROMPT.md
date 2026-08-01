@@ -31,6 +31,10 @@ stop — the sandbox is deleted right after.
    never reach for a shared dev/staging/production database. Implement per the recipe.
    Gates before pushing:
 {{GATES_LIST}}
+   A gate that exits `0` has not necessarily checked anything — a config-level error can make
+   a typechecker exit before checking a single file, and a test runner that matched zero tests
+   also "passes". Be suspicious of a clean result you didn't expect, especially a faster one;
+   treat "0 tests ran" as a failure, not a pass.
 4. **PR.** Open a PR with `Closes #<issue>`, label `nanobots:built`, and a description
    stating root cause / approach, how each acceptance criterion is met, and the exact gate
    results (don't claim a gate passed if you didn't actually run it — the outer loop

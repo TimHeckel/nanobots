@@ -21,7 +21,22 @@ For every item in **Inbox** (label `nanobots:inbox`):
    - Acceptance criteria (observable behavior, not implementation)
    - Test expectations (every change ships with coverage)
    - Pointers: relevant files, docs, prior PRs, gotchas from LEARNINGS.md
-6. **Move to Ready** (or **Backlog** if scored below the line).
+6. **Decide the dependency shape.** Prefer work items that are **independently mergeable
+   where that is natural** — it produces better specs and simpler review. But a dependent
+   item (B needs the type/migration/helper A introduces) is **not a triage failure**; it is a
+   supported shape now that GitHub stacks PRs natively. Choose one:
+   - **Independent** — default. Split so each item stands alone.
+   - **Sequenced** — B stays in Backlog until A merges. Simplest, costs throughput.
+   - **Stacked** — only when `stacks.enabled` is on in `.nanobots/config.json`. B's PR targets
+     A's branch; the outer loop owns the topology (see LOOP-PROMPT.md). Cap at
+     `stacks.maxDepth`; deeper means re-split. Same-repository only — a fork-based
+     contribution cannot be stacked.
+
+   Record which shape you chose **and why** in the work spec, and note the outcome in
+   LEARNINGS.md — whether stacking actually paid for itself here is exactly the kind of
+   judgment the distill pass should sharpen over time.
+
+7. **Move to Ready** (or **Backlog** if scored below the line).
 
 ## Scoring
 

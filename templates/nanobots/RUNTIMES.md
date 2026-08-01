@@ -72,21 +72,126 @@ about the shape of the tradeoff:
   per-run (see below).
 
 **Sandbox-side, for the duration of one run only:**
-- `GH_TOKEN` — the same classic PAT the outer loop uses, injected into that one sandbox's
-  environment so the agent can push and open the PR directly. This is a deliberate
-  simplification versus a fully mediated "controller performs every git/GitHub mutation,
-  model never touches a token" design: nanobots has no hosted control plane or GitHub App
-  to mint short-lived, repo-scoped installation tokens, and building one is disproportionate
-  to what a scaffolder should carry. The mitigation is the sandbox itself — the token lives
-  only inside a disposable environment that's destroyed within minutes of the run ending,
-  never written to a shared machine, and never logged (see redaction rules below).
+- `GH_TOKEN` — either a **per-run GitHub App installation token** (recommended; see below)
+  or, when no App is configured, the same classic PAT the outer loop uses. The App path is
+  strictly better and is what you should run.
 - The model credential (whichever one the triggering process was given).
 - Nothing else. No production database URL, no cloud credentials, no other repo's secrets.
+  In particular **not** the App private key — see below.
 
-**If your repo can't accept that tradeoff** (e.g. the PAT has access to other repos too),
-scope a dedicated PAT to just this repo, or wire up a GitHub App installation token
-yourself and inject it in place of `GH_TOKEN` in `daytona-worker.mjs` — the script has one
-clearly marked injection point.
+## GitHub App credentials (recommended)
+
+Without an App, the sandbox holds a long-lived, org-wide PAT that **carries pull-request
+permission**. That matters more than it sounds: for a system whose safety story is "the outer
+loop reviews and merges", a sandbox credential that can open, update, and merge PRs makes the
+outer loop advisory rather than authoritative. It also can't be revoked per run — cleanup
+means rotating a shared secret, which breaks every other run.
+
+Set all three of `NANOBOTS_GITHUB_APP_ID`, `NANOBOTS_GITHUB_APP_INSTALLATION_ID`, and
+`NANOBOTS_GITHUB_APP_PRIVATE_KEY` and the controller mints a **short-lived, repository-scoped
+installation token per run** instead, hands only that to the sandbox, and revokes it on the
+way out. A partially configured App is treated as *unconfigured* (with a loud warning) so a
+half-finished setup can't half-enable the path.
+
+**Setup.** Register a GitHub App (org or personal), then install it on **selected
+repositories** — this repo — rather than "all repositories". Grant exactly:
+
+| Grant | Value | Why |
+|---|---|---|
+| Contents | `write` | clone + push the work branch |
+| Metadata | `read` | mandatory dependency |
+| Pull requests | **omit** | the load-bearing decision — see below |
+| Workflows | `write` *(opt-in)* | only if tasks may edit `.github/workflows` |
+| Administration, Checks, Statuses | **never** | the worker must not be able to forge its own review gate |
+
+Store the App id and installation id and the PEM as repo **secrets** (the workflow passes
+them through). The private key must live only where the controller runs.
+
+**Why `pull_requests` is omitted.** With it, the sandbox credential can open and modify PRs
+on its own. Without it, a sandbox that outlives its run can push commits to a branch nobody
+is watching — and that is the entire blast radius. It cannot turn that push into a PR, modify
+an existing one, or merge. If a worker legitimately needs to open its own PR, that call
+belongs in the controller (which holds a separate, PR-capable credential), not in a token
+handed to the sandbox.
+
+**Honest limits — do not read a tighter fence into this than exists:**
+
+- **`contents: write` is repository-wide, not ref-scoped.** GitHub has no ref-scoped
+  installation token. A credential that outlives its run can push to *any* branch in this
+  repo. What contains a stray push is **branch protection and required checks**, not token
+  scope. Protect your default branch.
+- **Revocation is eventually consistent.** Measured against live GitHub: after
+  `DELETE /installation/token` returned `204`, the token still worked at ~2s and was rejected
+  by ~7s. Revocation is defence in depth, not a fence.
+- **`403` is not proof of revocation.** GitHub also returns it for rate limiting while the
+  token stays valid. Only `204` and `401` prove the token is gone; anything else is logged
+  and reported as a failed revocation.
+- **The private key must never reach the sandbox.** If the controller and the worker share an
+  env file or a mounted secret, the worker can mint its own tokens with the App's full
+  permission set and the whole scheme is decorative. `daytona-worker.mjs` passes only the
+  minted token into the sandbox env, never the App credentials.
+- **`NANOBOTS_GITHUB_APP_WORKFLOWS=true` requires an org owner to grant Workflows: write on
+  the installation first.** Requesting a permission the installation was not granted fails
+  *every* token mint — not just the workflow-touching ones — and stalls every run.
+
+**PAT fallback** stays supported and is what runs when no App is configured. If you stay on
+it, scope a dedicated PAT to just this repo.
+
+## Stacked PRs (optional, off by default)
+
+A loop that triages into small work items produces dependent items — B needs the type or
+migration A introduces. Without stacking the outer loop either serializes on merge (throughput
+collapses to one PR at a time) or lets workers branch from the default branch and collide.
+
+nanobots uses **GitHub's native stacked pull requests** (public preview since 2026-07-30) via
+the `gh-stack` CLI extension (`gh extension install github/gh-stack`). It does not build
+bespoke stacking machinery and does not vendor Graphite/ghstack/spr — GitHub now owns the hard
+part (rebase and retarget on partial merge), and it composes with the branch protections and
+merge methods nanobots already relies on.
+
+Enable with `stacks.enabled: true` in `.nanobots/config.json`; `stacks.maxDepth` (default 3)
+caps how deep a stack may go.
+
+**Ownership.** The outer loop owns stack topology and runs every `gh stack` command. Workers
+stay unaware: one branch, one PR, no stack commands in the sandbox. That is not just tidiness
+— the controller is where the PR-capable credential lives, and the sandbox's per-run token
+deliberately cannot restructure PRs (see "GitHub App credentials" above).
+
+**The critical interaction — re-review after rebase.** When a lower layer merges, GitHub
+automatically rebases and retargets every PR above it. Their head SHAs change with no human
+action, no worker run, and no commit anyone authored. The OCR gate reviews *the exact head
+SHA*, so **a stack merge silently invalidates the review on every layer above it.**
+
+The loop's rule is therefore SHA-based, not event-based: compare the head SHA the OCR
+conclusion was recorded against with the PR's current head, and treat any mismatch as
+unreviewed and a hard block, re-dispatching OCR for that PR. Whether the automatic rebase
+happens to fire a `synchronize` event (which would re-trigger `nanobots-ocr.yml` on its own) is
+treated as an optimization, not a guarantee — this feature is days old and its event semantics
+may change during preview. Comparing SHAs is correct either way.
+
+**Conflicts.** GitHub rebases; it does not resolve semantic conflicts. On a conflicted restack
+the stack is labeled blocked and escalated to a human. **Never** let an agent resolve a restack
+conflict — it will re-apply or discard already-merged work, and this remains the failure mode
+most likely to lose work silently.
+
+**Merge methods.** All three work with stacks, including squash: squash creates one clean
+squashed commit per pull request, so merging *n* PRs creates *n* squashed commits on the base
+branch, landed atomically. The old "squash breaks stacks" footgun belonged to manual stacking
+and does not apply here.
+
+**Limits worth knowing before you turn this on:**
+
+- **Same-repository only.** All branches in a stack must live in one repository; cross-fork
+  stacks are unsupported. A fork-based contribution path cannot be stacked.
+- **Merge queue support is still rolling out.** GitHub describes it as landing "progressively",
+  and there is at least one open report of `Merge stack` enqueueing only the bottom PR
+  ([gh-stack discussion #172](https://github.com/github/gh-stack/discussions/172)). If this
+  repo uses a merge queue, verify the behavior before enabling stacked dispatch — and keep
+  `stacks.enabled` handy as the off switch. When stacks do enter a queue, they queue in order,
+  ejection cascades to everything above, and the merge group may exceed its configured max
+  size by up to 50% to keep a stack together.
+- **It is a preview.** GitHub's docs say the feature "is in public preview and subject to
+  change." That is why the default is off.
 
 ## OCR review gate (required, not inside Daytona)
 

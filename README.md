@@ -27,27 +27,41 @@ deliberate signal source, not a bottleneck.
 
 ## Install (any repo)
 
+Install is an **AI onboarding agent** — the only way in. Give it an OpenAI-compatible
+inference endpoint first (the *same* provider your repo needs for the required OCR review,
+so it's not an extra key), then run `init`:
+
 ```bash
 cd your-repo
-npx nanobots-sh init        # or: curl -fsSL nanobots.sh/install | sh
+export OCR_LLM_URL=https://api.deepseek.com/chat/completions
+export OCR_LLM_TOKEN=sk-...            # your provider key
+export OCR_LLM_MODEL=deepseek-v4-flash
+npx nanobots-sh init                  # or: curl -fsSL nanobots.sh/install | sh
 ```
 
-`init` asks ~6 questions (test commands, hard-gate areas, WIP cap — with answers
-auto-detected from your repo where possible; **no API key needed to install**), then:
+The agent then drives the whole setup conversationally — no checklist to work through
+afterward. It:
 
-1. renders the loop into `.nanobots/` (prompts, triage rubric, recipes, learnings log,
-   runner script, the Daytona worker controller, `config.json`),
-2. writes GitHub workflows + issue intake forms,
-3. scaffolds GitHub state via `gh`: the project board, Priority/Size fields, labels,
-   and a pinned status issue,
-4. prints the manual steps GitHub's API can't do, plus the secrets checklist.
+1. auto-detects your repo (owner/branch/test commands), asks a handful of config
+   questions, and **renders the loop** into `.nanobots/` (prompts, triage rubric, recipes,
+   learnings log, runner script, the Daytona worker controller, `config.json`) plus GitHub
+   workflows + issue intake forms,
+2. **scaffolds GitHub state** via `gh`: the project board, Status/Priority/Size fields,
+   labels, and a pinned status issue,
+3. **collects and sets your secrets and variables for you** — the model credential,
+   `PROJECTS_PAT`, `DAYTONA_API_KEY` (verified with a live create/delete sandbox proof
+   *before* it's stored), and the OCR review config — explaining what each one is and how
+   to get it, and offering the optional autofix responder,
+4. walks you through the one board setting GitHub's API can't script (the "Auto-add to
+   project" workflow).
 
 After `init` the repo is **fully self-contained** — markdown prompts, one shell script,
 plain workflows. No runtime dependency on this package. Your repo's rubric and recipes
 are *supposed* to drift from the templates: that's the learning.
 
-Optional: `init --smart` additionally uses the `claude` CLI (if installed) to study your
-repo and draft repo-specific recipes and gates into `.nanobots/SUGGESTIONS.md`.
+> The onboarding agent runs on any OpenAI-compatible `/chat/completions` endpoint with
+> tool-calling (DeepSeek, OpenAI, Together, OpenRouter, a local server, …). It talks to
+> you and sets things via `gh` on your machine — it never sees more than you type.
 
 ## Run it
 
@@ -100,6 +114,26 @@ migrations, infra), comes back `needs_human` instead of a patch. Reviewer and fi
 are configured independently — DeepSeek V4 Flash is the shared default for both if you
 don't override either.
 
+**Workers get a per-run credential, not your PAT.** Configure a GitHub App
+(`NANOBOTS_GITHUB_APP_ID` / `_INSTALLATION_ID` / `_PRIVATE_KEY`, offered during `init`) and the
+controller mints a **short-lived, repository-scoped installation token per run**, hands only
+that to the sandbox, and revokes it on the way out. It grants `contents: write` + `metadata:
+read` and deliberately **omits `pull_requests`** — so a sandbox that outlives its run can push
+to a branch nobody is watching, and that is the entire blast radius: it cannot open, modify, or
+merge a PR, or mint another credential. The App private key never enters the sandbox. Two
+honest limits: `contents: write` is repository-wide rather than ref-scoped (branch protection,
+not token scope, is what contains a stray push), and revocation is eventually consistent
+(~2–7s observed). Without an App, the PAT remains a documented fallback.
+
+**Stacked PRs, off by default.** A loop that triages into small items produces dependent ones.
+nanobots supports [GitHub's native stacked PRs](https://github.blog/changelog/2026-07-30-stacked-pull-requests-are-now-in-public-preview/)
+(public preview) via `gh-stack` rather than building its own — set `stacks.enabled` in
+`config.json`. The outer loop owns stack topology; workers stay unaware. The rule that makes it
+safe: when a lower layer merges, GitHub auto-rebases every PR above it, silently changing their
+head SHAs — and OCR reviews *the exact head SHA*, so the loop treats any SHA mismatch as
+unreviewed and re-dispatches OCR before merge. Restack conflicts escalate to a human; an agent
+is never allowed to resolve one.
+
 ## How the learning works
 
 Every finished (or failed) work item gets an entry in `.nanobots/LEARNINGS.md` — an
@@ -123,7 +157,7 @@ The loop's policy documents are its weights; GitHub history is the training log.
 ## Commands
 
 ```bash
-npx nanobots-sh init [--smart] [--no-github] [--yes]   # scaffold a repo
+npx nanobots-sh init                                    # AI onboarding agent (needs OCR_LLM_URL/TOKEN/MODEL)
 npx nanobots-sh update                                  # re-render engine-owned files only
 npx nanobots-sh run <outer|worker>                      # one headless cycle (worker = Daytona sandbox)
 npx nanobots-sh verify daytona                           # connection + lifecycle proof
