@@ -27,8 +27,18 @@ const MARKER = '<!-- nanobots:ocr:sticky -->';
 
 // ── library (pure) ───────────────────────────────────────────────────────────
 
-export function parseOcrOutput(rawText) {
+// `exitCode` is the OCR binary's own exit status when the caller captured it. It is the only
+// way to tell two very different empty outputs apart:
+//   exit 0 + empty  → OCR ran fine and found nothing REVIEWABLE (e.g. a docs/YAML-only diff).
+//                     Treating that as a failure blocks every documentation PR forever.
+//   nonzero + empty → OCR did not run (bad config, bootstrap failure). Must stay blocking.
+// When the exit code is unknown we keep the old, conservative behaviour and block, because a
+// review that might not have happened must never read as clean.
+export function parseOcrOutput(rawText, { exitCode = null } = {}) {
   if (!rawText || !rawText.trim()) {
+    if (exitCode === 0) {
+      return { findings: [], parseError: null, noReviewableChanges: true };
+    }
     return { findings: [], parseError: 'OCR produced no findings output (bootstrap or run failure)' };
   }
   let parsed;
@@ -151,7 +161,11 @@ async function main() {
   const maxSummaryComments = Number(process.env.OCR_MAX_SUMMARY_COMMENTS ?? 20);
 
   const rawText = existsSync(findingsPath) ? readFileSync(findingsPath, 'utf8') : '';
-  const { findings, parseError } = parseOcrOutput(rawText);
+  // OCR_EXIT_CODE lets us distinguish "ran fine, nothing reviewable" from "never ran".
+  const rawExit = process.env.OCR_EXIT_CODE;
+  const exitCode = rawExit === undefined || rawExit === '' ? null : Number(rawExit);
+  const { findings, parseError, noReviewableChanges } = parseOcrOutput(rawText, { exitCode });
+  if (noReviewableChanges) console.log('OCR exited 0 with no output — no reviewable changes in this diff.');
   const report = buildReport({
     findings, parseError, headSha,
     blockingSeverities: cfg.ocr?.blockingSeverities, autoReviewEventsEnabled,

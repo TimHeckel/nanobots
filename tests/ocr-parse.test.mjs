@@ -70,9 +70,30 @@ ok(parseOcrOutput(JSON.stringify({ status: 'success' })).parseError !== null,
   ok(r.findings[0].line === 9, 'the surviving entry keeps its line');
 }
 
+// ── "nothing reviewable" is not the same as "review failed" ──────────────────
+// A docs/YAML-only PR makes OCR exit 0 with empty output. Treating that as a failure blocks
+// every documentation PR forever; treating an unknown or nonzero exit as clean would let a
+// broken reviewer wave code through. The exit code is what separates them.
+{
+  const ranFine = parseOcrOutput('', { exitCode: 0 });
+  ok(ranFine.parseError === null, 'exit 0 + empty output is NOT a failure (nothing reviewable)');
+  ok(ranFine.noReviewableChanges === true, 'it is reported as noReviewableChanges');
+  ok(ranFine.findings.length === 0, 'and carries no findings');
+
+  const brokeAndExited = parseOcrOutput('', { exitCode: 1 });
+  ok(brokeAndExited.parseError !== null, 'nonzero exit + empty output STAYS a failure');
+
+  const unknown = parseOcrOutput('');
+  ok(unknown.parseError !== null, 'unknown exit code stays conservative and blocks');
+  ok(parseOcrOutput('   \n  ', { exitCode: 0 }).noReviewableChanges === true, 'whitespace-only output with exit 0 counts as nothing reviewable');
+  // A successful exit must never launder malformed output into a clean review.
+  ok(parseOcrOutput('not json', { exitCode: 0 }).parseError !== null, 'exit 0 does not excuse malformed JSON');
+}
+
 if (fails.length) {
   console.error(`FAILED ${fails.length}:`);
   for (const f of fails) console.error(`  ✗ ${f}`);
   process.exit(1);
 }
 console.log(`ok — ${passed} ocr-parse tests passed`);
+

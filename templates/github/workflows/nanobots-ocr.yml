@@ -109,11 +109,13 @@ jobs:
             ./ocr review --from "origin/${{ steps.pr.outputs.base_ref }}" --to "${{ steps.pr.outputs.head_sha }}" \
             --format json --audience agent \
             --concurrency "${OCR_CONCURRENCY:-3}" --timeout "${OCR_TASK_TIMEOUT:-20}" \
-            > ocr-findings.json 2> ocr-stderr.log || true
-          # stdout holds the findings JSON, so the binary's own errors live only in stderr.
-          # Surfacing them is the difference between "no findings" and "never ran at all".
-          if [ ! -s ocr-findings.json ]; then
-            echo "::warning::OCR produced no findings output; its stderr follows"
+            > ocr-findings.json 2> ocr-stderr.log && echo 0 > ocr-exit.txt || echo $? > ocr-exit.txt
+          # The exit code is the ONLY way to tell "ran fine, nothing reviewable" (exit 0 with
+          # empty output — a docs-only diff does this) from "never ran" (nonzero). Without it
+          # every documentation PR is blocked forever by a review that never had work to do.
+          echo "ocr exit: $(cat ocr-exit.txt)  bytes: $(wc -c < ocr-findings.json)"
+          if [ ! -s ocr-findings.json ] || ! grep -q "[^[:space:]]" ocr-findings.json; then
+            echo "::warning::OCR wrote no findings JSON; its stderr follows"
             tail -40 ocr-stderr.log || true
           fi
 
@@ -125,6 +127,7 @@ jobs:
           OCR_MAX_INLINE_COMMENTS: ${{ vars.OCR_MAX_INLINE_COMMENTS }}
           OCR_MAX_SUMMARY_COMMENTS: ${{ vars.OCR_MAX_SUMMARY_COMMENTS }}
         run: |
+          export OCR_EXIT_CODE="$(cat ocr-exit.txt 2>/dev/null || echo)"
           node .nanobots/open-code-review-report.mjs ocr-findings.json "${{ steps.pr.outputs.head_sha }}" ocr-report.json
         continue-on-error: true
 
