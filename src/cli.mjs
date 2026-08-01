@@ -7,6 +7,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, cpSync }
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import readline from 'node:readline/promises';
+import { Writable } from 'node:stream';
 
 const PKG = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json'), 'utf8'));
 const VERSION = PKG.version;
@@ -329,17 +330,48 @@ const CREDENTIAL_QUESTION = /\b(token|api[- ]?key|key|pem|private[- ]?key|secret
 const isCredentialPrompt = (question, flagged) => Boolean(flagged) || CREDENTIAL_QUESTION.test(question || '');
 
 // Terminal line reader with optional masking for secret values (zero-dependency).
-function promptLine(query, { secret = false } = {}) {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    if (!secret) {
-      rl.question(query, (v) => { rl.close(); resolve(v); });
-      return;
-    }
-    const onData = () => process.stdout.write(`\x1b[2K\x1b[200D${query}${'*'.repeat(rl.line.length)}`);
-    process.stdin.on('data', onData);
-    rl.question(query, (v) => { process.stdin.removeListener('data', onData); rl.close(); process.stdout.write('\n'); resolve(v); });
-  });
+// ONE readline interface for the whole session, created lazily. Two hard-won constraints:
+//   1. `node:readline/promises` question() RETURNS A PROMISE and takes no callback. Passing
+//      one is silently swallowed as an options object and the prompt hangs forever.
+//   2. A fresh interface per prompt does NOT survive the previous one's close() — the second
+//      prompt never receives input. The interface must be shared and closed once at the end.
+// Both of these hung `init` outright, which is the only install path, so they are covered by
+// tests/prompt.test.mjs.
+let sharedRl = null;
+let promptOut = null;
+function promptInterface() {
+  if (!sharedRl) {
+    // readline echoes input to its output stream. Redrawing over that echo afterwards is too
+    // late — a PASTED credential arrives as one chunk, gets echoed in full, and is in the
+    // terminal (and scrollback) before any redraw runs. So we give readline a mutable sink
+    // and suppress the echo at the source instead.
+    promptOut = new Writable({
+      write(chunk, enc, cb) {
+        if (promptOut.muted) process.stdout.write('*');
+        else process.stdout.write(chunk, enc);
+        cb();
+      },
+    });
+    promptOut.muted = false;
+    sharedRl = readline.createInterface({ input: process.stdin, output: promptOut, terminal: true });
+  }
+  return sharedRl;
+}
+function closePrompt() {
+  if (sharedRl) { sharedRl.close(); sharedRl = null; promptOut = null; }
+}
+
+async function promptLine(query, { secret = false } = {}) {
+  const rl = promptInterface();
+  if (!secret) return rl.question(query);
+  const answer = rl.question(query);   // the prompt itself is written while still unmuted
+  promptOut.muted = true;              // …everything after it becomes asterisks
+  try {
+    return await answer;
+  } finally {
+    promptOut.muted = false;
+    process.stdout.write('\n');
+  }
 }
 
 async function llmChat({ url, token, model, messages, tools }) {
@@ -374,8 +406,14 @@ function onboardingSystemPrompt(d) {
 You cannot see the screen. Communicate ONLY through message_user (to tell the user things) and ask_user (to collect input). Never put user-facing text in plain assistant content. Be warm but concise. Never invent a token, key, or URL: always ask_user for secret values.
 
 TWO RULES THAT ARE NOT OPTIONAL:
-1. **message_user before every lettered section below.** ask_user asks a bare question with no context; message_user is the only way the user learns what a thing is, why it is needed, or how to get it. A run that is nothing but ask_user calls is a failed run — the user is staring at demands with no explanation. One or two sentences is enough.
+1. **message_user before every lettered section below.** ask_user asks a bare question with no context; message_user is the only way the user learns what a thing is, why it is needed, or how to get it. A run that is nothing but ask_user calls is a failed run — the user is staring at demands with no explanation.
 2. **secret:true on EVERY ask_user that collects a token, key, PEM, password, or PAT.** Without it their credential echoes in plain text in their terminal and scrollback.
+
+KEEP IT SHORT — this is a terminal, not a document:
+- Your opening greeting is ONE short sentence. Do not preview what is coming, do not list the questions you are about to ask, do not define terms up front.
+- Each message_user is 1-2 sentences, max ~30 words. If a section needs more, say the minimum and let the questions carry the rest.
+- **Explain each thing at the moment you ask about it, never in advance.** A question whose meaning is obvious from its own wording (board name, WIP cap) needs no explanation at all — just ask it.
+- Never restate what the user just told you back to them. Acknowledge briefly or not at all.
 
 Target repo: ${nwo} (default branch ${d.defaultBranch}). Detected gate/test commands: ${d.gates.join(', ') || 'none detected'}.
 
@@ -554,6 +592,7 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
     { role: 'user', content: 'Begin onboarding.' },
   ];
 
+  try {
   for (let step = 0; step < 60; step++) {
     let msg;
     try { msg = await llmChat({ url, token, model, messages, tools: ONBOARDING_TOOLS }); }
@@ -589,6 +628,10 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
   }
   if (DRY_RUN) emitTranscript(transcript, null);
   warn('onboarding hit its step limit — re-run `npx nanobots-sh init` to continue where the repo left off.');
+  } finally {
+    // Without this the process hangs on an open stdin handle after the agent finishes.
+    closePrompt();
+  }
 }
 
 function cmdUpdate() {
