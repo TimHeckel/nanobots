@@ -37,19 +37,26 @@ export function parseOcrOutput(rawText) {
   } catch (err) {
     return { findings: [], parseError: `malformed findings JSON: ${err.message}` };
   }
-  const list = Array.isArray(parsed) ? parsed : (parsed.findings ?? null);
+  // OCR's own JSON uses `comments[]` with `path`/`start_line`; older/agent shapes used
+  // `findings[]` with `file`/`line`. Accept both — reading only `findings`/`file` silently
+  // dropped every real finding and reported a clean review, which is the worst possible
+  // failure for a gate whose entire job is to block.
+  const list = Array.isArray(parsed)
+    ? parsed
+    : (parsed.findings ?? parsed.comments ?? null);
   if (!Array.isArray(list)) {
-    return { findings: [], parseError: 'findings JSON has no findings array' };
+    return { findings: [], parseError: 'findings JSON has neither a findings nor a comments array' };
   }
   const findings = list
-    .filter((f) => f && typeof f.file === 'string' && SEVERITIES.includes(f.severity))
+    .filter((f) => f && typeof (f.file ?? f.path) === 'string' && SEVERITIES.includes(f.severity))
     .map((f) => {
+      const line = [f.line, f.start_line, f.startLine].find(Number.isInteger);
       const finding = {
-        file: String(f.file).slice(0, 300),
-        line: Number.isInteger(f.line) ? f.line : 0,
+        file: String(f.file ?? f.path).slice(0, 300),
+        line: Number.isInteger(line) ? line : 0,
         category: String(f.category ?? 'other').slice(0, 40),
         severity: f.severity,
-        content: String(f.content ?? '').slice(0, 500),
+        content: String(f.content ?? f.message ?? '').slice(0, 500),
       };
       return { ...finding, fingerprint: fingerprintFinding(finding) };
     })
