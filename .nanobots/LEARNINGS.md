@@ -19,6 +19,28 @@ Entry format:
 
 ---
 
+## 2026-08-01 — #2 plan comment was missing the mandatory machine-readable marker
+- **Outcome:** n/a (caught during cycle 2's review-outcomes read, not a dispatched item;
+  issue #2 is still Ready, not yet Done)
+- **What worked / what didn't:** Cycle 1 posted a "Plan ready" comment on #2 with scope,
+  acceptance criteria, and gates, then a *separate* follow-up comment stating "Plan hash:
+  `1cb719a4564a`" in prose. Neither comment contained the literal
+  `<!-- nanobots:plan issue=2 hash=1cb719a4564a -->` marker LOOP-PROMPT.md requires.
+  `daytona-worker.mjs`'s `checkApproval()` finds the plan by regex
+  (`/<!--\s*nanobots:plan\s+issue=\d+\s+hash=([0-9a-f]{12})\s*-->/`) against comment bodies
+  — with no comment matching, the item would read as "no versioned plan posted yet"
+  forever, so `/nanobots start 1cb719a4564a` from a collaborator could never have claimed
+  it, no matter how correct the hash was. The sha256 itself was computed correctly (verified
+  by re-hashing the exact plan text) — only the marker line was missing. Fixed by editing
+  the original "Plan ready" comment via `gh api ... -X PATCH` to append the marker as its
+  final line, keeping the same hash since the text above it was unchanged.
+- **Lesson:** "Post a comment with X" and "the comment ends with the exact marker" are two
+  separate acceptance criteria — satisfying the first (useful prose, correct hash mentioned
+  somewhere) does not imply the second. When posting or reviewing a plan comment, grep the
+  actual comment body for the literal marker regex before trusting that a plan exists;
+  don't infer it from the hash appearing in nearby text.
+- **Applies to:** triage | prompt
+
 ## 2026-08-01 — TRIAGE.md hard-gate list drifted from config.json
 - **Outcome:** n/a (caught during cycle 1's policy read, not a dispatched item)
 - **What worked / what didn't:** `.nanobots/config.json` `hardGates` listed four real
