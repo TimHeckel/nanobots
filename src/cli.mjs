@@ -379,7 +379,11 @@ async function createAppViaManifest({ owner, repo, isOrg, appName }) {
           url: `https://github.com/${owner}/${repo}`,
           redirect_url: `http://127.0.0.1:${port}/cb`,
           public: false,
-          hook_attributes: { active: false },      // nanobots polls; it needs no webhook
+          // nanobots polls and needs no webhook, but GitHub's manifest schema still REQUIRES
+          // hook_attributes.url whenever hook_attributes is present — omitting it fails the
+          // whole submission with the unhelpful `"url" wasn't supplied`. Supply a valid URL
+          // and disable delivery.
+          hook_attributes: { url: `https://github.com/${owner}/${repo}`, active: false },
           default_events: [],
           // The load-bearing line: contents+metadata only. No pull_requests, no checks,
           // no statuses, no administration.
@@ -524,6 +528,8 @@ async function promptChoice(question, options) {
 }
 
 function openBrowser(url) {
+  // Tests drive this flow for real and must not hijack the developer's browser.
+  if (process.env.NANOBOTS_NO_BROWSER === '1') return;
   const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
   spawnSync(cmd, [url], { stdio: 'ignore' });
 }
