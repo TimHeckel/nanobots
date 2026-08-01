@@ -39,6 +39,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PROJECTS_PAT }}
         with:
+          # The action needs its GitHub credential as an INPUT, not an env var. Without this it
+          # falls back to requiring the Claude Code GitHub App and fails every run with
+          # "Claude Code is not installed on this repository" — see RUNTIMES.md.
+          github_token: ${{ secrets.PROJECTS_PAT }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             Read .nanobots/LOOP-PROMPT.md and execute exactly one outer-loop

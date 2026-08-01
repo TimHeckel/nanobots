@@ -144,10 +144,6 @@ The loop's policy documents are its weights; GitHub history is the training log.
 ## Requirements
 
 - `gh` CLI authenticated, with the `project` scope (`gh auth refresh -s project`)
-- **The [Claude Code GitHub App](https://github.com/apps/claude) installed on the repo** —
-  required before the outer loop can run in Actions. `nanobots-outer.yml` uses
-  `anthropics/claude-code-action`, which fails every run with "Claude Code is not installed
-  on this repository" until the App is installed. Not needed for laptop/VM runs.
 - A [Daytona](https://daytona.io) account and API key — required, not optional. Workers
   always build in a Daytona sandbox; there's no local/VM worker mode.
 - Secrets: `CLAUDE_CODE_OAUTH_TOKEN` (or another model credential), `PROJECTS_PAT` — a
