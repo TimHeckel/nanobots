@@ -315,6 +315,127 @@ async function daytonaProof(apiKey) {
   return { sandboxId: sandbox.id, cleaned };
 }
 
+// ── GitHub App creation (manifest flow) ───────────────────────────────────────
+// GitHub has no API to create an App outright, but the App Manifest flow gets us all the way
+// there: we POST a manifest with the permissions ALREADY DECLARED, the user just clicks
+// "Create GitHub App", and GitHub hands back a code we exchange for the App id AND private
+// key. That is the whole point — a hand-created App lets someone tick `pull_requests` and
+// silently defeat the per-run credential design. A manifest makes the permission set
+// impossible to get wrong.
+
+function manifestPage(manifest, actionUrl) {
+  const json = JSON.stringify(manifest)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return `<!doctype html><meta charset="utf-8"><title>Creating your nanobots GitHub App…</title>
+<body style="font:15px system-ui;padding:3rem;max-width:34rem;margin:auto">
+<h2>Handing you to GitHub…</h2>
+<p>Review the permissions (Contents: write, Metadata: read — nothing else) and press
+<b>Create GitHub App</b>. You'll come straight back here.</p>
+<form id="f" method="post" action="${actionUrl}"><input type="hidden" name="manifest" value="${json}"></form>
+<script>document.getElementById('f').submit()</script></body>`;
+}
+
+const DONE_PAGE = `<!doctype html><meta charset="utf-8"><title>nanobots</title>
+<body style="font:15px system-ui;padding:3rem;max-width:34rem;margin:auto">
+<h2>✅ App created</h2><p>Return to your terminal — nanobots has the credentials.</p></body>`;
+
+// Runs a one-shot local listener, walks the user through the GitHub form, and converts the
+// resulting code into { appId, pem, slug }. Never writes the key to disk.
+async function createAppViaManifest({ owner, repo, isOrg, appName }) {
+  const { createServer } = await import('node:http');
+  return new Promise((resolve, reject) => {
+    const server = createServer(async (req, res) => {
+      const url = new URL(req.url, 'http://127.0.0.1');
+      if (url.pathname === '/') {
+        const port = server.address().port;
+        const manifest = {
+          name: appName,
+          url: `https://github.com/${owner}/${repo}`,
+          redirect_url: `http://127.0.0.1:${port}/cb`,
+          public: false,
+          hook_attributes: { active: false },      // nanobots polls; it needs no webhook
+          default_events: [],
+          // The load-bearing line: contents+metadata only. No pull_requests, no checks,
+          // no statuses, no administration.
+          default_permissions: { contents: 'write', metadata: 'read' },
+        };
+        const action = isOrg
+          ? `https://github.com/organizations/${owner}/settings/apps/new`
+          : 'https://github.com/settings/apps/new';
+        res.writeHead(200, { 'content-type': 'text/html' });
+        res.end(manifestPage(manifest, action));
+        return;
+      }
+      if (url.pathname === '/cb') {
+        const code = url.searchParams.get('code');
+        if (!code) { res.writeHead(400); res.end('missing code'); return; }
+        try {
+          const conv = await fetch(`https://api.github.com/app-manifests/${code}/conversions`, {
+            method: 'POST',
+            headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'nanobots-init' },
+          });
+          const body = await conv.json();
+          if (!conv.ok || !body.id) throw new Error(`conversion failed: ${conv.status} ${body.message ?? ''}`);
+          res.writeHead(200, { 'content-type': 'text/html' });
+          res.end(DONE_PAGE);
+          server.close();
+          resolve({ appId: String(body.id), pem: body.pem, slug: body.slug, htmlUrl: body.html_url });
+        } catch (err) {
+          res.writeHead(500); res.end(String(err.message));
+          server.close();
+          reject(err);
+        }
+        return;
+      }
+      res.writeHead(404); res.end();
+    });
+
+    server.listen(0, '127.0.0.1', () => {
+      const url = `http://127.0.0.1:${server.address().port}/`;
+      console.log(`\n${c.cyan('→')} opening ${url} — if your browser didn't open, paste that URL into it.\n`);
+      openBrowser(url);
+    });
+    server.on('error', reject);
+    // Generous: the user has to read a GitHub permissions page and click through.
+    setTimeout(() => { server.close(); reject(new Error('timed out waiting for the GitHub App to be created (5 min)')); }, 5 * 60 * 1000);
+  });
+}
+
+// After creation the App still has to be INSTALLED on the repo. We can't click that for the
+// user, but we can watch for it: mint an App JWT and poll until the installation appears,
+// which also yields the installation id without asking them to read it out of a URL.
+async function waitForInstallation({ appId, pem, slug }, { timeoutMs = 5 * 60 * 1000 } = {}) {
+  const { appJwt } = await import(pathToFileURL(join(TEMPLATES, 'nanobots', 'github-app-auth.mjs')).href);
+  const installUrl = `https://github.com/apps/${slug}/installations/new`;
+  console.log(`\n${c.cyan('→')} opening ${installUrl}\n   Choose ${c.cyan('Only select repositories')} and pick your repo, then come back here.\n`);
+  openBrowser(installUrl);
+
+  const started = Date.now();
+  process.stdout.write('   waiting for the installation');
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const res = await fetch('https://api.github.com/app/installations', {
+        headers: {
+          Authorization: `Bearer ${appJwt({ appId, privateKey: pem })}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'nanobots-init',
+        },
+      });
+      if (res.ok) {
+        const list = await res.json();
+        if (Array.isArray(list) && list.length > 0) {
+          process.stdout.write(' ✓\n');
+          return String(list[0].id);
+        }
+      }
+    } catch { /* transient — keep polling */ }
+    process.stdout.write('.');
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  process.stdout.write('\n');
+  throw new Error('timed out waiting for the app installation');
+}
+
 // ── the onboarding agent ───────────────────────────────────────────────────────
 // nanobots has no interactive install path other than this. `init` boots an agent on
 // the same OpenAI-compatible endpoint the repo already needs for OCR review, and that
@@ -361,6 +482,26 @@ function closePrompt() {
   if (sharedRl) { sharedRl.close(); sharedRl = null; promptOut = null; }
 }
 
+// Numbered multiple choice. Better than a free-text question whenever the user might not
+// have the thing yet — "paste it" vs "walk me through getting one" is a choice, not a blank.
+async function promptChoice(question, options) {
+  console.log(`\n${c.cyan('?')} ${question}`);
+  options.forEach((o, i) => console.log(`   ${c.cyan(String(i + 1))}) ${o}`));
+  for (;;) {
+    const raw = (await promptLine(`   choose 1-${options.length}: `)).trim();
+    const n = Number.parseInt(raw, 10);
+    if (n >= 1 && n <= options.length) return options[n - 1];
+    const typed = raw && options.find((o) => o.toLowerCase().startsWith(raw.toLowerCase()));
+    if (typed) return typed;
+    console.log(c.dim(`   enter a number between 1 and ${options.length}`));
+  }
+}
+
+function openBrowser(url) {
+  const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+  spawnSync(cmd, [url], { stdio: 'ignore' });
+}
+
 async function promptLine(query, { secret = false } = {}) {
   const rl = promptInterface();
   if (!secret) return rl.question(query);
@@ -389,7 +530,9 @@ async function llmChat({ url, token, model, messages, tools }) {
 
 const ONBOARDING_TOOLS = [
   { type: 'function', function: { name: 'message_user', description: 'Say something to the user in the terminal. This is your ONLY channel for user-facing text — never put it in plain content.', parameters: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] } } },
-  { type: 'function', function: { name: 'ask_user', description: 'Ask the user a question and return their typed answer. Set secret:true for tokens/keys (input is masked).', parameters: { type: 'object', properties: { question: { type: 'string' }, secret: { type: 'boolean' } }, required: ['question'] } } },
+  { type: 'function', function: { name: 'ask_user', description: 'Ask an open question and return the typed answer. Set secret:true for tokens/keys (input is masked). Prefer ask_choice whenever the answer is one of a known set.', parameters: { type: 'object', properties: { question: { type: 'string' }, secret: { type: 'boolean' } }, required: ['question'] } } },
+  { type: 'function', function: { name: 'ask_choice', description: 'Ask a multiple-choice question; the user picks by number and the chosen option string is returned. Use this for every yes/no and every "do you have X or should I help you get it" decision — it is far better than an open question when the user may not have the thing yet.', parameters: { type: 'object', properties: { question: { type: 'string' }, options: { type: 'array', items: { type: 'string' }, minItems: 2 } }, required: ['question', 'options'] } } },
+  { type: 'function', function: { name: 'create_github_app', description: 'CREATE the GitHub App for the user via GitHub\'s App Manifest flow: opens their browser, they press one button, and this returns the App ID and private key with the correct permissions (contents:write + metadata:read, no pull_requests) already baked in. Then it waits for them to install it and captures the installation id. Use this instead of asking them to create an App by hand.', parameters: { type: 'object', properties: { appName: { type: 'string', description: 'Globally unique App name, e.g. nanobots-<owner>' }, isOrg: { type: 'boolean', description: 'true if the repo owner is an organization' } }, required: ['appName'] } } },
   { type: 'function', function: { name: 'render_scaffold', description: 'Write the .nanobots/ prompts, workflows, and config.json into the repo. Call once after gathering config.', parameters: { type: 'object', properties: { board: { type: 'string' }, humanLabel: { type: 'string' }, wipCap: { type: 'integer' }, gates: { type: 'array', items: { type: 'string' } }, hardGates: { type: 'array', items: { type: 'string' } }, actionsEnabled: { type: 'boolean' } }, required: ['board', 'humanLabel', 'wipCap', 'gates', 'hardGates', 'actionsEnabled'] } } },
   { type: 'function', function: { name: 'check_gh', description: 'Report gh auth status and whether the token has the project scope needed for Projects v2.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'scaffold_github', description: 'Create the project board, Status/Priority/Size fields, labels, and pinned status issue. Requires render_scaffold first.', parameters: { type: 'object', properties: {} } } },
@@ -415,6 +558,10 @@ KEEP IT SHORT — this is a terminal, not a document:
 - **Explain each thing at the moment you ask about it, never in advance.** A question whose meaning is obvious from its own wording (board name, WIP cap) needs no explanation at all — just ask it.
 - Never restate what the user just told you back to them. Acknowledge briefly or not at all.
 
+ANSWER HANDLING:
+- For any question that collects a LIST (gate commands, hard-gate areas), treat a bare "none", "no", "n/a", "skip", "empty", or "-" as an explicitly EMPTY list. Pass [] — never store the literal word as a list entry. Empty is a valid, supported answer for both of these; say so in the question itself, e.g. "(or 'none')".
+- An empty reply always means "accept the bracketed default", which is NOT the same as "none". Do not conflate them.
+
 Target repo: ${nwo} (default branch ${d.defaultBranch}). Detected gate/test commands: ${d.gates.join(', ') || 'none detected'}.
 
 Run the setup in this order:
@@ -428,16 +575,23 @@ C. REQUIRED SECRETS — for each, explain what it is and how to get it, ask_user
    • PROJECTS_PAT — a CLASSIC GitHub personal access token with THREE scopes: repo, project, AND read:org, from a human account (the default GITHUB_TOKEN cannot touch org Projects v2). read:org is required even for a personal account: without it the \`gh project\` CLI fails with "unknown owner type" even though the underlying GraphQL API works. Give them this direct link, which pre-ticks all three: https://github.com/settings/tokens/new?scopes=repo,project,read:org&description=nanobots
    • DAYTONA_API_KEY — from daytona.io → API Keys. REQUIRED; workers always build in a Daytona sandbox. Before storing it, call verify_daytona with the key; only set_secret it if the proof passes. If it fails, report the error and offer to retry.
 
-D. RECOMMENDED — PER-RUN GITHUB APP CREDENTIALS. Explain the tradeoff in two sentences, then ask whether to set it up now (skipping is fine — the PAT keeps working and they can add this later). Without an App, the sandbox holds a long-lived, org-wide PAT that can open, update, and merge PRs, which makes the outer loop's review advisory rather than authoritative. With one, the sandbox gets a short-lived, repository-scoped token per run that can clone and push and nothing else.
-   If yes, walk them through it: register a GitHub App (Settings → Developer settings → GitHub Apps → New), install it on SELECTED REPOSITORIES (this repo only, never "all repositories"), and grant exactly Contents: write and Metadata: read — and explicitly NOT Pull requests, Administration, Checks, or Statuses. Then ask_user for each and store: set_secret NANOBOTS_GITHUB_APP_ID; set_secret NANOBOTS_GITHUB_APP_INSTALLATION_ID (the number at the end of the installation's settings URL); set_secret NANOBOTS_GITHUB_APP_PRIVATE_KEY (secret:true — the whole PEM including BEGIN/END lines; if their terminal mangles multi-line paste, tell them a single line with \\n escapes works, those are restored automatically).
-   State two caveats plainly: all three values are required, and a partial setup is treated as unconfigured and silently falls back to the PAT; and \`contents: write\` is repository-wide, NOT branch-scoped — branch protection on the default branch, not the token, is what actually contains a stray push.
-   Only if they say tasks may edit .github/workflows: set_variable NANOBOTS_GITHUB_APP_WORKFLOWS=true, and warn that an org owner must grant Workflows: write on the installation FIRST, because requesting a permission the installation lacks makes EVERY token mint fail and stalls every run.
+D. PER-RUN GITHUB APP CREDENTIALS — YOU CREATE IT FOR THEM, they do not create it by hand.
+   Explain the tradeoff in two sentences: without an App the sandbox holds a long-lived, org-wide PAT that can open, update and merge PRs — which makes the outer loop's review advisory instead of authoritative; with one, each run gets a short-lived, repo-scoped token that can clone and push and nothing else.
+   Then ask_choice: ["Create the GitHub App for me now (recommended)", "I'll paste credentials for an App I already have", "Skip — use the PAT for now, add this later"].
+   • "Create … for me" → call create_github_app with appName "nanobots-<owner>" (lowercased) and isOrg set correctly. It opens their browser, they click one button, and it stores all three secrets itself. DO NOT ask them for App ID, installation ID, or the PEM afterwards — the tool already stored them. Just confirm what happened.
+   • "I'll paste …" → ask_user for each of the three and set_secret them. Tell them all three are required; a partial setup is treated as unconfigured and silently falls back to the PAT.
+   • "Skip" → say the PAT stays in use and move on. Do not store anything.
+   Only if they say tasks may edit .github/workflows: set_variable NANOBOTS_GITHUB_APP_WORKFLOWS=true, warning that an org owner must grant Workflows: write on the installation FIRST or every token mint fails.
 
-E. REQUIRED OCR REVIEW — every nanobots:built PR gets a required review. Note the endpoint powering YOU is exactly what OCR needs, so the user can reuse it. Confirm each value with ask_user, then: set_secret OCR_LLM_TOKEN; set_variable OCR_LLM_URL (e.g. https://api.deepseek.com/chat/completions); set_variable OCR_LLM_MODEL (e.g. deepseek-v4-flash).
+E. REQUIRED OCR REVIEW. Explain properly before asking for anything — most users have never heard of this. Say, in your own words: OCR is Open Code Review, an independent second model that reviews every PR a nanobot opens, on that PR's exact commit. It posts real GitHub review comments, and findings it rates critical or high BLOCK the merge until they are fixed or a human overrides. It is required and has no opt-out, because isolated builds without an independent review of the result is only half the safety story — the worker that wrote the code is not allowed to be the only thing that judges it. Mention that the endpoint powering YOU is exactly what OCR needs, so they can reuse the same values. Confirm each with ask_user, then: set_secret OCR_LLM_TOKEN; set_variable OCR_LLM_URL; set_variable OCR_LLM_MODEL.
 
-F. OPTIONAL AUTOFIX — ask if they want the surgical autofix responder (writes code, only inside Daytona). If yes: set_secret OCR_AUTOFIX_TOKEN (falls back to OCR_LLM_TOKEN), set_variable OCR_AUTOFIX_MODEL and OCR_AUTOFIX_URL (fall back to OCR_LLM_*), set_variable OCR_AUTOFIX_ENABLED=true. If no, skip.
+F. OPTIONAL AUTOFIX RESPONDER. Explain what it actually does before asking: when OCR blocks a PR, this second model tries to fix the findings itself. It proposes exact, character-level text replacements — never free-form patches or shell commands — and each one is validated mechanically against the real file before anything is written. The repair runs in its own disposable Daytona sandbox, and it only pushes if your gates pass and the PR hasn't moved. Anything it is unsure about, or that touches a protected path (.github, .nanobots, lockfiles, auth, migrations, infra), comes back as "needs human" instead of a patch. Capped at 3 rounds per PR. Say plainly that this is the one optional component that WRITES CODE, and that leaving it off means blocked PRs simply wait for a human.
+   Then ask_choice: ["Yes — let it try to fix blocking findings", "No — review only, I'll fix them myself"].
+   If yes: set_secret OCR_AUTOFIX_TOKEN (falls back to OCR_LLM_TOKEN), set_variable OCR_AUTOFIX_MODEL and OCR_AUTOFIX_URL (fall back to OCR_LLM_*), set_variable OCR_AUTOFIX_ENABLED=true.
 
-G. CRONS — only if they chose to install the Actions in step A, ask whether to enable the crons now (they may prefer to watch a manual cycle first). If yes: set_variable NANOBOTS_OUTER_ENABLED=1 and NANOBOTS_WORKER_ENABLED=1.
+G. CRONS. Explain the consequence before asking, because this is the switch that makes the loop autonomous: enabling them means the outer loop starts triaging on a timer and workers start claiming approved work without you present. Note what still gates it — a worker will not claim anything until a human replies "/nanobots start <hash>" to the plan comment — and note that the crons do nothing until the workflow files are committed and pushed.
+   Then ask_choice: ["Not yet — I'll run a cycle by hand first and watch what it does (recommended)", "Yes — enable both crons now"].
+   Only on "Yes": set_variable NANOBOTS_OUTER_ENABLED=1 and NANOBOTS_WORKER_ENABLED=1.
 
 H. MANUAL STEP — message_user the one thing the GitHub API can't do: in the Project's Workflows settings, enable "Auto-add to project" with filter \`is:issue is:open label:nanobots:inbox\`, set "Item added to project" → Status: Inbox, and confirm "Issue closed"/"PR merged" → Done.
 
@@ -488,6 +642,14 @@ function dryRunTools(transcript) {
       board: a.board, humanLabel: a.humanLabel, wipCap: a.wipCap,
       gates: a.gates, hardGates: a.hardGates, actionsEnabled: a.actionsEnabled,
     }, 'scaffold written (dry run — nothing was actually written).'),
+    ask_choice: async ({ question, options }) => {
+      const opts = (options || []).map(String);
+      // Prefer the affirmative/"help me" option so a dry run walks the fullest path.
+      const pick = opts.find((o) => /^(yes|create|set (it )?up|walk me|help me)/i.test(o)) ?? opts[0] ?? '';
+      return rec('ask_choice', { question, options: opts, chose: pick }, pick);
+    },
+    create_github_app: async ({ appName }) => rec('create_github_app', { appName },
+      'GitHub App created (id 999999), installed (installation 888888), all three secrets stored. Nothing further to ask the user for.'),
     check_gh: async () => rec('check_gh', {}, 'authenticated. project scope: present.'),
     scaffold_github: async () => rec('scaffold_github', {}, 'board ready (project #1), status issue #1, labels + fields created.'),
     set_secret: async ({ name, value }) => rec('set_secret', { name, hasValue: Boolean(value) }, `secret ${name} set.`),
@@ -545,6 +707,29 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
   const liveTools = {
     message_user: async ({ text }) => { console.log(`\n${text}\n`); return 'shown'; },
     ask_user: async ({ question, secret }) => promptLine(`${c.cyan('?')} ${question} `, { secret: isCredentialPrompt(question, secret) }),
+    ask_choice: async ({ question, options }) => {
+      if (!Array.isArray(options) || options.length < 2) return 'error: need at least two options';
+      return promptChoice(question, options.map(String));
+    },
+    create_github_app: async ({ appName, isOrg }) => {
+      try {
+        const app = await createAppViaManifest({
+          owner: d.owner, repo: d.repo, isOrg: Boolean(isOrg),
+          appName: appName || `nanobots-${d.owner}`.toLowerCase(),
+        });
+        say(`app created: ${app.htmlUrl} (id ${app.appId})`);
+        // Store immediately — if the install step fails the user still keeps the credentials.
+        const put = (name, value) => spawnSync('gh', ['secret', 'set', name, '--repo', nwo], { input: String(value) }).status === 0;
+        if (!put('NANOBOTS_GITHUB_APP_ID', app.appId)) return 'error: created the app but failed to store NANOBOTS_GITHUB_APP_ID';
+        if (!put('NANOBOTS_GITHUB_APP_PRIVATE_KEY', app.pem)) return 'error: created the app but failed to store NANOBOTS_GITHUB_APP_PRIVATE_KEY';
+
+        const installationId = await waitForInstallation(app);
+        if (!put('NANOBOTS_GITHUB_APP_INSTALLATION_ID', installationId)) return 'error: installed, but failed to store NANOBOTS_GITHUB_APP_INSTALLATION_ID';
+        return `GitHub App "${app.slug}" created (id ${app.appId}), installed (installation ${installationId}), and all three secrets stored. Permissions are contents:write + metadata:read only — no pull_requests. Nothing further to ask the user for.`;
+      } catch (err) {
+        return `error: ${err.message}. The PAT fallback still works; offer to skip and add the App later.`;
+      }
+    },
     render_scaffold: async (a) => {
       state.cfg = buildConfig(d, {
         board: a.board, humanLabel: a.humanLabel, wipCap: parseInt(a.wipCap, 10) || 2,

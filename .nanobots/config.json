@@ -1,0 +1,44 @@
+{
+  "version": "0.14.2",
+  "owner": "TimHeckel",
+  "repo": "nanobots",
+  "defaultBranch": "main",
+  "board": "Nanobots",
+  "humanLabel": "summon-human",
+  "wipCap": 2,
+  "gates": [
+    "npm run test"
+  ],
+  "hardGates": [],
+  "actionsEnabled": true,
+  "daytona": {
+    "snapshot": null,
+    "target": "us",
+    "autoDeleteMinutes": 60,
+    "databaseBootstrap": []
+  },
+  "ocr": {
+    "version": "v1.7.12",
+    "blockingSeverities": [
+      "critical",
+      "high"
+    ],
+    "maxRounds": 3,
+    "autofix": {
+      "protectedPaths": []
+    }
+  },
+  "approval": {
+    "requireVersionedStart": true
+  },
+  "stacks": {
+    "enabled": false,
+    "maxDepth": 3
+  },
+  "mergePolicy": {
+    "autoMergeNonProduction": false,
+    "protectedBranches": [
+      "main"
+    ]
+  }
+}

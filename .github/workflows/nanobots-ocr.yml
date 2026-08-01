@@ -1,0 +1,159 @@
+# nanobots:engine-owned v0.2 — re-rendered by `nanobots update`
+#
+# Required, always installed — every nanobots:built PR gets reviewed before merge, no
+# opt-out. Runs as a plain Actions job, deliberately NOT inside the Daytona sandbox for the
+# review step — OCR only reads a diff and calls an LLM, so the isolation an ephemeral
+# runner already gives you is enough. See .nanobots/RUNTIMES.md "OCR review gate" for why.
+#
+# The optional surgical autofix responder (OCR_AUTOFIX_ENABLED=true) DOES use Daytona —
+# it writes/tests code, so that step always happens in a disposable sandbox, never on this
+# runner. See .nanobots/RUNTIMES.md "Autofix credential placement" for the exact threat
+# boundaries and .nanobots/ocr-autofix-controller.mjs for the orchestration.
+#
+# Required secrets: OCR_LLM_URL/_MODEL/_TOKEN (reviewer). Optional (autofix):
+# DAYTONA_API_KEY, OCR_AUTOFIX_TOKEN (falls back to OCR_LLM_TOKEN), OCR_AUTOFIX_MODEL/_URL
+# (fall back to the reviewer's). See init output / README for the full variable reference.
+name: Nanobots OCR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review (and optionally autofix)'
+        required: true
+      autofix:
+        description: 'Force-run the autofix responder for this one dispatch, regardless of OCR_AUTOFIX_ENABLED'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: nanobots-ocr-${{ github.event.pull_request.number || inputs.pr_number }}
+  # A responder-authored push explicitly dispatches its own follow-up run; cancelling an
+  # in-progress run here could cancel one that's still publishing replies/resolving
+  # threads. Runs queue instead of overlapping or being cancelled.
+  cancel-in-progress: false
+
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write   # only used by the autofix step's sandbox-clone credential (same-repo PR branch push)
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Resolve PR metadata
+        id: pr
+        run: |
+          set -euo pipefail
+          NUM="${{ github.event.pull_request.number || inputs.pr_number }}"
+          JSON=$(gh pr view "$NUM" --repo "$GH_REPOSITORY" --json number,headRefName,headRefOid,baseRefName,baseRefOid,isDraft,headRepositoryOwner)
+          echo "number=$NUM" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$(echo "$JSON" | jq -r .headRefName)" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(echo "$JSON" | jq -r .headRefOid)" >> "$GITHUB_OUTPUT"
+          echo "base_ref=$(echo "$JSON" | jq -r .baseRefName)" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$(echo "$JSON" | jq -r .baseRefOid)" >> "$GITHUB_OUTPUT"
+          echo "draft=$(echo "$JSON" | jq -r .isDraft)" >> "$GITHUB_OUTPUT"
+          IS_FORK=$([ "$(echo "$JSON" | jq -r .headRepositoryOwner.login)" != "${GH_REPOSITORY%%/*}" ] && echo true || echo false)
+          echo "is_fork=$IS_FORK" >> "$GITHUB_OUTPUT"
+
+      # Trusted control surface: engine-owned scripts and policy come from the PR's BASE
+      # commit, never the PR head — a PR cannot rewrite the review/autofix scripts that
+      # judge it. persist-credentials is off; nothing on this runner needs to push.
+      - name: Checkout trusted base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.base_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch exact PR head for diffing
+        run: git fetch --quiet origin ${{ steps.pr.outputs.head_sha }}
+
+      - name: Install OCR v1.7.12
+        run: |
+          set -euo pipefail
+          curl -fsSL -o ocr "https://github.com/alibaba/open-code-review/releases/download/v1.7.12/ocr-linux-amd64"
+          chmod +x ocr
+
+      - name: Review exact PR head
+        env:
+          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
+          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
+          OCR_LLM_EXTRA_BODY: ${{ vars.OCR_LLM_EXTRA_BODY }}
+          OCR_LLM_PROTOCOL: openai
+          OCR_CONCURRENCY: ${{ vars.OCR_CONCURRENCY }}
+          OCR_TASK_TIMEOUT: ${{ vars.OCR_TASK_TIMEOUT }}
+          OCR_NO_UPDATE: '1'
+        run: |
+          set -euo pipefail
+          HOME="$(mktemp -d)" XDG_CONFIG_HOME="$(mktemp -d)" \
+            ./ocr review --from "origin/${{ steps.pr.outputs.base_ref }}" --to "${{ steps.pr.outputs.head_sha }}" \
+            --format json --audience agent \
+            --concurrency "${OCR_CONCURRENCY:-3}" --timeout "${OCR_TASK_TIMEOUT:-20}" \
+            > ocr-findings.json || true
+
+      - name: Parse findings, post review, write report artifact, gate on blocking severities
+        id: report
+        env:
+          GH_PR_NUMBER: ${{ steps.pr.outputs.number }}
+          OCR_AUTO_REVIEW_EVENTS: ${{ vars.OCR_AUTO_REVIEW_EVENTS }}
+          OCR_MAX_INLINE_COMMENTS: ${{ vars.OCR_MAX_INLINE_COMMENTS }}
+          OCR_MAX_SUMMARY_COMMENTS: ${{ vars.OCR_MAX_SUMMARY_COMMENTS }}
+        run: |
+          node .nanobots/open-code-review-report.mjs ocr-findings.json "${{ steps.pr.outputs.head_sha }}" ocr-report.json
+        continue-on-error: true
+
+      - name: Upload report artifact (best-effort — never blocks review publication)
+        if: always()
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ocr-report-${{ steps.pr.outputs.number }}-${{ steps.pr.outputs.head_sha }}
+          path: |
+            ocr-report.json
+            ocr-findings.json
+          retention-days: 14
+
+      # Autofix: only for same-repo, non-draft, nanobots:built PRs, only when explicitly
+      # enabled, only when there's something blocking to fix. Writes/tests code exclusively
+      # inside a disposable Daytona sandbox — never on this runner. OCR_LLM_TOKEN is
+      # deliberately absent from this step's env; it never reaches the sandbox either.
+      - name: Surgical autofix (Daytona sandbox — optional)
+        if: steps.report.outcome == 'failure' && (vars.OCR_AUTOFIX_ENABLED == 'true' || inputs.autofix == 'true')
+        env:
+          GH_PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GH_PR_HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+          GH_PR_BASE_REF: ${{ steps.pr.outputs.base_ref }}
+          GH_PR_DRAFT: ${{ steps.pr.outputs.draft }}
+          GH_PR_IS_FORK: ${{ steps.pr.outputs.is_fork }}
+          DAYTONA_API_KEY: ${{ secrets.DAYTONA_API_KEY }}
+          OCR_AUTOFIX_ENABLED: ${{ vars.OCR_AUTOFIX_ENABLED }}
+          OCR_AUTOFIX_MODEL: ${{ vars.OCR_AUTOFIX_MODEL }}
+          OCR_AUTOFIX_URL: ${{ vars.OCR_AUTOFIX_URL }}
+          OCR_AUTOFIX_EXTRA_BODY: ${{ vars.OCR_AUTOFIX_EXTRA_BODY }}
+          OCR_AUTOFIX_TOKEN: ${{ secrets.OCR_AUTOFIX_TOKEN }}
+          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
+          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_EXTRA_BODY: ${{ vars.OCR_LLM_EXTRA_BODY }}
+          OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
+          OCR_AUTOFIX_MAX_ROUNDS: ${{ vars.OCR_AUTOFIX_MAX_ROUNDS }}
+          OCR_AUTOFIX_MAX_FINDINGS: ${{ vars.OCR_AUTOFIX_MAX_FINDINGS }}
+          OCR_AUTOFIX_MAX_FILES: ${{ vars.OCR_AUTOFIX_MAX_FILES }}
+          OCR_AUTOFIX_MAX_CHANGED_LINES: ${{ vars.OCR_AUTOFIX_MAX_CHANGED_LINES }}
+          OCR_AUTOFIX_CONTEXT_LINES: ${{ vars.OCR_AUTOFIX_CONTEXT_LINES }}
+          OCR_AUTOFIX_MAX_EXCERPT_CHARS: ${{ vars.OCR_AUTOFIX_MAX_EXCERPT_CHARS }}
+          OCR_AUTOFIX_INITIAL_CONCURRENCY: ${{ vars.OCR_AUTOFIX_INITIAL_CONCURRENCY }}
+          OCR_AUTOFIX_MAX_CONCURRENCY: ${{ vars.OCR_AUTOFIX_MAX_CONCURRENCY }}
+          OCR_AUTOFIX_ADVISOR_CHECKPOINT_SIZE: ${{ vars.OCR_AUTOFIX_ADVISOR_CHECKPOINT_SIZE }}
+          OCR_AUTOFIX_VALIDATION_COMMAND: ${{ vars.OCR_AUTOFIX_VALIDATION_COMMAND }}
+        run: node .nanobots/ocr-autofix-controller.mjs ocr-report.json
+
+      - name: Fail the check if the review was blocking or failed
+        if: steps.report.outcome == 'failure'
+        run: exit 1

@@ -1,0 +1,50 @@
+# nanobots:engine-owned v0.1 — re-rendered by `nanobots update`
+name: Nanobots Outer Loop (scheduled)
+
+# Keeps the loop alive when no local session is running. Enable by setting the
+# repo variable NANOBOTS_OUTER_ENABLED=1 and the PROJECTS_PAT secret (CLASSIC
+# PAT, scopes: project + repo + read:org, from a HUMAN account — the default GITHUB_TOKEN
+# cannot reach org Projects v2, fine-grained PATs are flaky on the Projects
+# GraphQL API, and dispatch comments from bot actors are refused by
+# claude-code-action). Disable by unsetting the variable.
+
+on:
+  schedule:
+    - cron: '17 */3 * * *' # every 3h; offset minute to dodge top-of-hour congestion
+  workflow_dispatch:
+
+concurrency:
+  group: nanobots-outer
+  cancel-in-progress: false
+
+jobs:
+  outer-loop:
+    if: vars.NANOBOTS_OUTER_ENABLED == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # docs-only learning commits
+      issues: write
+      pull-requests: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run outer loop cycle
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.PROJECTS_PAT }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Read .nanobots/LOOP-PROMPT.md and execute exactly one outer-loop
+            cycle. You are running in GitHub Actions: no local/prod access, so
+            skip any step requiring the running app — escalate those to the
+            Nanobots Status issue instead. Do not schedule wakeups; this run IS
+            the cadence. You are the outer loop: never write product code;
+            .nanobots/* and agent-instruction learning commits only.
+          claude_args: '--allowed-tools "Bash(gh:*),Bash(git:*),Read,Grep,Glob,Edit,Write"'

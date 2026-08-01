@@ -1,0 +1,35 @@
+# nanobots:engine-owned v0.1 — re-rendered by `nanobots update`
+name: Feature request
+description: Request a new capability or improvement
+title: "[feat] "
+labels: ["enhancement", "nanobots:inbox"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / opportunity
+      description: What can't you do today, or what would be better?
+      placeholder: As a user, I want ... so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should happen? Sketch the ideal flow, not the implementation.
+  - type: dropdown
+    id: impact
+    attributes:
+      label: How much does this matter?
+      options:
+        - Nice to have
+        - Meaningful improvement
+        - Blocking my workflow
+        - Business critical
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Links / context
+      description: Related issues, screenshots, prior art.

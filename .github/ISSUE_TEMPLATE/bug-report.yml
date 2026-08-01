@@ -1,0 +1,43 @@
+# nanobots:engine-owned v0.1 — re-rendered by `nanobots update`
+name: Bug report
+description: Something is broken or behaving wrong
+title: "[bug] "
+labels: ["bug", "nanobots:inbox"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you see? Paste errors verbatim.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See error
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Cosmetic
+        - Annoying but workaroundable
+        - Feature unusable
+        - Data loss / security / payments
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Links / context
+      description: Logs, IDs, screenshots, environment.
