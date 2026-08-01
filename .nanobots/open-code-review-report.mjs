@@ -155,8 +155,12 @@ async function main() {
 
   // Sticky summary (update in place if present).
   const summary = formatSummaryComment(report);
+  // `gh pr view --json comments` returns GraphQL node IDs (IC_kwD…), but the REST endpoint
+  // below needs the NUMERIC database id. Passing the node ID 404s and takes the whole review
+  // down with it, so read the comments through the REST API where the `id` already is
+  // numeric. (`.url` is not usable either — it is the HTML url, not the API one.)
   const existingId = shTry(
-    `gh pr view ${PR} --repo ${NWO} --json comments --jq '[.comments[] | select(.body | startswith("${MARKER}"))] | .[0].id // empty'`,
+    `gh api repos/${NWO}/issues/${PR}/comments --paginate --jq '[.[] | select(.body | startswith("${MARKER}"))] | .[0].id // empty'`,
   );
   if (existingId) {
     shStdin(`gh api repos/${NWO}/issues/comments/${existingId} -X PATCH --input -`, JSON.stringify({ body: summary }));
