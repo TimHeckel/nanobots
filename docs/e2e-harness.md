@@ -117,6 +117,28 @@ gh variable set NANOBOTS_WORKER_ENABLED --body 1
 - **Stray branches/PRs.** A failed run can leave `nanobots/<issue>-<slug>` branches behind;
   nanobots has no ref-cleanup subsystem, so that cleanup is yours.
 
+## What dogfooding actually found (2026-08-01)
+
+Every item below was invisible to the test suite and surfaced only by running the loop for
+real on this repo. They are recorded here because the pattern matters more than the
+individual bugs: **six of the seven were gates that passed without checking the thing they
+named.**
+
+| # | Symptom | Root cause | Why no test caught it |
+|---|---|---|---|
+| 1 | `gh project` → "unknown owner type" | `PROJECTS_PAT` needs `read:org`, not just `project`+`repo` | The GraphQL API works with the documented scopes; only the CLI needs the third |
+| 2 | `init` hung on question 1 | `node:readline/promises` `question()` takes no callback | The onboarding e2e runs in dry-run and never touches the real reader |
+| 3 | Pasted tokens echoed in cleartext | Masking redrew *over* readline's echo, too late for a paste | Nothing asserted on terminal bytes |
+| 4 | Outer loop failed every run | `claude-code-action` needs `github_token` as an **input**; we passed `GH_TOKEN` as env | The error named a GitHub App, so the first fix documented a workaround instead of finding the bug |
+| 5 | Worker: "no versioned plan posted yet", forever | Prompt described the plan hash in prose; worker required a literal HTML marker | One half is a prompt, the other a parser, and nothing compared them |
+| 6 | **Worker claimed an item with no human approval** | Approval regex matched the command anywhere — including the loop's own comment explaining *how* to approve | Both halves were individually correct; the gate only failed when a real item moved |
+| 7 | Every sandbox died at its first command | Daytona exec moved to a per-sandbox `toolboxProxyUrl` | `verify daytona` proved create/delete and never ran a command |
+
+**The lesson worth keeping:** `npm test` was green throughout all seven. A suite that never
+exercises the path it claims to cover is not evidence — the same point `RECIPES.md` makes
+about trusting a gate. Where a fix was possible, it was paired with a test that fails against
+the old behavior: the prose-only plan hash is asserted *not* to parse, the loop's own
+approval prose is asserted *not* to approve, and `verify daytona` now runs a real command.
 ### The OCR chain (bugs 8–13)
 
 OCR is documented as a **required** review that blocks merges. It had never successfully run
