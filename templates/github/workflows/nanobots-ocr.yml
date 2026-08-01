@@ -67,7 +67,12 @@ jobs:
       - name: Checkout trusted base
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.pr.outputs.base_sha }}
+          # The BASE BRANCH TIP, not base_sha. base_sha is the commit the PR branched from,
+          # so the reviewer ran whatever .nanobots/ scripts existed back then — every engine
+          # fix landed on the default branch was invisible to it, and a long-lived branch was
+          # reviewed by permanently stale tooling. The tip is equally trusted (it is the
+          # default branch, never PR-authored code) and is always the current engine.
+          ref: ${{ steps.pr.outputs.base_ref }}
           fetch-depth: 0
           persist-credentials: false
 
