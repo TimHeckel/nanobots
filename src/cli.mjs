@@ -310,9 +310,35 @@ async function daytonaProof(apiKey) {
   if (!createRes.ok) throw new Error(`sandbox create failed: ${createRes.status} ${(await createRes.text().catch(() => '')).slice(0, 200)}`);
   const sandbox = await createRes.json();
 
+  // Prove EXEC, not just lifecycle. Create/delete passing while exec is broken is exactly
+  // what happened in practice: `verify daytona` reported "ready", then every real worker run
+  // died at its first command inside a sandbox it had already paid to provision. A proof that
+  // skips the thing the worker actually does is not a proof.
+  let exec = null;
+  try {
+    const detail = await (await fetch(`${base}/sandbox/${sandbox.id}`, { headers })).json();
+    const proxy = detail?.toolboxProxyUrl;
+    if (!proxy) throw new Error('sandbox advertises no toolboxProxyUrl — the API shape has moved');
+    const r = await fetch(`${proxy.replace(/\/$/, '')}/${sandbox.id}/process/execute`, {
+      method: 'POST', headers, body: JSON.stringify({ command: 'echo nanobots-verify' }),
+    });
+    const body = await r.text();
+    if (!r.ok) throw new Error(`${r.status}: ${body.slice(0, 200)}`);
+    const parsed = JSON.parse(body);
+    if (parsed.exitCode !== 0 || !String(parsed.result ?? '').includes('nanobots-verify')) {
+      throw new Error(`unexpected result: ${body.slice(0, 200)}`);
+    }
+    exec = { ok: true };
+  } catch (err) {
+    exec = { ok: false, error: err.message };
+  }
+
   const delRes = await fetch(`${base}/sandbox/${sandbox.id}`, { method: 'DELETE', headers });
   const cleaned = delRes.ok;
-  return { sandboxId: sandbox.id, cleaned };
+  if (!exec.ok) {
+    throw new Error(`sandbox exec failed (create/delete were fine, so this is the toolbox API): ${exec.error}`);
+  }
+  return { sandboxId: sandbox.id, cleaned, execOk: true };
 }
 
 // ── GitHub App creation (manifest flow) ───────────────────────────────────────
@@ -846,7 +872,7 @@ async function cmdVerify(target) {
   let proof;
   try { proof = await daytonaProof(apiKey); }
   catch (e) { die(e.message); }
-  say(`sandbox ${proof.sandboxId} created.`);
+  say(`sandbox ${proof.sandboxId} created; exec proof passed.`);
   if (proof.cleaned) say('deleted.');
   else warn(`cleanup failed for ${proof.sandboxId} — check the Daytona dashboard and delete it manually.`);
 

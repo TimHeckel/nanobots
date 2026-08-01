@@ -41,11 +41,39 @@ export async function createSandbox(apiKey, { labels, snapshot, target, autoStop
   return sandbox.id;
 }
 
+// Exec does NOT live on the main API host. Daytona serves the toolbox from a separate proxy,
+// advertised per-sandbox as `toolboxProxyUrl`, and the shape is
+// `{toolboxProxyUrl}/{sandboxId}/process/execute`.
+//
+// Two older shapes are dead ends, both of which this template shipped or tried:
+//   {api}/sandbox/{id}/toolbox/process/execute   → 404 (never/no longer routed)
+//   {api}/toolbox/{id}/toolbox/process/execute   → 404 (documented as DEPRECATED upstream)
+// Getting this wrong fails at the first command inside the sandbox, after a sandbox has
+// already been provisioned and paid for — which is why `nanobots verify daytona` now runs a
+// real command instead of only proving create/delete.
+async function toolboxBase(apiKey, sandboxId) {
+  const sandbox = await daytonaApi(apiKey, 'GET', `/sandbox/${sandboxId}`);
+  const proxy = sandbox?.toolboxProxyUrl;
+  if (!proxy) {
+    throw new Error(`sandbox ${sandboxId} advertises no toolboxProxyUrl — the Daytona API shape has moved; see execInSandbox() in .nanobots/daytona-client.mjs`);
+  }
+  return `${proxy.replace(/\/$/, '')}/${sandboxId}`;
+}
+
 export async function execInSandbox(apiKey, sandboxId, command, { cwd, timeout = 900, env } = {}) {
-  const result = await daytonaApi(apiKey, 'POST', `/sandbox/${sandboxId}/toolbox/process/execute`, {
-    command, cwd, timeout, env,
+  const base = await toolboxBase(apiKey, sandboxId);
+  const res = await fetch(`${base}/process/execute`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ command, cwd, timeout, env }),
   });
-  return result; // { exitCode, result: <stdout+stderr> }
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Daytona toolbox exec -> ${res.status}: ${text.slice(0, 300)}`);
+  try {
+    return JSON.parse(text); // { exitCode, result: <stdout+stderr> }
+  } catch {
+    throw new Error(`Daytona toolbox exec returned non-JSON: ${text.slice(0, 200)}`);
+  }
 }
 
 // Returns true on confirmed deletion, false if there was nothing to delete or deletion
