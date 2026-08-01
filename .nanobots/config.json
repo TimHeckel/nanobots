@@ -5,11 +5,16 @@
   "defaultBranch": "main",
   "board": "Nanobots",
   "humanLabel": "summon-human",
-  "wipCap": 2,
+  "wipCap": 1,
   "gates": [
     "npm run test"
   ],
-  "hardGates": [],
+  "hardGates": [
+    "the CLI itself (src/**) — changes every future install",
+    "the templates (templates/**) — changes what every repo renders",
+    "packaging and release (package.json) — the npm publish surface",
+    "CI and loop workflows (.github/**)"
+  ],
   "actionsEnabled": true,
   "daytona": {
     "snapshot": null,
