@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Tier 0 — no credentials. Runs on everything.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Unit tests (render + ocr-autofix + github-app-auth)
+        run: npm test
+
+      - name: Headless scaffold smoke test
+        # Proves the full render path end-to-end: every template renders, the config lands
+        # with the expected shape, and the engine-owned file set is complete. No network.
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          cd "$work"
+          git init -q .
+          git remote add origin https://github.com/acme/widget.git
+          node "$GITHUB_WORKSPACE/src/cli.mjs" init --headless --no-github
+          test -f .nanobots/config.json           || { echo "no config.json"; exit 1; }
+          test -f .nanobots/github-app-auth.mjs   || { echo "no github-app-auth.mjs"; exit 1; }
+          test -f .nanobots/LOOP-PROMPT.md        || { echo "no LOOP-PROMPT.md"; exit 1; }
+          test -f .github/workflows/nanobots-ocr.yml || { echo "no OCR workflow"; exit 1; }
+          node -e '
+            const c = require("./.nanobots/config.json");
+            if (c.owner !== "acme" || c.repo !== "widget") throw new Error("bad detect()");
+            if (c.stacks.enabled !== false) throw new Error("stacks must default OFF while in preview");
+            if (!Array.isArray(c.hardGates) || !c.hardGates.length) throw new Error("no hard gates");
+            console.log("config shape ok");
+          '
+
+      - name: Package contents
+        # The tarball is the product. Catch anything that would ship a secret or bloat.
+        run: |
+          set -euo pipefail
+          npm pack --dry-run 2>&1 | tee /tmp/pack.txt
+          if grep -qiE '(^|/)\.env|_logs|node_modules' /tmp/pack.txt; then
+            echo "::error::package would ship something it must not"; exit 1
+          fi
+
+  # Tier 1 — exercises the REAL onboarding agent against a REAL model endpoint, with every
+  # side effect stubbed. This is the only automated coverage of `init`, which is the sole
+  # install path. Skips itself when the secret isn't available (e.g. on fork PRs).
+  onboarding-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Never run untrusted fork code with the model key in scope.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Onboarding agent e2e (dry run — no writes, no gh, no secrets, no sandbox)
+        env:
+          OCR_LLM_URL: ${{ vars.OCR_LLM_URL }}
+          OCR_LLM_MODEL: ${{ vars.OCR_LLM_MODEL }}
+          OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
+        run: node tests/init-agent.e2e.mjs

@@ -397,6 +397,55 @@ I. Call finish with a concise summary: what got set, what's optional/left, and h
 If any tool returns an error, tell the user plainly and offer to retry or skip. Respect skips. Keep going until the required steps are done or the user asks to stop, then finish.`;
 }
 
+const DRY_RUN = process.env.NANOBOTS_INIT_DRY_RUN === '1';
+
+// Scripted answers for a dry run. An empty string is the natural "accept the bracketed
+// default" reply, which makes this robust to however the agent chooses to word a question.
+// Anything asking for a credential gets an obvious sentinel so the agent walks the whole
+// secret-collection path — set_secret is a recorder here, so no real credential is involved.
+function dryRunAnswer(question) {
+  const scripted = process.env.NANOBOTS_INIT_DRY_RUN_ANSWERS;
+  if (scripted) {
+    try {
+      for (const [pattern, answer] of Object.entries(JSON.parse(scripted))) {
+        if (new RegExp(pattern, 'i').test(question)) return answer;
+      }
+    } catch { /* malformed script — fall through to the heuristics */ }
+  }
+  if (/\b(token|key|pem|secret|pat)\b/i.test(question)) return 'DRYRUN-NOT-A-REAL-CREDENTIAL';
+  if (/\b(yes\/no|y\/n|do you want|would you like|should i|enable|set (this|it) up)\b/i.test(question)) return 'yes';
+  return ''; // accept the default
+}
+
+// Every tool becomes a recorder. Secret VALUES are never captured — a transcript can land in
+// CI logs — only the name and whether a value was supplied.
+function dryRunTools(transcript) {
+  const rec = (tool, detail, result) => { transcript.push({ tool, ...detail }); return result; };
+  return {
+    message_user: async ({ text }) => rec('message_user', { chars: (text || '').length }, 'shown'),
+    ask_user: async ({ question, secret }) => {
+      const answer = dryRunAnswer(question || '');
+      return rec('ask_user', { question, secret: !!secret, answered: answer ? (secret ? '<redacted>' : answer) : '<default>' }, answer);
+    },
+    render_scaffold: async (a) => rec('render_scaffold', {
+      board: a.board, humanLabel: a.humanLabel, wipCap: a.wipCap,
+      gates: a.gates, hardGates: a.hardGates, actionsEnabled: a.actionsEnabled,
+    }, 'scaffold written (dry run — nothing was actually written).'),
+    check_gh: async () => rec('check_gh', {}, 'authenticated. project scope: present.'),
+    scaffold_github: async () => rec('scaffold_github', {}, 'board ready (project #1), status issue #1, labels + fields created.'),
+    set_secret: async ({ name, value }) => rec('set_secret', { name, hasValue: Boolean(value) }, `secret ${name} set.`),
+    set_variable: async ({ name, value }) => rec('set_variable', { name, value }, `variable ${name}=${value} set.`),
+    verify_daytona: async () => rec('verify_daytona', {}, 'daytona ok — created and deleted sandbox sbx-dryrun.'),
+  };
+}
+
+function emitTranscript(transcript, finished) {
+  const out = JSON.stringify({ finished, calls: transcript }, null, 2);
+  const dest = process.env.NANOBOTS_INIT_DRY_RUN_OUT;
+  if (dest) { writeFileSync(dest, `${out}\n`); say(`dry-run transcript → ${dest}`); }
+  else console.log(`\n--- nanobots dry-run transcript ---\n${out}`);
+}
+
 async function cmdInit(flags) {
   const d = detect();
   if (!d.owner) die('could not parse owner/repo from the origin remote');
@@ -436,7 +485,7 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
   const nwo = `${d.owner}/${d.repo}`;
   const state = { cfg: null };
 
-  const toolImpls = {
+  const liveTools = {
     message_user: async ({ text }) => { console.log(`\n${text}\n`); return 'shown'; },
     ask_user: async ({ question, secret }) => promptLine(`${c.cyan('?')} ${question} `, { secret: !!secret }),
     render_scaffold: async (a) => {
@@ -474,6 +523,13 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
     },
   };
 
+  // Dry run (NANOBOTS_INIT_DRY_RUN=1): swap every side-effecting tool for a recorder so CI can
+  // exercise the REAL agent loop against a REAL endpoint with zero side effects — nothing
+  // written, no `gh` invoked, no secrets set, no sandbox created. This is how the one path
+  // every new user hits gets tested without a throwaway repo per run.
+  const transcript = [];
+  const toolImpls = DRY_RUN ? dryRunTools(transcript) : liveTools;
+
   const messages = [
     { role: 'system', content: onboardingSystemPrompt(d) },
     { role: 'user', content: 'Begin onboarding.' },
@@ -508,9 +564,11 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
     }
     if (finished !== null) {
       console.log(`\n${c.cyan('Done.')} ${finished}\n`);
+      if (DRY_RUN) emitTranscript(transcript, finished);
       return;
     }
   }
+  if (DRY_RUN) emitTranscript(transcript, null);
   warn('onboarding hit its step limit — re-run `npx nanobots-sh init` to continue where the repo left off.');
 }
 
