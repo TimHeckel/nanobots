@@ -21,7 +21,23 @@ disagree with them, propose an edit — don't silently deviate.
 1. **Sync.** Read the board "{{BOARD}}" (commands in `.nanobots/RUNTIMES.md`), open PRs,
    CI status on `{{DEFAULT_BRANCH}}`, and the last cycle report on the pinned
    **Nanobots Status** issue. If `{{DEFAULT_BRANCH}}` CI is red, that becomes a P0 Inbox
-   item immediately.
+   item immediately — with exactly one narrow exception, below.
+
+   **Transient-flake exception.** Some gates deliberately call a live third-party endpoint on
+   every push, so they will fail occasionally for reasons unrelated to the code. Filing a P0
+   for those pages a human about something that has usually already fixed itself. Skip the P0
+   **only** when *all* of these hold:
+   - exactly one job is red, and it calls a live external service;
+   - the failure is network-shaped (`fetch failed`, timeout, connection reset, 5xx);
+   - the failing commit's diff does not plausibly touch that code path; and
+   - `gh run rerun --failed` on the same commit comes back **green**.
+
+   Then log it as a transient flake in LEARNINGS.md and say so in the cycle report — do not
+   file a P0. If **any** condition fails — two or more red jobs, a non-network failure, the
+   commit touches the path, or the rerun is still red — file the P0 immediately, exactly as
+   before, with no further judgement. When the *same* job flakes repeatedly across cycles,
+   file a `chore` to make it resilient (or to stop it gating the default branch); that is a
+   real problem, just not a P0.
 
 2. **Ingest.** Anything labeled `nanobots:inbox` not yet on the board → add it.
 
