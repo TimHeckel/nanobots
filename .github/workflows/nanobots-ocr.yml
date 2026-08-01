@@ -77,7 +77,14 @@ jobs:
       - name: Install OCR v1.7.12
         run: |
           set -euo pipefail
-          curl -fsSL -o ocr "https://github.com/alibaba/open-code-review/releases/download/v1.7.12/ocr-linux-amd64"
+          # The release asset is named opencodereview-*, NOT ocr-*. Getting this wrong 404s and
+          # fails every review. Verified against the live release listing.
+          ASSET="opencodereview-linux-amd64"
+          URL="https://github.com/alibaba/open-code-review/releases/download/v1.7.12/$ASSET"
+          curl -fsSL -o ocr "$URL" || {
+            echo "::error::could not download $URL — check that the release tag exists and the asset is still named $ASSET (upstream has renamed it before)"
+            exit 1
+          }
           chmod +x ocr
 
       - name: Review exact PR head
