@@ -169,7 +169,13 @@ function checkApproval(number) {
   });
   if (!planHash) return { approved: false, reason: 'no versioned plan posted yet' };
   for (let i = comments.length - 1; i > planIndex; i--) {
-    const m = comments[i].body?.match(/\/nanobots start ([0-9a-f]{12})\b/);
+    // ANCHORED TO A WHOLE LINE, deliberately. An unanchored match reads the command out of
+    // ordinary prose — including the loop's own plan comment, which tells the human "approve
+    // with `/nanobots start <hash>`". That made the loop self-approve every item it planned
+    // (it posts via PROJECTS_PAT, a collaborator), turning the human gate into decoration.
+    // Requiring the command to be alone on its line means a backticked mention inside a
+    // sentence cannot approve anything, while a human can still add commentary on other lines.
+    const m = comments[i].body?.match(/^[ \t]*\/nanobots start ([0-9a-f]{12})[ \t]*$/m);
     if (m && m[1] === planHash) {
       const login = comments[i].author?.login;
       const perm = shTry(`gh api repos/${NWO}/collaborators/${login}/permission --jq .permission`);

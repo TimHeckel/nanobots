@@ -42,8 +42,12 @@ disagree with them, propose an edit — don't silently deviate.
    `daytona-worker.mjs` finds the plan with a literal regex, so a plan comment that only
    mentions the hash in prose can never be claimed, no matter how many approvals it
    collects. Write the marker even if you also state the hash in human-readable text.
-   A worker will not claim the item until a
-   collaborator replies `/nanobots start <hash>` with the current hash — a stale hash (the
+   A worker will not claim the item until a collaborator replies with `/nanobots start <hash>`
+   **alone on its own line** in a later comment. When you mention that command while
+   explaining approval, keep it inline in a sentence exactly as this instruction does —
+   **never on a line by itself** — because the worker treats any line that is only that
+   command as a real approval, and it cannot tell your explanation from a human's consent.
+   Approval must carry the current hash — a stale hash (the
    issue changed since) doesn't count, and requires a fresh plan + fresh approval. If
    approval is off, Ready alone is enough to claim.
 

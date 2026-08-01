@@ -25,7 +25,7 @@ const ok = (c, l) => { if (c) passed++; else fails.push(l); };
 
 // ── pull the real regexes out of the worker ──────────────────────────────────
 const planSrc = worker.match(/match\((\/<!--.*?nanobots:plan.*?-->\/)\)/)?.[1];
-const startSrc = worker.match(/match\((\/\\\/nanobots start .*?\/)\)/)?.[1];
+const startSrc = worker.match(/match\((\/\S.*?nanobots start.*?\/[a-z]*)\)/)?.[1];
 ok(Boolean(planSrc), 'found the plan-marker regex in daytona-worker.mjs');
 ok(Boolean(startSrc), 'found the /nanobots start regex in daytona-worker.mjs');
 
@@ -68,6 +68,20 @@ if (startSrc) {
   ok(startRe.test('/nanobots start 1cb719a4564a'), 'the documented approval command satisfies the worker regex');
   ok(/\/nanobots start/.test(prompt), 'LOOP-PROMPT.md documents the /nanobots start approval command');
   ok(!startRe.test('/nanobots start'), 'a bare /nanobots start with no hash is rejected');
+
+  // THE SELF-APPROVAL BUG, reproduced verbatim. The loop's own plan comment explains how to
+  // approve; an unanchored regex read that explanation as the approval, so the loop approved
+  // every item it planned and the human gate never engaged. These assertions fail against the
+  // old regex and pass against the anchored one.
+  const loopsOwnProse = 'Plan hash: `1cb719a4564a` (sha256 of the plan comment above, first 12 hex chars). '
+    + 'A collaborator can approve with `/nanobots start 1cb719a4564a`. This hash is invalidated if the issue changes.';
+  ok(!startRe.test(loopsOwnProse), 'the loop explaining HOW to approve is not itself an approval (the self-approval bug)');
+  ok(!startRe.test('please run `/nanobots start 1cb719a4564a` when ready'), 'a backticked mention in a sentence does not approve');
+  ok(!startRe.test('see /nanobots start 1cb719a4564a for details'), 'a mid-sentence mention does not approve');
+  ok(startRe.test('/nanobots start 1cb719a4564a'), 'a bare command alone on its line DOES approve');
+  ok(startRe.test('looks good to me\n/nanobots start 1cb719a4564a'), 'a human may add commentary on other lines');
+  ok(startRe.test('  /nanobots start 1cb719a4564a  '), 'leading/trailing whitespace on the line is tolerated');
+  ok(/own line/.test(prompt), 'LOOP-PROMPT.md warns the loop never to write the bare command on its own line');
 }
 
 if (fails.length) {
