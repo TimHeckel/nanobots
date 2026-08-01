@@ -28,7 +28,10 @@ for (const forbidden of ['pull_requests', 'administration', 'checks', 'statuses'
   const inManifest = new RegExp(`default_permissions[\\s\\S]{0,200}${forbidden}`).test(src);
   ok(!inManifest, `manifest never grants ${forbidden}`);
 }
-ok(/hook_attributes:\s*\{\s*active:\s*false\s*\}/.test(src), 'manifest disables webhooks (nanobots polls)');
+// NB: the real value is a template literal containing ${owner}/${repo}, so a [^}]* class
+// stops at the first brace. Match across a bounded span instead.
+ok(/hook_attributes:\s*\{[\s\S]{0,160}?active:\s*false/.test(src), 'manifest disables webhook delivery');
+ok(/hook_attributes:\s*\{[\s\S]{0,80}?url:/.test(src), 'manifest supplies hook_attributes.url — GitHub rejects the whole manifest without it');
 ok(/public:\s*false/.test(src), 'manifest creates a private App');
 ok(/redirect_url:\s*`http:\/\/127\.0\.0\.1:\$\{port\}\/cb`/.test(src), 'redirect_url is loopback-only, never a public host');
 ok(/server\.listen\(0,\s*'127\.0\.0\.1'/.test(src), 'the callback server binds to loopback only');
@@ -56,7 +59,7 @@ writeFileSync(server, [
   "      url: 'https://github.com/acme/widget',",
   '      redirect_url: `http://127.0.0.1:${port}/cb`,',
   '      public: false,',
-  '      hook_attributes: { active: false },',
+  '      hook_attributes: { url: \x27https://github.com/acme/widget\x27, active: false },',
   '      default_events: [],',
   "      default_permissions: { contents: 'write', metadata: 'read' },",
   '    };',
