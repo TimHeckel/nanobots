@@ -58,9 +58,15 @@ For every item in **Inbox** (label `nanobots:inbox`):
 **Hard rules**
 - P0 jumps the queue; ping the maintainer immediately (issue comment + assign) rather than
   silently working.
-- Anything touching a hard-gate area gets `summon-human`, never auto-dispatch:
-  - (none configured)
-- Max WIP for workers: **2** items In Progress at once. Don't dispatch past that.
+- Anything touching a hard-gate area gets `summon-human`, never auto-dispatch. Per
+  `.nanobots/config.json` `hardGates`, currently:
+  - the CLI itself (`src/**`) — changes every future install
+  - the templates (`templates/**`) — changes what every repo renders
+  - packaging and release (`package.json`) — the npm publish surface
+  - CI and loop workflows (`.github/**`)
+- Max WIP for workers: match `.nanobots/config.json` `wipCap` (currently **1**). Don't
+  dispatch past that — this file is a prose mirror of the config value, not a separate
+  source of truth; if they ever disagree, config.json wins and this line is stale.
 
 ## Source weighting
 
