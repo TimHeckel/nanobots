@@ -116,3 +116,35 @@ gh variable set NANOBOTS_WORKER_ENABLED --body 1
   the public repo. Removing them later is manual.
 - **Stray branches/PRs.** A failed run can leave `nanobots/<issue>-<slug>` branches behind;
   nanobots has no ref-cleanup subsystem, so that cleanup is yours.
+
+### The OCR chain (bugs 8–13)
+
+OCR is documented as a **required** review that blocks merges. It had never successfully run
+once. Six failures sat behind each other, each only visible after the previous was fixed:
+
+| # | Symptom | Root cause |
+|---|---|---|
+| 8 | install 404 | asset is `opencodereview-linux-amd64`, workflow asked for `ocr-linux-amd64` |
+| 9 | report step 404 | used a GraphQL node ID (`IC_kwD…`) against a REST endpoint needing a numeric id |
+| 10 | binary died in 50ms | workflow read `OCR_LLM_URL`/`MODEL` from **secrets**; `init` sets them as **variables** → empty |
+| 11 | every finding dropped | OCR emits `comments[]`/`path`; parser read `findings[]`/`file` |
+| 12 | docs-only PR blocked forever | OCR exits 0 with no output when nothing is reviewable; treated as "review failed" |
+| 13 | fixes appeared to do nothing | reviewer checked out `base_sha`, so it ran the engine code from the PR's merge-base |
+
+**#13 is the one to remember.** It made #9–#12 look unfixable: each fix landed on the default
+branch while CI kept running the pre-fix copy from the merge-base. The reviewer now checks out
+the base *branch tip* — equally trusted, always current.
+
+**#12 is the mirror image of the rest.** Every other bug was something that did not work; that
+one was a gate so conservative it could never pass. Both directions matter: the fix keeps
+"nonzero exit" and "unknown exit" blocking, so a review that *might* not have happened still
+never reads as clean.
+
+### Guard rails added
+
+- `verify daytona` runs a real command in the sandbox, not just create/delete.
+- `tests/plan-protocol.test.mjs` asserts the prompt's documented plan marker satisfies the
+  worker's parser, and that the loop's own approval prose does **not** count as approval.
+- `tests/ocr-parse.test.mjs` pins OCR's real JSON shape and keeps empty/malformed output loud.
+- CI fails if `.nanobots/` has drifted from `templates/` — the installed copy is what actually
+  runs, and forgetting `nanobots update` silently reverts fixes.

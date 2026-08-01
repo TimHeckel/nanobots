@@ -42,6 +42,24 @@ jobs:
             console.log("config shape ok");
           '
 
+      - name: Engine drift — is the installed .nanobots/ current with templates/?
+        # Only meaningful on a repo that dogfoods itself (this one). A fix landed in
+        # templates/ does NOT reach the running loop until `nanobots update` re-renders
+        # .nanobots/ — and the workers, the outer loop and the reviewer all execute the
+        # INSTALLED copy. Four consecutive fixes to the OCR report parser appeared to do
+        # nothing because of exactly this gap, so it is now a hard failure rather than
+        # something a human has to remember.
+        if: hashFiles('.nanobots/config.json') != ''
+        run: |
+          set -euo pipefail
+          node src/cli.mjs update
+          if ! git diff --quiet -- .nanobots .github/workflows/nanobots-*.yml; then
+            echo "::error::.nanobots/ is stale — run 'node src/cli.mjs update' and commit. Files that differ:"
+            git --no-pager diff --stat -- .nanobots .github/workflows/nanobots-*.yml
+            exit 1
+          fi
+          echo "installed engine matches templates"
+
       - name: Package contents
         # The tarball is the product. Catch anything that would ship a secret or bloat.
         run: |
