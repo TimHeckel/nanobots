@@ -62,19 +62,49 @@ export async function loadSystemPrompt(cfg, nwo) {
   }
 }
 
+// True once any turn in this conversation carries an image part. Text-only models don't
+// degrade on an image_url part — they hard-fail the whole request (DeepSeek answers
+// "unknown variant `image_url`") — and the history keeps the image around, so once a
+// screenshot is in play every subsequent turn needs the vision model too.
+export function hasImage(messages) {
+  return messages.some((m) => Array.isArray(m.content) && m.content.some((p) => p?.type === 'image_url'));
+}
+
+// Route per turn: vision model when a screenshot is involved, cheap text model otherwise.
+// The vision endpoint may live at a different provider entirely (e.g. DeepSeek for text,
+// Fireworks/Kimi for vision), so each field falls back to the primary config independently.
+export function resolveModel(ai, messages) {
+  if (!hasImage(messages)) return { base: ai.baseUrl, apiKey: ai.apiKey, model: ai.model, kind: 'text' };
+  const v = ai.vision ?? {};
+  if (!v.model) return { base: ai.baseUrl, apiKey: ai.apiKey, model: ai.model, kind: 'text-no-vision-configured' };
+  return {
+    base: v.baseUrl || ai.baseUrl,
+    apiKey: v.apiKey || ai.apiKey,
+    model: v.model,
+    kind: 'vision',
+  };
+}
+
 async function callModel(ai, messages) {
-  const base = ai.baseUrl.replace(/\/$/, '').replace(/\/chat\/completions$/, '');
+  const picked = resolveModel(ai, messages);
+  const base = picked.base.replace(/\/$/, '').replace(/\/chat\/completions$/, '');
   const res = await fetch(`${base}/chat/completions`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      Authorization: `Bearer ${ai.apiKey}`,
+      Authorization: `Bearer ${picked.apiKey}`,
     },
-    body: JSON.stringify({ model: ai.model, max_tokens: 2000, tools: TOOLS, messages }),
+    body: JSON.stringify({ model: picked.model, max_tokens: 2000, tools: TOOLS, messages }),
   });
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
-    throw new Error(`model → ${res.status}: ${detail.error?.message ?? detail.message ?? 'unknown error'}`);
+    const msg = detail.error?.message ?? detail.message ?? 'unknown error';
+    // The overwhelmingly common cause of a 400 here is a screenshot sent to a text-only
+    // model. Say so, instead of surfacing "unknown variant `image_url`" to a user.
+    if (picked.kind !== 'vision' && hasImage(messages)) {
+      throw new Error(`${picked.model} can't read images (${res.status}). Set a vision model in Options → Chat agent model → vision model, e.g. Fireworks \`accounts/fireworks/models/kimi-k3\`.`);
+    }
+    throw new Error(`model → ${res.status}: ${msg}`);
   }
   return res.json();
 }

@@ -101,6 +101,14 @@ async function persist() {
       apiKey: $('aikey').value.trim(),
       baseUrl: $('aibase').value.trim() || 'https://api.anthropic.com/v1',
       model: $('aimodel').value.trim() || 'claude-sonnet-5',
+      // Optional second model used only for turns that carry a screenshot. Blank fields
+      // fall back to the primary provider, so "same provider, bigger model" needs only
+      // the model field — and a different provider entirely is equally supported.
+      vision: {
+        apiKey: $('vkey').value.trim(),
+        baseUrl: $('vbase').value.trim(),
+        model: $('vmodel').value.trim(),
+      },
     },
   });
   await paintRail();
@@ -122,6 +130,9 @@ async function persist() {
   $('aikey').value = cfg.ai.apiKey;
   $('aibase').value = cfg.ai.baseUrl;
   $('aimodel').value = cfg.ai.model;
+  $('vkey').value = cfg.ai.vision?.apiKey ?? '';
+  $('vbase').value = cfg.ai.vision?.baseUrl ?? '';
+  $('vmodel').value = cfg.ai.vision?.model ?? '';
   lastPatByOwner = cfg.patByOwner ?? {};
   $('gh-connect').hidden = !GITHUB_OAUTH_CLIENT_ID;
   // Reflect the saved base URL as a provider selection (without overwriting
@@ -146,9 +157,12 @@ const PROVIDERS = {
   Grok: { base: 'https://api.x.ai/v1', model: 'grok-4', keys: 'https://console.x.ai' },
   OpenRouter: { base: 'https://openrouter.ai/api/v1', model: 'anthropic/claude-sonnet-5', keys: 'https://openrouter.ai/settings/keys' },
   // nanobots' own shipped default — the same OpenAI-compatible provider `init` and the OCR
-  // review run on (OCR_LLM_URL / OCR_LLM_MODEL). Reuse those values here; note the chat agent
-  // reads screenshots, so pick a multimodal model if you want vision.
-  DeepSeek: { base: 'https://api.deepseek.com', model: 'deepseek-v4-flash', keys: 'https://platform.deepseek.com/api_keys' },
+  // review run on (OCR_LLM_URL / OCR_LLM_MODEL). Cheap and good for text, but VERIFIED
+  // text-only: it rejects image parts outright rather than degrading, so pair it with a
+  // vision model below if you file screenshots.
+  DeepSeek: { base: 'https://api.deepseek.com', model: 'deepseek-v4-flash', keys: 'https://platform.deepseek.com/api_keys', vision: false },
+  // Verified multimodal (kimi-k3 reads screenshots correctly).
+  Fireworks: { base: 'https://api.fireworks.ai/inference/v1', model: 'accounts/fireworks/models/kimi-k3', keys: 'https://fireworks.ai/account/api-keys' },
   Manual: null,
 };
 
@@ -158,6 +172,15 @@ function selectProvider(name, { fill = true } = {}) {
   }
   const preset = PROVIDERS[name];
   $('manual-fields').hidden = Boolean(preset);
+  // Screenshots are the point of this extension, so a text-only primary must not fail
+  // silently at the moment someone pastes one — warn at configuration time instead.
+  const warn = $('vision-warn');
+  if (preset && preset.vision === false) {
+    warn.innerHTML = `⚠️ <b>${name}</b> can't read images — it rejects screenshots outright. Set a vision model below (e.g. Fireworks <code>accounts/fireworks/models/kimi-k3</code>) or filing with a screenshot will fail.`;
+    warn.hidden = false;
+  } else {
+    warn.hidden = true;
+  }
   if (preset) {
     $('key-link').innerHTML = `<a href="${preset.keys}" target="_blank">get a${'AEIOU'.includes(name[0]) ? 'n' : ''} ${name} key ↗</a>`;
     if (fill) {

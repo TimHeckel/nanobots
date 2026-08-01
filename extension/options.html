@@ -162,7 +162,17 @@
     </div>
     <label for="aimodel">model</label>
     <input id="aimodel" placeholder="claude-sonnet-5">
-    <div class="hint">Pre-filled with a sensible multimodal default — vision is how the agent reads screenshots while filing. Swap it for any model your provider offers.</div>
+    <div class="hint">Used for every turn without a screenshot.</div>
+    <div class="hint" id="vision-warn" hidden></div>
+
+    <h3 style="margin-top:18px">Vision model <span class="dim">(optional)</span></h3>
+    <p class="sub">Used automatically on any turn that carries a screenshot, then it switches back. Leave blank to use the model above for everything — only do that if it reads images.</p>
+    <label for="vmodel">model</label>
+    <input id="vmodel" placeholder="accounts/fireworks/models/kimi-k3">
+    <label for="vkey">api key <span class="dim">(blank = reuse the key above)</span></label>
+    <input id="vkey" type="password" placeholder="only if the vision model is at another provider">
+    <label for="vbase">base url <span class="dim">(blank = reuse the base url above)</span></label>
+    <input id="vbase" placeholder="https://api.fireworks.ai/inference/v1">
   </section>
 
   <!-- ── step 4: review ─────────────────────────────────────────────────── -->

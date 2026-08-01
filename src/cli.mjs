@@ -321,6 +321,13 @@ async function daytonaProof(apiKey) {
 // conversationally, through the tools below. (Hidden `--headless` scaffolds from defaults
 // for CI/self-tests; it is deliberately absent from the help text.)
 
+// Defence in depth. The onboarding agent is told to set secret:true when it asks for a
+// credential, but compliance is nondeterministic — observed both ways against the same model.
+// A credential must never echo in the user's terminal because of a model slip, so we mask on
+// the question text too and treat the model's flag as a hint, not the control.
+const CREDENTIAL_QUESTION = /\b(token|api[- ]?key|key|pem|private[- ]?key|secret|password|pat|credential)\b/i;
+const isCredentialPrompt = (question, flagged) => Boolean(flagged) || CREDENTIAL_QUESTION.test(question || '');
+
 // Terminal line reader with optional masking for secret values (zero-dependency).
 function promptLine(query, { secret = false } = {}) {
   return new Promise((resolve) => {
@@ -364,7 +371,11 @@ function onboardingSystemPrompt(d) {
   const nwo = `${d.owner}/${d.repo}`;
   return `You are the nanobots onboarding agent, running inside the \`npx nanobots-sh init\` CLI, on the user's machine, in their target git repo. Your job: get a complete, working nanobots install stood up for THIS repo, conversationally, using your tools.
 
-You cannot see the screen. Communicate ONLY through message_user (to tell the user things) and ask_user (to collect input). Never put user-facing text in plain assistant content. Be warm but concise — one or two sentences per step before you act. Never invent a token, key, or URL: always ask_user for secret values.
+You cannot see the screen. Communicate ONLY through message_user (to tell the user things) and ask_user (to collect input). Never put user-facing text in plain assistant content. Be warm but concise. Never invent a token, key, or URL: always ask_user for secret values.
+
+TWO RULES THAT ARE NOT OPTIONAL:
+1. **message_user before every lettered section below.** ask_user asks a bare question with no context; message_user is the only way the user learns what a thing is, why it is needed, or how to get it. A run that is nothing but ask_user calls is a failed run — the user is staring at demands with no explanation. One or two sentences is enough.
+2. **secret:true on EVERY ask_user that collects a token, key, PEM, password, or PAT.** Without it their credential echoes in plain text in their terminal and scrollback.
 
 Target repo: ${nwo} (default branch ${d.defaultBranch}). Detected gate/test commands: ${d.gates.join(', ') || 'none detected'}.
 
@@ -412,9 +423,11 @@ function dryRunAnswer(question) {
       }
     } catch { /* malformed script — fall through to the heuristics */ }
   }
-  if (/\b(token|key|pem|secret|pat)\b/i.test(question)) return 'DRYRUN-NOT-A-REAL-CREDENTIAL';
-  if (/\b(yes\/no|y\/n|do you want|would you like|should i|enable|set (this|it) up)\b/i.test(question)) return 'yes';
-  return ''; // accept the default
+  if (/\b(token|key|pem|secret|pat|credential)\b/i.test(question)) return 'DRYRUN-NOT-A-REAL-CREDENTIAL';
+  // Anything that reads as a confirmation gets an affirmative. Answering "" (accept default)
+  // to "do you have X ready?" makes the agent skip the step, which produced false failures.
+  if (/\b(y\/n|yes\/no|do you|did you|are you|have you|would you|will you|should i|shall (i|we)|can you|ready|want|like to|prefer|enable|set (this|it|that) up|configure|continue|proceed|go ahead|ok to|now\?)\b/i.test(question)) return 'yes';
+  return ''; // accept the bracketed default
 }
 
 // Every tool becomes a recorder. Secret VALUES are never captured — a transcript can land in
@@ -425,7 +438,13 @@ function dryRunTools(transcript) {
     message_user: async ({ text }) => rec('message_user', { chars: (text || '').length }, 'shown'),
     ask_user: async ({ question, secret }) => {
       const answer = dryRunAnswer(question || '');
-      return rec('ask_user', { question, secret: !!secret, answered: answer ? (secret ? '<redacted>' : answer) : '<default>' }, answer);
+      const masked = isCredentialPrompt(question, secret);
+      return rec('ask_user', {
+        question,
+        secret: !!secret,                 // what the model claimed
+        masked,                           // what actually happened
+        answered: answer ? (masked ? '<redacted>' : answer) : '<default>',
+      }, answer);
     },
     render_scaffold: async (a) => rec('render_scaffold', {
       board: a.board, humanLabel: a.humanLabel, wipCap: a.wipCap,
@@ -487,7 +506,7 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
 
   const liveTools = {
     message_user: async ({ text }) => { console.log(`\n${text}\n`); return 'shown'; },
-    ask_user: async ({ question, secret }) => promptLine(`${c.cyan('?')} ${question} `, { secret: !!secret }),
+    ask_user: async ({ question, secret }) => promptLine(`${c.cyan('?')} ${question} `, { secret: isCredentialPrompt(question, secret) }),
     render_scaffold: async (a) => {
       state.cfg = buildConfig(d, {
         board: a.board, humanLabel: a.humanLabel, wipCap: parseInt(a.wipCap, 10) || 2,

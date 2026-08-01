@@ -65,6 +65,11 @@ ok(calls.length >= 5, `agent made a real sequence of tool calls (got ${calls.len
 ok(byTool('message_user').length > 0, 'agent spoke to the user via message_user');
 ok(byTool('ask_user').length > 0, 'agent collected input via ask_user');
 ok(byTool('ask_user').some((c) => c.secret === true), 'agent marked at least one prompt as secret (masked input)');
+// The model's secret flag is nondeterministic — observed set and unset for the same prompt
+// across runs. What must hold is that every credential prompt was ACTUALLY masked, which the
+// CLI enforces on the question text rather than trusting the flag.
+const unmasked = byTool('ask_user').filter((c) => /\b(token|key|pem|secret|password|pat|credential)\b/i.test(c.question || '') && !c.masked);
+ok(unmasked.length === 0, `every credential prompt was actually masked (${unmasked.length} unmasked: ${unmasked.map((c) => (c.question || '').slice(0, 40)).join(' | ')})`);
 
 // ── it rendered a sane scaffold ──────────────────────────────────────────────
 const scaffold = byTool('render_scaffold')[0];
