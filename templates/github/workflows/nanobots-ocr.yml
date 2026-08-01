@@ -89,9 +89,9 @@ jobs:
 
       - name: Review exact PR head
         env:
-          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_URL: ${{ vars.OCR_LLM_URL || secrets.OCR_LLM_URL }}
           OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
-          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
+          OCR_LLM_MODEL: ${{ vars.OCR_LLM_MODEL || secrets.OCR_LLM_MODEL }}
           OCR_LLM_EXTRA_BODY: ${{ vars.OCR_LLM_EXTRA_BODY }}
           OCR_LLM_PROTOCOL: openai
           OCR_CONCURRENCY: ${{ vars.OCR_CONCURRENCY }}
@@ -99,11 +99,23 @@ jobs:
           OCR_NO_UPDATE: '1'
         run: |
           set -euo pipefail
+          # URL and MODEL are non-sensitive and `init` sets them as VARIABLES. Reading them
+          # from secrets yielded empty strings, so the binary ran with no endpoint and died
+          # in milliseconds — silently, because stdout was redirected into the findings file.
+          : "${OCR_LLM_URL:?OCR_LLM_URL is empty - set it as a repo VARIABLE (init does) or a secret}"
+          : "${OCR_LLM_MODEL:?OCR_LLM_MODEL is empty - set it as a repo VARIABLE (init does) or a secret}"
+          : "${OCR_LLM_TOKEN:?OCR_LLM_TOKEN is empty - set it as a repo SECRET}"
           HOME="$(mktemp -d)" XDG_CONFIG_HOME="$(mktemp -d)" \
             ./ocr review --from "origin/${{ steps.pr.outputs.base_ref }}" --to "${{ steps.pr.outputs.head_sha }}" \
             --format json --audience agent \
             --concurrency "${OCR_CONCURRENCY:-3}" --timeout "${OCR_TASK_TIMEOUT:-20}" \
-            > ocr-findings.json || true
+            > ocr-findings.json 2> ocr-stderr.log || true
+          # stdout holds the findings JSON, so the binary's own errors live only in stderr.
+          # Surfacing them is the difference between "no findings" and "never ran at all".
+          if [ ! -s ocr-findings.json ]; then
+            echo "::warning::OCR produced no findings output; its stderr follows"
+            tail -40 ocr-stderr.log || true
+          fi
 
       - name: Parse findings, post review, write report artifact, gate on blocking severities
         id: report
@@ -145,8 +157,8 @@ jobs:
           OCR_AUTOFIX_URL: ${{ vars.OCR_AUTOFIX_URL }}
           OCR_AUTOFIX_EXTRA_BODY: ${{ vars.OCR_AUTOFIX_EXTRA_BODY }}
           OCR_AUTOFIX_TOKEN: ${{ secrets.OCR_AUTOFIX_TOKEN }}
-          OCR_LLM_MODEL: ${{ secrets.OCR_LLM_MODEL }}
-          OCR_LLM_URL: ${{ secrets.OCR_LLM_URL }}
+          OCR_LLM_MODEL: ${{ vars.OCR_LLM_MODEL || secrets.OCR_LLM_MODEL }}
+          OCR_LLM_URL: ${{ vars.OCR_LLM_URL || secrets.OCR_LLM_URL }}
           OCR_LLM_EXTRA_BODY: ${{ vars.OCR_LLM_EXTRA_BODY }}
           OCR_LLM_TOKEN: ${{ secrets.OCR_LLM_TOKEN }}
           OCR_AUTOFIX_MAX_ROUNDS: ${{ vars.OCR_AUTOFIX_MAX_ROUNDS }}
