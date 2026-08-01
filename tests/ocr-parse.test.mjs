@@ -7,7 +7,7 @@
 // is to block merges. Silently reporting "clean" is the worst possible failure mode here,
 // strictly worse than crashing.
 
-import { parseOcrOutput } from '../templates/nanobots/open-code-review-report.mjs';
+import { parseOcrOutput, positiveIntEnv } from '../templates/nanobots/open-code-review-report.mjs';
 
 let passed = 0;
 const fails = [];
@@ -88,6 +88,21 @@ ok(parseOcrOutput(JSON.stringify({ status: 'success' })).parseError !== null,
   ok(parseOcrOutput('   \n  ', { exitCode: 0 }).noReviewableChanges === true, 'whitespace-only output with exit 0 counts as nothing reviewable');
   // A successful exit must never launder malformed output into a clean review.
   ok(parseOcrOutput('not json', { exitCode: 0 }).parseError !== null, 'exit 0 does not excuse malformed JSON');
+}
+
+// ── unset repo VARIABLES arrive as "" ────────────────────────────────────────
+// GitHub passes an unset vars.X into env as an EMPTY STRING, so `?? default` never fires and
+// Number("") is 0. That capped the summary and inline comments at zero: a PR with two CRITICAL
+// findings rendered as "no findings" to the human reading it, while still blocking the merge.
+{
+  ok(positiveIntEnv("", 20) === 20, "empty string falls back to the default (the actual bug)");
+  ok(positiveIntEnv(undefined, 20) === 20, "undefined falls back");
+  ok(positiveIntEnv("   ", 20) === 20, "whitespace falls back");
+  ok(positiveIntEnv("0", 20) === 20, "an explicit 0 falls back rather than hiding every finding");
+  ok(positiveIntEnv("-5", 20) === 20, "a negative value falls back");
+  ok(positiveIntEnv("abc", 20) === 20, "a non-numeric value falls back");
+  ok(positiveIntEnv("5", 20) === 5, "a real value is honoured");
+  ok(positiveIntEnv("7.9", 20) === 7, "a float is floored");
 }
 
 if (fails.length) {

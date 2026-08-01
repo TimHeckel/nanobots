@@ -879,6 +879,62 @@ async function cmdVerify(target) {
   say(`${c.cyan('daytona: ready')} — connection + lifecycle proof passed.`);
 }
 
+// `nanobots app create` — the manifest flow, standalone.
+//
+// It also lives as a tool inside `init`, but skipping it there used to leave no way back:
+// adding per-run credentials later meant re-running the whole onboarding conversation. Most
+// people skip it on the first pass (it is the one step that opens a browser), so "later"
+// is the common case, not the exception.
+async function cmdApp(sub) {
+  if (sub !== 'create') die('usage: nanobots app create');
+  const d = detect();
+  if (!d.owner) die('could not parse owner/repo from the origin remote');
+  const nwo = `${d.owner}/${d.repo}`;
+
+  const existing = shTry(`gh secret list --repo ${nwo}`) ?? '';
+  if (existing.includes('NANOBOTS_GITHUB_APP_ID')) {
+    warn(`${nwo} already has NANOBOTS_GITHUB_APP_ID set. Creating a second App will overwrite all three secrets.`);
+    const go = await promptChoice('Continue and replace the existing App credentials?', ['No — leave them alone', 'Yes — replace them']);
+    if (go.startsWith('No')) { closePrompt(); return; }
+  }
+
+  const isOrgAnswer = await promptChoice(`Is "${d.owner}" an organization or a personal account?`, ['Personal account', 'Organization']);
+  const appName = (await promptLine(`${c.cyan('?')} App name (must be globally unique) ${c.dim(`[nanobots-${d.owner.toLowerCase()}]`)} `)).trim()
+    || `nanobots-${d.owner.toLowerCase()}`;
+
+  console.log(`\n${c.dim('The App is created with contents:write + metadata:read and nothing else — notably')}`);
+  console.log(`${c.dim('NOT pull_requests, so a sandbox can push a branch but can never open, change or merge a PR.')}\n`);
+
+  let app;
+  try {
+    app = await createAppViaManifest({ owner: d.owner, repo: d.repo, isOrg: isOrgAnswer === 'Organization', appName });
+  } catch (err) {
+    closePrompt();
+    die(`app creation failed: ${err.message}\nThe PAT fallback keeps working; re-run \`nanobots app create\` to try again.`);
+  }
+  say(`created ${app.htmlUrl} (id ${app.appId})`);
+
+  const put = (name, value) => spawnSync('gh', ['secret', 'set', name, '--repo', nwo], { input: String(value) }).status === 0;
+  // Store before installing: if the install step fails the credentials are not lost.
+  if (!put('NANOBOTS_GITHUB_APP_ID', app.appId)) { closePrompt(); die('failed to store NANOBOTS_GITHUB_APP_ID'); }
+  if (!put('NANOBOTS_GITHUB_APP_PRIVATE_KEY', app.pem)) { closePrompt(); die('failed to store NANOBOTS_GITHUB_APP_PRIVATE_KEY'); }
+  say('app id + private key stored as repo secrets.');
+
+  try {
+    const installationId = await waitForInstallation(app);
+    if (!put('NANOBOTS_GITHUB_APP_INSTALLATION_ID', installationId)) { closePrompt(); die('failed to store NANOBOTS_GITHUB_APP_INSTALLATION_ID'); }
+    say(`installation ${installationId} stored.`);
+    console.log(`\n${c.cyan('Done.')} Workers on ${nwo} now get a short-lived, repo-scoped token per run.`);
+    console.log(`${c.dim('Reminder: contents:write is repository-wide, not ref-scoped — branch protection is what contains a stray push.')}\n`);
+  } catch (err) {
+    warn(`app created and stored, but the installation was not detected: ${err.message}`);
+    warn(`Install it at https://github.com/apps/${app.slug}/installations/new, then set the id:`);
+    warn(`  gh secret set NANOBOTS_GITHUB_APP_INSTALLATION_ID --repo ${nwo}`);
+    warn('All three are required — a partial setup is treated as unconfigured and falls back to the PAT.');
+  }
+  closePrompt();
+}
+
 function cmdExtension() {
   // Chrome has no CLI install path for extensions (by design), so this
   // materializes the extension folder locally and prints the load steps.
@@ -924,6 +980,9 @@ switch (command) {
   case 'run':
     cmdRun(args[args.indexOf('run') + 1]);
     break;
+  case 'app':
+    await cmdApp(args[args.indexOf('app') + 1]);
+    break;
   case 'extension':
     cmdExtension();
     break;
@@ -940,6 +999,7 @@ ${c.cyan('nanobots')} v${VERSION} — self-improving agent loops for any GitHub 
   nanobots init                                    AI onboarding agent (needs OCR_LLM_URL/TOKEN/MODEL)
   nanobots update                                  re-render engine-owned files
   nanobots run <outer|worker>                      one headless cycle (worker = Daytona sandbox)
+  nanobots app create                              create + install the per-run credential GitHub App
   nanobots verify daytona                          connection + lifecycle proof before enabling the worker cron
   nanobots extension                               copy the browser extension here (+ load steps)
   nanobots version

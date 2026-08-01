@@ -76,8 +76,18 @@ function checkEligibility(cfg, existingState, headSha) {
   if (process.env.GH_PR_DRAFT === 'true') return { eligible: false, reason: 'draft PR — waits until ready_for_review' };
   const labels = JSON.parse(shTry(`gh pr view ${PR} --repo ${NWO} --json labels --jq '.labels'`) || '[]').map((l) => l.name);
   if (!labels.includes('nanobots:built')) return { eligible: false, reason: 'not labeled nanobots:built' };
-  const protectedBranches = cfg.mergePolicy?.protectedBranches ?? ['main'];
-  if (protectedBranches.includes(process.env.GH_PR_BASE_REF)) return { eligible: false, reason: `base ${process.env.GH_PR_BASE_REF} is a protected branch` };
+  // Guard the ref the responder actually WRITES — the PR head. It clones and pushes there
+  // and never touches the base. Gating on the base made autofix dead code on every normal
+  // repo: protectedBranches defaults to [main] and practically every PR targets main, so
+  // the responder declined every PR it was ever offered while the docs described it working.
+  const protectedBranches = cfg.mergePolicy?.protectedBranches ?? [main];
+  const headRef = process.env.GH_PR_HEAD_REF;
+  if (protectedBranches.includes(headRef)) {
+    return { eligible: false, reason: `head ${headRef} is a protected branch — the responder would have to push to it` };
+  }
+  if (headRef && headRef === process.env.GH_PR_BASE_REF) {
+    return { eligible: false, reason: 'head and base are the same ref' };
+  }
   if (process.env.OCR_AUTOFIX_ENABLED !== 'true') return { eligible: false, reason: 'OCR_AUTOFIX_ENABLED is not true' };
 
   if (existingState?.state?.sourceSha === headSha && ['fixed', 'evaluated', 'validation_failed', 'blocked'].includes(existingState.state.status)) {
