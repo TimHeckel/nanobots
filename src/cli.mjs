@@ -5,7 +5,7 @@
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, cpSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import readline from 'node:readline/promises';
 import { Writable } from 'node:stream';
 
@@ -891,8 +891,36 @@ async function cmdVerify(target) {
 // adding per-run credentials later meant re-running the whole onboarding conversation. Most
 // people skip it on the first pass (it is the one step that opens a browser), so "later"
 // is the common case, not the exception.
-async function cmdApp(sub) {
-  if (sub !== 'create') die('usage: nanobots app create');
+// `nanobots app install <slug>` — finish a setup that got as far as creating the App.
+// Repo secrets are write-only, so once the id and PEM are stored we cannot read them back to
+// mint a JWT and poll for the installation. The installation id is visible to the user in the
+// URL after installing, so we ask for it rather than pretending we can discover it.
+async function cmdAppInstall(slug) {
+  const d = detect();
+  if (!d.owner) die('could not parse owner/repo from the origin remote');
+  const nwo = `${d.owner}/${d.repo}`;
+  if (!slug) die('usage: nanobots app install <app-slug>   (e.g. nanobots-yourname)');
+
+  const url = `https://github.com/apps/${slug}/installations/new`;
+  console.log(`\n${c.cyan('→')} opening ${url}`);
+  console.log(`   Choose ${c.cyan('Only select repositories')} → ${nwo}, then install.`);
+  console.log(`   Afterwards your address bar reads ${c.dim('github.com/settings/installations/<ID>')} — that trailing number is what I need.\n`);
+  openBrowser(url);
+
+  const id = (await promptLine(`${c.cyan('?')} Installation ID: `)).trim();
+  closePrompt();
+  if (!/^\d+$/.test(id)) die(`"${id}" is not an installation id — it is the number at the end of the settings/installations URL`);
+
+  const ok = spawnSync('gh', ['secret', 'set', 'NANOBOTS_GITHUB_APP_INSTALLATION_ID', '--repo', nwo], { input: id }).status === 0;
+  if (!ok) die('failed to store NANOBOTS_GITHUB_APP_INSTALLATION_ID');
+  say(`installation ${id} stored — all three App secrets are now set.`);
+  console.log(`\n${c.cyan('Done.')} Workers on ${nwo} now get a short-lived, repo-scoped token per run.`);
+  console.log(`${c.dim('contents:write is repository-wide, not ref-scoped — branch protection is what contains a stray push.')}\n`);
+}
+
+async function cmdApp(sub, arg) {
+  if (sub === 'install') return cmdAppInstall(arg);
+  if (sub !== 'create') die('usage: nanobots app create | nanobots app install <app-slug>');
   const d = detect();
   if (!d.owner) die('could not parse owner/repo from the origin remote');
   const nwo = `${d.owner}/${d.repo}`;
@@ -987,7 +1015,7 @@ switch (command) {
     cmdRun(args[args.indexOf('run') + 1]);
     break;
   case 'app':
-    await cmdApp(args[args.indexOf('app') + 1]);
+    await cmdApp(args[args.indexOf('app') + 1], args[args.indexOf('app') + 2]);
     break;
   case 'extension':
     cmdExtension();
@@ -1006,6 +1034,7 @@ ${c.cyan('nanobots')} v${VERSION} — self-improving agent loops for any GitHub 
   nanobots update                                  re-render engine-owned files
   nanobots run <outer|worker>                      one headless cycle (worker = Daytona sandbox)
   nanobots app create                              create + install the per-run credential GitHub App
+  nanobots app install <slug>                      finish an interrupted app setup (stores the installation id)
   nanobots verify daytona                          connection + lifecycle proof before enabling the worker cron
   nanobots extension                               copy the browser extension here (+ load steps)
   nanobots version

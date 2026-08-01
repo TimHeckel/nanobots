@@ -39,6 +39,15 @@ ok(/app-manifests\/\$\{code\}\/conversions/.test(src), 'exchanges the manifest c
 ok(/NANOBOTS_GITHUB_APP_PRIVATE_KEY/.test(src) && !/writeFileSync\([^)]*pem/.test(src),
   'the private key goes to a secret, never to disk');
 
+// Every node:url helper the file USES must also be imported. `pathToFileURL` was used in
+// waitForInstallation but never imported, which is invisible to `node --check` (it is a
+// runtime ReferenceError) and only fires on the App-creation path — so it reached a user.
+for (const helper of ['pathToFileURL', 'fileURLToPath']) {
+  const used = new RegExp(`\\b${helper}\\(`).test(src);
+  const imported = new RegExp(`import \\{[^}]*${helper}[^}]*\\} from 'node:url'`).test(src);
+  ok(!used || imported, `${helper} is used without being imported`);
+}
+
 // ── behavioural: the manifest actually served over the wire ──────────────────
 const dir = mkdtempSync(join(tmpdir(), 'nanobots-manifest-'));
 const server = join(dir, 's.mjs');
