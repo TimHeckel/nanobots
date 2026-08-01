@@ -30,8 +30,19 @@ disagree with them, propose an edit — don't silently deviate.
    gates — `{{HUMAN_LABEL}}` items get an escalation comment per the escalation recipe,
    never dispatch. If `.nanobots/config.json` has `approval.requireVersionedStart` on (the
    default), items moving to Ready also get a **versioned plan**: post a `Plan ready`
-   comment with scope, out-of-scope, acceptance criteria, the gate commands, and a short
-   hash of that comment's normalized content. A worker will not claim the item until a
+   comment with scope, out-of-scope, acceptance criteria, and the gate commands, and end
+   that comment with this **exact** machine-readable marker on its own final line:
+
+   ```
+   <!-- nanobots:plan issue=<N> hash=<12 lowercase hex chars> -->
+   ```
+
+   where the hash is the first 12 hex characters of the sha256 of everything above the
+   marker. **The marker is mandatory and its shape is not negotiable** —
+   `daytona-worker.mjs` finds the plan with a literal regex, so a plan comment that only
+   mentions the hash in prose can never be claimed, no matter how many approvals it
+   collects. Write the marker even if you also state the hash in human-readable text.
+   A worker will not claim the item until a
    collaborator replies `/nanobots start <hash>` with the current hash — a stale hash (the
    issue changed since) doesn't count, and requires a fresh plan + fresh approval. If
    approval is off, Ready alone is enough to claim.
