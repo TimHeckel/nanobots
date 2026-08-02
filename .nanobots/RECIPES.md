@@ -46,6 +46,18 @@ into the recipe here.
 1. Post one crisp comment: the decision needed, 2-3 options with your recommendation
    first, and what's blocked on it. Assign the maintainer.
 2. Move to Blocked. Do not partially start the work.
+3. Confirmed working as intended for hard-gate edits (#5, 2026-08-01): the maintainer adopted
+   the recommended option verbatim and closed same day. Keep this shape as the default rather
+   than second-guessing it. `[distilled from 2026-08-01 #5]`
+
+## recipe: posting a plan comment (versioned-start approval)
+
+`daytona-worker.mjs` finds a plan by a literal regex against comment bodies — "the hash
+appears somewhere in the comment" is not the acceptance criterion, "the exact
+`<!-- nanobots:plan issue=N hash=... -->` marker is the comment's final line" is. Before
+trusting that a plan exists (yours or a prior cycle's), grep the actual comment body for the
+literal marker regex; don't infer it from prose that merely mentions the hash.
+`[distilled from 2026-08-01 #2]`
 
 ## recipe: touching the GitHub API (loop or worker code)
 
@@ -73,6 +85,22 @@ are expensive to find later.
 7. **Distinguish a config gap from a transient failure.** "Not configured" should fail loudly
    and stay failed; a transient API error must retry, or one brief GitHub outage permanently
    strands every task it touched.
+8. **When fixing a bug in an engine file this repo dogfoods on itself, diff the installed
+   copy (`.nanobots/*`) against its template source (`templates/nanobots/*`) — they must stay
+   byte-for-byte identical.** A fix applied to only one copy looks done (this repo's board and
+   CI go green) but ships nothing to future `npx nanobots-sh init` installs, or vice versa.
+   `ci.yml`'s drift check catches this on the next push, but checking by hand during review
+   catches it immediately. `[distilled from 2026-08-02 #7, #8]`
+9. **A board item stuck in a status the code should have moved it out of is a symptom, not
+   just a stale-claim case.** Verify the code path, field IDs, and query in isolation before
+   trusting either "the board is right" or your own guess at what status it should be —
+   reconcile the board by hand and file a chore to find the root cause rather than silently
+   re-deriving the status with no paper trail. `[distilled from 2026-08-02 #2/PR #9]`
+10. **A board item stuck `In Progress` with a dead sandbox and no completion comment is a
+    symptom, not the bug.** Read the actual Actions run logs, and cross-check how many PRs
+    exist and who authored them — a cheap, high-signal sanity check for "is the core pipeline
+    working at all" that's easy to skip when triaging item-by-item. `[distilled from
+    2026-08-02 #7]`
 
 ## recipe: trusting a gate
 

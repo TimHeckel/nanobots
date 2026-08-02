@@ -67,6 +67,23 @@ For every item in **Inbox** (label `nanobots:inbox`):
 - Max WIP for workers: match `.nanobots/config.json` `wipCap` (currently **1**). Don't
   dispatch past that — this file is a prose mirror of the config value, not a separate
   source of truth; if they ever disagree, config.json wins and this line is stale.
+- A scheduled dispatcher cron (`nanobots-worker.yml`, `nanobots-outer.yml`) failing on
+  **every** run is exactly as urgent as red `main` CI, even though LOOP-PROMPT.md's Sync
+  step is worded around `main` — a cron that always crashes before reaching the code an
+  open escalation is about means that escalation can't even be exercised yet. `[distilled
+  from 2026-08-02 #8]`
+
+## Merge policy (self-hosting/dogfood repos)
+
+`mergePolicy.protectedBranches` containing the default branch (`main`) plus
+`mergePolicy.autoMergeNonProduction: false` is a **blanket defer-to-human** switch, not a
+narrow one scoped to PRs that edit branch-protection config. Since virtually every real PR
+targets `main`, that combination means LOOP-PROMPT.md step 4's "anything touching
+`mergePolicy.protectedBranches` → request human review, move to Verify" applies to *every*
+PR while this repo dogfoods itself — a bad merge here ships a broken install to every future
+`npx nanobots-sh init`. Check `autoMergeNonProduction` and the actual base ref before
+assuming a clean S/M item auto-merges; `docs/e2e-harness.md` states this repo's own intent
+plainly ("every PR waits for you"). `[distilled from 2026-08-02 #2/PR #9]`
 
 ## Source weighting
 

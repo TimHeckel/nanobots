@@ -19,7 +19,63 @@ Entry format:
 
 ---
 
-## 2026-08-02 — #8 filed: shStdin's unquoted `encoding: utf8` crashes every worker run at claim(), upstream of #7
+## 2026-08-02 — #2/PR #9: first successful end-to-end worker run; merge deferred to a human per this repo's own dogfooding policy [distilled]
+- **Outcome:** n/a (not merged yet — moved to **Verify**, not Done; a human owns the merge call)
+- **What worked / what didn't:** After #7/#8 landed, the very next scheduled worker run
+  (`dead270f`) claimed #2, built the README change, ran `npm run test` (319/319), and pushed
+  `nanobots/2-add-github-app-credentials` — the first real worker-produced change in this
+  repo's history. The controller (`734c2f0`, 0.27.0) opened PR #9 from it; CI and OCR both came
+  back clean on the exact current head (`f4f76896`), and the diff matched #2's acceptance
+  criteria exactly (all three vars listed, "required together" stated, no other section
+  touched). Did **not** merge: `.nanobots/config.json` sets `mergePolicy.autoMergeNonProduction:
+  false` with `main` in `protectedBranches`, and `docs/e2e-harness.md` states the intent plainly
+  — "start with `wipCap: 1` and `autoMergeNonProduction: false` so every PR waits for you" —
+  because a bad merge here ships a broken install to every future `npx nanobots-sh init`.
+  Interpreted LOOP-PROMPT.md step 4's "anything touching `mergePolicy.protectedBranches` →
+  request human review" as: with `autoMergeNonProduction: false` and `main` in that list, every
+  normal PR (base `main`) qualifies, not just PRs that edit branch-protection config — the repo's
+  own docs confirm that reading. Also found the board item had stayed `In Progress` instead of
+  the `In Review` `openPullRequest()` is supposed to set it to (verified the code path, the
+  option ID, and the query all work in isolation) — moved it to `Verify` by hand and filed a
+  chore to find out why the automatic move didn't fire, rather than guessing.
+- **Lesson:** in a self-hosting/dogfood config, `mergePolicy.protectedBranches` containing the
+  default branch is a blanket "always defer to human" switch, not a narrow one — check
+  `autoMergeNonProduction` and the actual base ref before assuming a clean S/M item auto-merges.
+  Also: a board status that doesn't match what the code path *should* have done is worth
+  reconciling by hand immediately and filing a chore for root-cause, rather than either trusting
+  the stale board or silently re-deriving the "right" status without a paper trail.
+- **Applies to:** triage | review
+
+## 2026-08-02 — #8 closed: shStdin's `utf8` `ReferenceError` fixed in `0.25.1`, confirmed by a live worker run, not just a code read [distilled]
+- **Outcome:** merged (fix already on `main` since cycle 7's window; closed the issue and moved
+  the board item to Done this cycle once confirmed)
+- **What worked / what didn't:** `116deae` (0.25.1) quotes `encoding: 'utf8'` in `shStdin`.
+  Diffed `.nanobots/daytona-worker.mjs` against `templates/nanobots/daytona-worker.mjs` byte-for-
+  byte identical — the fix reached both the installed copy and the source template, so future
+  `nanobots update`/fresh installs get it too, not just this repo. Rather than trusting the code
+  read alone (LEARNINGS from cycles 6-8 explicitly warned against that), confirmed empirically:
+  the `dead270f` run (see #2/PR #9 above) is a real worker claim that got past `claim()` and did
+  real work.
+- **Lesson:** "diff the installed copy against the template source" is a cheap, high-value check
+  whenever a fix lands in an engine file in this repo — it catches the class of bug where a fix
+  is applied to one copy and not the other, which `ci.yml`'s drift check would also catch but
+  not until the next push.
+- **Applies to:** build | review
+
+## 2026-08-02 — #7 closed: `NANOBOTS_SKIP_PERMISSIONS`/`ROLE=worker-inline` wiring fixed in `0.26.0`, confirmed by a live worker run [distilled]
+- **Outcome:** merged (fix already on `main` since cycle 7's window; closed the issue and moved
+  the board item to Done this cycle once confirmed)
+- **What worked / what didn't:** `34c53f3` (0.26.0) made `run-cycle.sh` key off `ROLE=worker-inline`
+  directly instead of requiring an env var no caller ever set — same drift check as #8 (identical
+  across `.nanobots/` and `templates/nanobots/`). Confirmed via the `dead270f` run's transcript:
+  it ran `gh`/`npm` commands without hitting the "I need approval" wall every prior attempt hit.
+- **Lesson:** the same as #8's — a fix isn't "done" until a live run exercises the exact path
+  that was broken, and stacking two upstream-of-each-other P0s (this issue's bug was unreachable
+  until #8 was also fixed) means neither one's fix can be confirmed live in isolation; confirming
+  them together against the same successful run is legitimate, not a shortcut.
+- **Applies to:** build | review
+
+## 2026-08-02 — #8 filed: shStdin's unquoted `encoding: utf8` crashes every worker run at claim(), upstream of #7 [distilled]
 - **Outcome:** escalated (filed #8, `summon-human`, Blocked, P0; cross-linked to #7 both
   directions)
 - **What worked / what didn't:** Sync found `.github/workflows/nanobots-worker.yml`
@@ -47,7 +103,7 @@ Entry format:
   found something a code-only read would have missed.
 - **Applies to:** triage | review | build
 
-## 2026-08-02 — #7 filed: the worker sandbox has likely never completed real work, ever
+## 2026-08-02 — #7 filed: the worker sandbox has likely never completed real work, ever [distilled]
 - **Outcome:** escalated (filed #7, `summon-human`, Blocked, P0); reconciled #2's stale
   claim (moved back to Ready) and added evidence to #6 (still open, left for the maintainer)
 - **What worked / what didn't:** Review-outcomes on #2 found it stuck `In Progress` with a
@@ -75,7 +131,7 @@ Entry format:
   item-by-item.
 - **Applies to:** triage | review | build
 
-## 2026-08-01 — #6 CI red on e901e4b: filed P0 without a confirming judgment call, per the rule's own limits
+## 2026-08-01 — #6 CI red on e901e4b: filed P0 without a confirming judgment call, per the rule's own limits [distilled]
 - **Outcome:** escalated (filed #6, `summon-human`, Blocked, P0)
 - **What worked / what didn't:** Cycle 4's Sync found `main` red on `e901e4b` — the `test`
   job failing `tests/app-manifest-live.test.mjs` with "the command served its manifest page
@@ -99,7 +155,7 @@ Entry format:
   *shape* alone.
 - **Applies to:** triage | prompt
 
-## 2026-08-01 — #5 escalation (CI-red flake-exception policy) resolved directly by the maintainer
+## 2026-08-01 — #5 escalation (CI-red flake-exception policy) resolved directly by the maintainer [distilled]
 - **Outcome:** merged (maintainer implemented `0.21.0` directly, closed #5)
 - **What worked / what didn't:** Cycle 3 escalated #5 (a `templates/**` hard-gate edit) with
   three options and a recommendation instead of touching the hard-gated file itself. The
@@ -112,7 +168,7 @@ Entry format:
   edits — worth keeping as the default shape rather than second-guessing it.
 - **Applies to:** triage
 
-## 2026-08-01 — `main` CI red turned out to be a transient DeepSeek flake, not a regression
+## 2026-08-01 — `main` CI red turned out to be a transient DeepSeek flake, not a regression [distilled]
 - **Outcome:** n/a (a policy judgment call during Sync, not a dispatched item; filed #5 to
   propose hardening the rule)
 - **What worked / what didn't:** Cycle 3's Sync step found `main` CI red on head `a2c7e14`
@@ -138,7 +194,7 @@ Entry format:
   unresolved.
 - **Applies to:** triage | prompt
 
-## 2026-08-01 — #2 plan comment was missing the mandatory machine-readable marker
+## 2026-08-01 — #2 plan comment was missing the mandatory machine-readable marker [distilled]
 - **Outcome:** n/a (caught during cycle 2's review-outcomes read, not a dispatched item;
   issue #2 is still Ready, not yet Done)
 - **What worked / what didn't:** Cycle 1 posted a "Plan ready" comment on #2 with scope,
@@ -160,7 +216,7 @@ Entry format:
   don't infer it from the hash appearing in nearby text.
 - **Applies to:** triage | prompt
 
-## 2026-08-01 — TRIAGE.md hard-gate list drifted from config.json
+## 2026-08-01 — TRIAGE.md hard-gate list drifted from config.json [distilled]
 - **Outcome:** n/a (caught during cycle 1's policy read, not a dispatched item)
 - **What worked / what didn't:** `.nanobots/config.json` `hardGates` listed four real
   areas (`src/**`, `templates/**`, `package.json`, `.github/**`), but
