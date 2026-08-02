@@ -306,7 +306,17 @@ async function main() {
       timeout: 60 * 45,
       // Only the scoped token crosses into the sandbox. The App id/installation/private key
       // never do — a worker that could mint its own tokens would defeat the whole scheme.
-      env: { GH_TOKEN: buildToken, ...MODEL_ENV },
+      // THE ASSIGNMENT. Without these the sandboxed agent has no idea which item it is
+      // working: the prompt refers to "the issue" and "your run ID" but nothing supplied
+      // either, so it replied "What would you like me to do?" and exited 0 having done
+      // nothing. The controller knows both — it just never passed them across.
+      env: {
+        GH_TOKEN: buildToken,
+        NANOBOTS_ISSUE: String(target.number),
+        NANOBOTS_RUN_ID: RUN_ID,
+        NANOBOTS_REPO: NWO,
+        ...MODEL_ENV,
+      },
     });
 
     sh(`gh issue comment ${target.number} --repo ${NWO} --body ${JSON.stringify(

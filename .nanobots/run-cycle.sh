@@ -59,6 +59,23 @@ RENDERED_PROMPT="$(cat "$PROMPT_FILE")
 You are running headless (one-shot). Execute exactly one cycle, then exit — do not
 schedule wakeups; the host timer is the cadence."
 
+# The worker's assignment. WORKER-PROMPT.md talks about "the issue" and "your run ID", so
+# without these the agent has nothing to act on and simply asks what to do. The controller
+# already claimed the item; it passes the identifiers in via the environment.
+if [ "$ROLE" = "worker-inline" ] && [ -n "${NANOBOTS_ISSUE:-}" ]; then
+  RENDERED_PROMPT="$RENDERED_PROMPT
+
+## Your assignment (from the controller that claimed it)
+
+- Repository: ${NANOBOTS_REPO:-unknown}
+- Issue to implement: #${NANOBOTS_ISSUE}
+- Your run ID: ${NANOBOTS_RUN_ID:-unknown}
+
+Start by reading issue #${NANOBOTS_ISSUE} and its work-spec comment
+(\`gh issue view ${NANOBOTS_ISSUE} --repo ${NANOBOTS_REPO:-} --comments\`). That comment is your
+contract. Do not ask which item to work on — this is it. Do not pick a different one."
+fi
+
 # ── swappable engine ─────────────────────────────────────────────────────────
 # Claude Code is the shipped default, not a requirement. A worker is anything that reads a
 # work-spec and opens a PR with `Closes #N`, so Codex, Copilot's coding agent, OpenHands,
