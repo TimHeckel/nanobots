@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — nanobots</title>
+<meta name="description" content="nanobots privacy policy. We operate no servers and receive no user data. Everything stays in your browser or goes directly to services you configure.">
+<style>
+  :root { --bg:#0b0e12; --panel:#11151b; --border:#1e242e; --text:#c9d1d9; --dim:#8b949e; --accent:#4ade80; --accent2:#22d3ee; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.7 ui-monospace, Menlo, Consolas, monospace; }
+  main { max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 26px; margin-bottom: 6px; }
+  h1 .bot { color: var(--accent); }
+  h2 { font-size: 17px; margin: 34px 0 10px; color: #fff; }
+  p, li { margin-bottom: 12px; }
+  ul { margin-left: 22px; }
+  a { color: var(--accent2); }
+  .sub { color: var(--dim); font-size: 14px; margin-bottom: 8px; }
+  .lede { border-left: 3px solid var(--accent); padding: 14px 18px; background: var(--panel);
+    border-radius: 0 8px 8px 0; margin: 24px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); color: #fff; }
+  code { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 14px; }
+  footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--dim); font-size: 13.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Privacy Policy — nano<span class="bot">bots</span></h1>
+  <p class="sub">Applies to the nanobots browser extension and the <code>nanobots-sh</code> command-line tool. Last updated 2 August 2026.</p>
+
+  <div class="lede">
+    <p><strong>We run no servers and receive none of your data.</strong> nanobots has no backend. Everything
+    it does happens in your browser or on your own machine, and every network request goes directly
+    from you to a service you configured with your own credentials. There is no account to create,
+    no telemetry, and no analytics.</p>
+  </div>
+
+  <h2>What the extension stores, and where</h2>
+  <p>All configuration is kept in your browser's local extension storage. It never leaves your device
+  except to reach the service it belongs to.</p>
+  <ul>
+    <li><strong>GitHub personal access tokens</strong> and the list of repositories you can file to.</li>
+    <li><strong>Cloudflare R2 credentials</strong> — account id, bucket, API token, and public base URL.</li>
+    <li><strong>Model provider settings</strong> — the endpoint, model name, and API key you choose,
+      including a separate vision model if you configure one.</li>
+    <li><strong>A local history</strong> of reports you have filed, so you can find them again.</li>
+  </ul>
+
+  <h2>What is transmitted, and to whom</h2>
+  <p>Only when you take an action, and only to the service that action is for:</p>
+  <table>
+    <tr><th>Destination</th><th>What is sent</th><th>When</th></tr>
+    <tr>
+      <td>GitHub<br><code>api.github.com</code></td>
+      <td>Your token, the issue title and body, the page URL and title of the page you are reporting
+        about, and search queries when the assistant looks for existing issues or code.</td>
+      <td>When you file a report or ask the assistant about the repository.</td>
+    </tr>
+    <tr>
+      <td>Cloudflare R2<br><code>api.cloudflare.com</code></td>
+      <td>Your R2 API token and the annotated screenshot image.</td>
+      <td>When you file a report with a screenshot attached.</td>
+    </tr>
+    <tr>
+      <td>Your model provider<br>(the endpoint you choose)</td>
+      <td>Your API key, the messages you type, and any screenshots you attach to the chat.</td>
+      <td>When you send a message in the assistant chat.</td>
+    </tr>
+  </table>
+  <p>These are your accounts, reached with your credentials. Their handling of that data is governed by
+  their own privacy policies, not this one.</p>
+
+  <h2>Screenshots</h2>
+  <p>A screenshot is captured only when you click the extension's toolbar icon. Nothing is captured in
+  the background, on a schedule, or without that click. The image is shown to you for annotation before
+  anything is sent, and you can cancel at any point. If you have not configured R2, reports are filed as
+  text only and no image is uploaded.</p>
+
+  <h2>What we do not do</h2>
+  <ul>
+    <li>We do not operate a server, so we cannot and do not receive your data.</li>
+    <li>We do not sell or transfer your data to anyone.</li>
+    <li>We do not use analytics, tracking pixels, fingerprinting, or advertising identifiers.</li>
+    <li>We do not monitor your browsing, log keystrokes, or record activity on pages you visit.</li>
+    <li>We do not use your data to determine creditworthiness or for lending purposes.</li>
+    <li>We do not use your data for any purpose beyond the extension's single purpose: capturing,
+      annotating, and filing a report to a repository you chose.</li>
+  </ul>
+
+  <h2>Permissions, and why each exists</h2>
+  <ul>
+    <li><code>activeTab</code> — to capture the current page and draw the annotation layer on it, only
+      after you click the toolbar icon.</li>
+    <li><code>scripting</code> — to inject that annotation layer into the page you are reporting about.</li>
+    <li><code>storage</code> — to keep your settings and report history locally.</li>
+    <li><strong>Host permissions</strong> — a fixed list: GitHub, Cloudflare, and the supported model
+      providers. The extension does not request access to every site you visit. A local model server on
+      <code>localhost</code> can be granted separately, only if you configure one.</li>
+  </ul>
+
+  <h2>Deleting your data</h2>
+  <p>Removing the extension deletes everything it stored, because everything it stored was local. Issues
+  you filed live in your GitHub repository and screenshots live in your R2 bucket; both are yours to
+  delete directly.</p>
+
+  <h2>Children</h2>
+  <p>nanobots is a developer tool and is not directed at children under 13.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes materially, the updated version will be published at this URL with a new
+  date above. The extension's Chrome Web Store listing links here.</p>
+
+  <h2>Contact</h2>
+  <p>Questions or requests: open an issue at
+  <a href="https://github.com/TimHeckel/nanobots/issues">github.com/TimHeckel/nanobots/issues</a>.</p>
+
+  <footer>
+    nanobots is open source — the claims above can be checked against the code at
+    <a href="https://github.com/TimHeckel/nanobots">github.com/TimHeckel/nanobots</a>.
+    · <a href="/terms">Terms</a> · <a href="/">Home</a>
+  </footer>
+</main>
+</body>
+</html>

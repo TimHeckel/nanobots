@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terms of Use — nanobots</title>
+<meta name="description" content="Terms of use for the nanobots browser extension and CLI. MIT licensed, provided as is, you are responsible for your own credentials and for what the agents do in your repository.">
+<style>
+  :root { --bg:#0b0e12; --panel:#11151b; --border:#1e242e; --text:#c9d1d9; --dim:#8b949e; --accent:#4ade80; --accent2:#22d3ee; --warn:#f87171; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.7 ui-monospace, Menlo, Consolas, monospace; }
+  main { max-width: 780px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 26px; margin-bottom: 6px; }
+  h1 .bot { color: var(--accent); }
+  h2 { font-size: 17px; margin: 34px 0 10px; color: #fff; }
+  p, li { margin-bottom: 12px; }
+  ul { margin-left: 22px; }
+  a { color: var(--accent2); }
+  .sub { color: var(--dim); font-size: 14px; margin-bottom: 8px; }
+  .lede { border-left: 3px solid var(--accent); padding: 14px 18px; background: var(--panel);
+    border-radius: 0 8px 8px 0; margin: 24px 0; }
+  .callout { border-left: 3px solid var(--warn); padding: 14px 18px; background: var(--panel);
+    border-radius: 0 8px 8px 0; margin: 24px 0; }
+  code { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 14px; }
+  footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--dim); font-size: 13.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Terms of Use — nano<span class="bot">bots</span></h1>
+  <p class="sub">Applies to the nanobots browser extension and the <code>nanobots-sh</code> command-line tool. Last updated 2 August 2026.</p>
+
+  <div class="lede">
+    <p><strong>nanobots is free, open-source software released under the MIT licence.</strong> It is
+    provided as is, without warranty. You bring your own credentials and your own model provider, and
+    you remain responsible for what happens in your repositories and accounts.</p>
+  </div>
+
+  <h2>Licence</h2>
+  <p>The software is licensed under the MIT Licence, reproduced in the repository at
+  <a href="https://github.com/TimHeckel/nanobots/blob/main/LICENSE">LICENSE</a>. You may use, copy,
+  modify, and distribute it under those terms. These terms of use do not restrict rights the MIT
+  licence grants you; they describe the service context around it.</p>
+
+  <h2>Your credentials and your accounts</h2>
+  <ul>
+    <li>You supply your own GitHub tokens, Cloudflare R2 credentials, and model provider API keys.</li>
+    <li>They are stored locally on your device and sent only to the service they belong to.</li>
+    <li>You are responsible for keeping them secure, for scoping them to the minimum access you need,
+      and for any charges your model provider or storage provider bills you.</li>
+    <li>You are responsible for complying with the terms of the services you connect — GitHub,
+      Cloudflare, and whichever model provider you choose.</li>
+  </ul>
+
+  <h2>What you capture and file</h2>
+  <p>Screenshots are captured only when you click the extension's icon, and you decide what to file.
+  You are responsible for what those screenshots contain. Do not capture or upload anything you are not
+  entitled to share — including other people's personal information, credentials visible on screen, or
+  material covered by confidentiality obligations. Screenshots you upload go to your own storage bucket
+  and inherit whatever access controls you set on it.</p>
+
+  <div class="callout">
+    <p><strong>Autonomous agents change code.</strong> If you install the nanobots loop on a repository,
+    agents will triage issues, write code in isolated sandboxes, and open pull requests. Merges are
+    gated by review and by the policies you configure — but you own the result. Read
+    <code>.nanobots/RUNTIMES.md</code> before enabling the scheduled workers, protect your default
+    branch, and keep the approval gate on until you trust the setup. Do not point it at a repository
+    where an unexpected commit or pull request would cause harm.</p>
+  </div>
+
+  <h2>Model output</h2>
+  <p>The assistant and the loop are powered by whichever model you configure. Their output can be wrong,
+  incomplete, or confidently mistaken. Review anything they produce before acting on it, and never treat
+  generated code, triage decisions, or reviews as a substitute for your own judgement.</p>
+
+  <h2>Acceptable use</h2>
+  <ul>
+    <li>Use it on repositories and pages you are authorised to access.</li>
+    <li>Do not use it to harass, to infringe rights, or to break the law.</li>
+    <li>Do not use it to circumvent access controls or scrape material you have no right to.</li>
+  </ul>
+
+  <h2>No warranty</h2>
+  <p>The software is provided "as is", without warranty of any kind, express or implied, including but
+  not limited to the warranties of merchantability, fitness for a particular purpose, and
+  non-infringement. It may contain defects; it may stop working when an upstream API changes.</p>
+
+  <h2>Limitation of liability</h2>
+  <p>To the maximum extent permitted by law, the authors and copyright holders are not liable for any
+  claim, damages, or other liability — including lost data, lost revenue, unwanted commits, or provider
+  charges — arising from the software or its use, whether in an action of contract, tort, or otherwise.</p>
+
+  <h2>No service commitment</h2>
+  <p>nanobots is software you run, not a hosted service. There is no uptime commitment and no support
+  obligation. Issues and pull requests are welcome, and are handled on a best-effort basis.</p>
+
+  <h2>Changes</h2>
+  <p>These terms may change; the current version always lives at this URL with the date above.
+  Continuing to use the software after a change means you accept the updated terms.</p>
+
+  <h2>Contact</h2>
+  <p>Open an issue at
+  <a href="https://github.com/TimHeckel/nanobots/issues">github.com/TimHeckel/nanobots/issues</a>.</p>
+
+  <footer>
+    <a href="/privacy">Privacy</a> · <a href="/">Home</a> ·
+    <a href="https://github.com/TimHeckel/nanobots">source</a>
+  </footer>
+</main>
+</body>
+</html>

@@ -67,11 +67,10 @@ async function paintReview() {
 // ── persist (runs on every save & continue / rail jump) ─────────────────────
 
 async function persist() {
-  // Arbitrary OpenAI-compatible hosts need a runtime permission grant — and there can be TWO
-  // of them, because the vision model may live at a different provider than the text model
-  // (DeepSeek for text, Fireworks for screenshots, say). Granting only the primary meant the
-  // vision call was blocked the moment someone pasted a screenshot, which is the one thing
-  // this extension exists to do.
+  // The supported providers are declared in manifest host_permissions and are therefore
+  // granted at install. Only a loopback host (a local model server) still needs a runtime
+  // grant. Both the text and the vision base URL are checked, because the vision model may
+  // live at a different provider than the text one.
   const origins = [];
   for (const id of ['aibase', 'vbase']) {
     const value = $(id)?.value.trim();

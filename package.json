@@ -1,6 +1,6 @@
 {
   "name": "nanobots-sh",
-  "version": "0.30.1",
+  "version": "0.31.0",
   "description": "Self-improving agent loops for any GitHub repo — an outer loop that triages and learns, nanobot workers that build in a Daytona sandbox and ship PRs",
   "type": "module",
   "bin": {
