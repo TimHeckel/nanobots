@@ -196,6 +196,53 @@ function checkApproval(number) {
   return { approved: false, reason: `no valid /nanobots start ${planHash} from a collaborator yet` };
 }
 
+// Opens the PR for a branch the sandbox pushed, using the CONTROLLER's PR-capable credential.
+// Identifies the branch by the convention the worker prompt mandates (nanobots/<issue>-*) and
+// verifies it against the API rather than trusting anything the sandbox reported.
+function openPullRequest(number, projectNumber, statusField) {
+  const refs = shTry(`gh api repos/${NWO}/git/matching-refs/heads/nanobots/${number}- --jq '[.[].ref]'`);
+  // An empty list is a valid 200 response — `if (refs)` would read "[]" as success.
+  let branches = [];
+  try { branches = JSON.parse(refs || '[]'); } catch { branches = []; }
+  if (!Array.isArray(branches) || branches.length === 0) {
+    warn(`no nanobots/${number}-* branch was pushed — nothing to open a PR for.`);
+    return null;
+  }
+  // Most recently created ref wins if the worker retried within a run.
+  const branch = branches[branches.length - 1].replace(/^refs\/heads\//, '');
+
+  // Never trust a reported PR number: ask GitHub whether one already exists for this head.
+  const existing = shTry(`gh pr list --repo ${NWO} --head ${branch} --state open --json number --jq '.[0].number // empty'`);
+  if (existing) {
+    say(`PR #${existing} already open for ${branch}.`);
+    return existing;
+  }
+
+  const body = `Closes #${number}\n\nBuilt by a nanobot worker in a disposable Daytona sandbox (run \`${RUN_ID.slice(0, 8)}\`).\n`
+    + `The sandbox pushed \`${branch}\`; this PR was opened by the controller, because the sandbox's\n`
+    + `per-run token deliberately carries no \`pull_requests\` permission.\n\n`
+    + `Gates and the required OCR review run on this PR head — see the checks below.`;
+  const title = shTry(`gh api repos/${NWO}/commits/${branch} --jq .commit.message`)?.split('\n')[0]
+    ?? `nanobots: resolve #${number}`;
+
+  const url = shStdinTry(
+    `gh pr create --repo ${NWO} --base ${cfg.defaultBranch} --head ${branch} --title ${JSON.stringify(title)} --body-file - --label nanobots:built`,
+    body,
+  );
+  if (!url) { warn(`failed to open a PR for ${branch} — the branch is pushed; open it by hand.`); return null; }
+  const prNumber = String(url).trim().split('/').pop();
+  say(`opened PR #${prNumber} for ${branch}`);
+
+  // Hand the item to the review stage the outer loop watches.
+  const item = shJson(`gh project item-list ${projectNumber} --owner ${cfg.owner} -L 200 --format json --query 'status:"In Progress"'`)
+    .items.find((it) => it.content?.number === number);
+  if (item && statusField.options['In Review']) {
+    shTry(`gh project item-edit --project-id ${statusField.projectId} --id ${item.id} --field-id ${statusField.id} --single-select-option-id ${statusField.options['In Review']}`);
+    say('board: In Progress → In Review');
+  }
+  return prNumber;
+}
+
 function claim(number, projectNumber, statusField) {
   const item = shJson(`gh project item-list ${projectNumber} --owner ${cfg.owner} -L 200 --format json --query 'status:"Ready"'`)
     .items.find((it) => it.content?.number === number);
@@ -358,6 +405,13 @@ async function main() {
       + `🤖 sandbox run finished (exit ${build.exitCode}). Tail:\n\n\`\`\`\n${redact(build.result ?? '').slice(-3000)}\n\`\`\``,
     );
     if (build.exitCode !== 0) throw new Error(`worker exited ${build.exitCode} — see the issue comment for the sanitized tail`);
+
+    // THE CONTROLLER OPENS THE PR — the sandbox cannot, by design. Its per-run token grants
+    // contents:write and deliberately NOT pull_requests, so a worker that outlives its run
+    // can push to a branch nobody watches and nothing more. RUNTIMES.md always said this
+    // call "belongs in the controller"; until now nothing actually made it, so the worker
+    // pushed a perfectly good branch and no PR ever appeared.
+    openPullRequest(target.number, project.number, statusField);
   } catch (err) {
     warn(`run ${RUN_ID} for #${target.number} failed: ${err.message}`);
     // err.message can also carry sandbox output (exec failures embed the response body).

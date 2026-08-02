@@ -35,12 +35,16 @@ stop — the sandbox is deleted right after.
    a typechecker exit before checking a single file, and a test runner that matched zero tests
    also "passes". Be suspicious of a clean result you didn't expect, especially a faster one;
    treat "0 tests ran" as a failure, not a pass.
-4. **PR.** Open a PR with `Closes #<issue>`, label `nanobots:built`, and a description
-   stating root cause / approach, how each acceptance criterion is met, and the exact gate
-   results (don't claim a gate passed if you didn't actually run it — the outer loop
-   verifies against CI, not your description). Move the item to **In Review**. Do NOT merge
-   your own PR — the outer loop (or a human) owns merge, and it needs a clean OCR review
-   on this exact PR head first.
+4. **Push — do NOT open the PR.** Push your branch and stop there. Your credential grants
+   `contents: write` and deliberately **not** `pull_requests`, so `gh pr create` will fail:
+   that is the design, not a misconfiguration. The controller that dispatched you opens the
+   PR with `Closes #<issue>` and the `nanobots:built` label, and moves the item to
+   **In Review**. Attempting it yourself only wastes a round.
+   In your final message, state the branch name, the root cause / approach, how each
+   acceptance criterion is met, and the exact gate results — don't claim a gate passed if you
+   didn't actually run it; the outer loop verifies against CI, not your description.
+   You never merge anything: the outer loop (or a human) owns merge, and it needs a clean OCR
+   review on the exact PR head first.
 5. **Report.** Final comment on the issue: what was done, gate results, anything learned
    worth a LEARNINGS entry (flag it; the outer loop writes the entry at review time).
 
