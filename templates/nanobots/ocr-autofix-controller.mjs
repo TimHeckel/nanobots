@@ -205,9 +205,23 @@ async function main() {
       snapshot: daytona.snapshot, target: daytona.target, autoDeleteInterval: 30,
     });
 
-    const cloneCmd = `git clone --branch ${input.headRef} https://x-access-token:${process.env.GH_TOKEN}@github.com/${NWO}.git repo`;
-    const clone = await execInSandbox(daytonaKey, sandboxId, cloneCmd, { timeout: 300 });
+    // Authenticate via a credential helper reading the token from the ENVIRONMENT, never from
+    // the clone URL. An embedded credential is written straight into .git/config as
+    // remote.origin.url, where the repair run's own gate commands can read it. The helper
+    // script holds only an env var NAME, so it carries no secret itself.
+    const helper = `git config --global credential.helper '!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f'`;
+    const helperRes = await execInSandbox(daytonaKey, sandboxId, helper, { timeout: 60 });
+    if (helperRes.exitCode !== 0) throw new Error('failed to configure the git credential helper');
+
+    const cloneCmd = `git clone --branch ${input.headRef} https://github.com/${NWO}.git repo`;
+    const clone = await execInSandbox(daytonaKey, sandboxId, cloneCmd, { timeout: 300, env: { GH_TOKEN: process.env.GH_TOKEN } });
     if (clone.exitCode !== 0) throw new Error('clone into remediation sandbox failed');
+
+    // Same assertion the worker makes: verify the credential did not survive the clone.
+    const gitCfg = await execInSandbox(daytonaKey, sandboxId, 'git config --local --list', { cwd: 'repo', timeout: 60 });
+    if ((gitCfg.result ?? '').includes(process.env.GH_TOKEN)) {
+      throw new Error('SECURITY: the push token was persisted into .git/config inside the remediation sandbox — refusing to continue');
+    }
 
     const writeInput = await execInSandbox(daytonaKey, sandboxId, `cat > repo/.nanobots/autofix-input.json <<'NANOBOTS_INPUT_EOF'\n${JSON.stringify(input)}\nNANOBOTS_INPUT_EOF`, { timeout: 60 });
     if (writeInput.exitCode !== 0) throw new Error('failed to write bounded input into the sandbox');

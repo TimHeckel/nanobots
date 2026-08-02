@@ -275,8 +275,21 @@ async function main() {
     say('cloning repository into sandbox...');
     // `--no-tags` and a credential inline in the URL: git does NOT persist an inline
     // credential to .git/config, but we verify rather than trust — see the assert below.
-    const cloneCmd = `git clone --branch ${cfg.defaultBranch} https://x-access-token:${cloneToken}@github.com/${NWO}.git repo`;
-    const clone = await execInSandbox(sandboxId, cloneCmd, { timeout: 300 });
+    // Authenticate through a credential helper that reads the token from the ENVIRONMENT at
+    // use time, never from a URL. Embedding it as https://x-access-token:TOKEN@github.com/...
+    // writes the whole credential into .git/config as remote.origin.url — verified, not
+    // assumed: the leak assertion below caught exactly that in production. It matters because
+    // the worker then runs arbitrary build and test commands (npm install and friends) which
+    // can read .git/config and exfiltrate the token.
+    //
+    // The helper script itself contains no secret — only the NAME of an env var — so writing
+    // it to the sandbox's global gitconfig is safe. GH_TOKEN is supplied per command below.
+    const helper = `git config --global credential.helper '!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f'`;
+    const helperRes = await execInSandbox(sandboxId, helper, { timeout: 60 });
+    if (helperRes.exitCode !== 0) throw new Error('failed to configure the git credential helper');
+
+    const cloneCmd = `git clone --branch ${cfg.defaultBranch} https://github.com/${NWO}.git repo`;
+    const clone = await execInSandbox(sandboxId, cloneCmd, { timeout: 300, env: { GH_TOKEN: cloneToken } });
     if (clone.exitCode !== 0) throw new Error('clone failed');
 
     // Assert the credential did not survive the clone. If it is sitting in .git/config, it
