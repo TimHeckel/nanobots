@@ -20,6 +20,56 @@
 
   const close = () => { host?.remove(); host = null; };
 
+  // A small, deliberate celebration: filing is the whole point of this extension, and the
+  // old behaviour was one line of text followed by four silent seconds.
+  function burstConfetti(root) {
+    const layer = document.createElement("div");
+    layer.className = "confetti";
+    const colors = ["#4ade80", "#22d3ee", "#f59e0b", "#ef4444", "#a78bfa", "#e6edf3"];
+    for (let i = 0; i < 90; i++) {
+      const bit = document.createElement("i");
+      bit.style.left = `${Math.random() * 100}vw`;
+      bit.style.top = `${8 + Math.random() * 22}vh`;
+      bit.style.background = colors[i % colors.length];
+      bit.style.setProperty("--dx", `${(Math.random() - 0.5) * 340}px`);
+      bit.style.setProperty("--spin", `${(Math.random() - 0.5) * 1080}deg`);
+      bit.style.setProperty("--dur", `${1100 + Math.random() * 900}ms`);
+      bit.style.setProperty("--delay", `${Math.random() * 220}ms`);
+      if (i % 3 === 0) bit.style.borderRadius = "50%";
+      layer.appendChild(bit);
+    }
+    root.appendChild(layer);
+    setTimeout(() => layer.remove(), 2400);
+  }
+
+  // Header drag. The panel is centred with a transform, which fights explicit positioning —
+  // so the first drag pins it to its current pixel position and drops the transform.
+  function makeDraggable(panel) {
+    const bar = panel.querySelector("h1");
+    if (!bar) return;
+    let d = null;
+    bar.addEventListener("pointerdown", (e) => {
+      const r = panel.getBoundingClientRect();
+      panel.style.transform = "none";
+      panel.style.left = `${r.left}px`;
+      panel.style.top = `${r.top}px`;
+      d = { dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width };
+      bar.classList.add("dragging");
+      bar.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    bar.addEventListener("pointermove", (e) => {
+      if (!d) return;
+      // Always leave a strip on screen so the panel cannot be dragged out of reach.
+      const maxL = window.innerWidth - 80, maxT = window.innerHeight - 40;
+      panel.style.left = `${Math.max(80 - d.w, Math.min(maxL, e.clientX - d.dx))}px`;
+      panel.style.top = `${Math.max(0, Math.min(maxT, e.clientY - d.dy))}px`;
+    });
+    const end = () => { d = null; bar.classList.remove("dragging"); };
+    bar.addEventListener("pointerup", end);
+    bar.addEventListener("pointercancel", end);
+  }
+
   function open(ctx) {
     host = document.createElement('nanobots-overlay');
     host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
@@ -36,10 +86,27 @@
           background: #11151b; color: #c9d1d9; border: 1px solid #1e242e; border-radius: 8px;
           padding: 8px 16px; }
         .hintbar b { color: #4ade80; }
+        /* Lighter than the page-dimming veil and lifted with a shadow, so the panel reads as
+           a surface floating ABOVE the page rather than a hole cut into it. */
         .panel { position: fixed; top: 3vh; left: 50%; transform: translateX(-50%);
-          width: min(680px, 94vw); max-height: 94vh; overflow-y: auto; background: #0b0e12;
-          border: 1px solid #1e242e; border-radius: 10px; padding: 16px; color: #c9d1d9; }
-        .panel h1 { font-size: 14px; margin-bottom: 10px; } .panel h1 b { color: #4ade80; }
+          width: min(680px, 94vw); max-height: 94vh; overflow-y: auto; background: #161b22;
+          border: 1px solid #30363d; border-radius: 12px; padding: 16px; color: #e6edf3;
+          box-shadow: 0 18px 60px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.04) inset; }
+        /* The header is the drag handle — hence the grab cursor and the grip glyph. */
+        .panel h1 { font-size: 14px; margin-bottom: 10px; cursor: grab; user-select: none;
+          display: flex; align-items: center; gap: 8px; }
+        .panel h1.dragging { cursor: grabbing; }
+        .panel h1 .grip { color: #6e7681; letter-spacing: -2px; font-size: 15px; }
+        .panel h1 b { color: #4ade80; }
+        .panel input, .panel textarea, .panel select { background: #0d1117; border-color: #30363d; }
+        /* Confetti: plain divs, no canvas and no dependency. Removed when the burst ends. */
+        .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 2147483647; }
+        .confetti i { position: absolute; width: 9px; height: 14px; opacity: 0;
+          animation: nb-fall var(--dur) cubic-bezier(.2,.6,.35,1) var(--delay) forwards; }
+        @keyframes nb-fall {
+          0%   { opacity: 1; transform: translate3d(0,0,0) rotate(0deg); }
+          100% { opacity: 0; transform: translate3d(var(--dx), 78vh, 0) rotate(var(--spin)); }
+        }
         .tools { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
         .dot { width: 18px; height: 18px; border-radius: 50%; padding: 0; border: 2px solid transparent; flex-shrink: 0; }
         .dot.on { border-color: #fff; }
@@ -139,7 +206,7 @@
     const panel = document.createElement('div');
     panel.className = 'panel';
     panel.innerHTML = `
-      <h1>report to nano<b>bots</b> <span style="color:#8b949e">— ${esc(ctx.title).slice(0, 60)}</span></h1>
+      <h1><span class="grip">⠿</span>report to nano<b>bots</b> <span style="color:#8b949e">— ${esc(ctx.title).slice(0, 60)}</span></h1>
       ${baseCanvas ? `
       <div class="tools">
         <button data-tool="pen" class="on">✏️ pen</button>
@@ -505,7 +572,8 @@
       if (btn.dataset.act === 'cancel') close();
       if (btn.dataset.act === 'page') chrome.runtime.sendMessage({ kind: 'nanobots-open-page', page: btn.dataset.page });
       if (btn.dataset.act === 'file') {
-        const status = panel.querySelector('.status');
+        makeDraggable(panel);
+      const status = panel.querySelector('.status');
         const title = panel.querySelector('[name=title]').value;
         if (!title.trim()) { status.innerHTML = '<span class="err">title required</span>'; return; }
         btn.disabled = true;
@@ -521,8 +589,9 @@
           pageTitle: ctx.title,
         });
         if (resp?.ok) {
+        burstConfetti(root);
           status.innerHTML = `<span class="ok">filed → <a href="${resp.url}" target="_blank" rel="noreferrer">#${resp.number}</a> — the loop takes it from here.</span>`;
-          setTimeout(close, 4000);
+          setTimeout(close, 1800);   // confetti runs ~2s; close as it settles
         } else {
           status.innerHTML = `<span class="err">${esc(resp?.error ?? 'failed')}</span>`;
           btn.disabled = false;
