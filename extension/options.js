@@ -67,15 +67,28 @@ async function paintReview() {
 // ── persist (runs on every save & continue / rail jump) ─────────────────────
 
 async function persist() {
-  // Arbitrary OpenAI-compatible hosts need a runtime permission grant.
-  try {
-    const base = $('aibase').value.trim();
-    if (base) {
-      const origin = new URL(base).origin + '/*';
-      const has = await chrome.permissions.contains({ origins: [origin] });
-      if (!has) await chrome.permissions.request({ origins: [origin] });
-    }
-  } catch { /* invalid URL or declined — calls will surface it */ }
+  // Arbitrary OpenAI-compatible hosts need a runtime permission grant — and there can be TWO
+  // of them, because the vision model may live at a different provider than the text model
+  // (DeepSeek for text, Fireworks for screenshots, say). Granting only the primary meant the
+  // vision call was blocked the moment someone pasted a screenshot, which is the one thing
+  // this extension exists to do.
+  const origins = [];
+  for (const id of ['aibase', 'vbase']) {
+    const value = $(id)?.value.trim();
+    if (!value) continue;
+    try { origins.push(new URL(value).origin + '/*'); } catch { /* not a URL yet */ }
+  }
+  const needed = [...new Set(origins)];
+  if (needed.length) {
+    try {
+      const missing = [];
+      for (const origin of needed) {
+        if (!(await chrome.permissions.contains({ origins: [origin] }))) missing.push(origin);
+      }
+      // One prompt for everything missing rather than one per host.
+      if (missing.length) await chrome.permissions.request({ origins: missing });
+    } catch { /* declined — the calls themselves will surface it */ }
+  }
 
   const pats = parsePats();
   if (tokensDirty && pats.length) {
