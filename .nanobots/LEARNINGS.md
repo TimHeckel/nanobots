@@ -19,6 +19,29 @@ Entry format:
 
 ---
 
+## 2026-08-02 — #15 (nanobots:ext) closed: same "test" pattern as #14, guidance held (cycle 12)
+- **Outcome:** closed `not planned` (not added to board)
+- **What worked / what didn't:** New inbox item, body just "test" plus a screenshot of
+  `sleeperhit.studio/writer` — an unrelated app, not this repo. Same shape as #14
+  (meta-commentary, wrong app), filed ~5 hours after `0.13.0` (`c46252a`,
+  maintainer-authored extension drag/arrow fix) — almost certainly the maintainer smoke-
+  testing the capture flow itself right after shipping it, not a real report. The
+  EXTENSION-PROMPT.md guidance added after #14 (push back once on meta-commentary/wrong-app,
+  then file verbatim if the user insists) was already live when this was filed, so a filed
+  "test" body is consistent with the guidance working as designed (user insisted) rather
+  than failing — there's no visible chat transcript on the issue itself to confirm which,
+  since the extension only posts the final report, not the pushback exchange. Closed with
+  the same rationale as #14 rather than adding a needs-info Blocked item, since there was
+  nothing to clarify.
+- **Lesson:** a repeat of a previously-guided pattern isn't automatically evidence the
+  guidance failed — the "push back once, then file if they insist" design means a low-
+  signal filing can still be the correct, expected outcome. Don't tighten guidance further
+  off a single recurrence with no visible transcript; only revise EXTENSION-PROMPT.md if a
+  pattern keeps recurring *despite* pushback, which would need the user's own words in the
+  body contradicting "meta-commentary" (e.g. explicitly restating a real bug after being
+  asked).
+- **Applies to:** triage
+
 ## 2026-08-02 — #11/PR #12 merged: second real end-to-end worker run, clean on every check; board reconciled In Review→Done (cycle 11)
 - **Outcome:** merged (`TimHeckel` merged PR #12 at 17:01:17Z; OCR review on `976ae324578e`
   came back `APPROVED` — "clean")
