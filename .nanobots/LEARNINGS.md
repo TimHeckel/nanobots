@@ -19,6 +19,43 @@ Entry format:
 
 ---
 
+## 2026-08-01 — #6 CI red on e901e4b: filed P0 without a confirming judgment call, per the rule's own limits
+- **Outcome:** escalated (filed #6, `summon-human`, Blocked, P0)
+- **What worked / what didn't:** Cycle 4's Sync found `main` red on `e901e4b` — the `test`
+  job failing `tests/app-manifest-live.test.mjs` with "the command served its manifest page
+  (timed out)". Checked the transient-flake exception's four conditions before doing
+  anything else: it requires the sole red job to call a *live external/third-party service*.
+  This test spawns the CLI locally and fetches its own `127.0.0.1` server — no third party
+  in the failing path — so condition 1 fails outright. Per the rule ("if any condition
+  fails... file the P0 immediately, exactly as before, with no further judgement"), filed
+  without trying to reason my way to a skip. Still ran `gh run rerun --failed` for the P0's
+  own evidence (not to decide whether to file) — it failed again with the identical
+  assertion, so this also would not have qualified even under a looser reading. Cross-checked
+  git history on this exact test: it failed on a real logic bug two commits ago, was fixed
+  and passed clean one commit ago, then failed differently (timeout, not an assertion) on the
+  current head — whose diff doesn't touch the manifest-server code path at all. That
+  combination was worth surfacing to the maintainer rather than guessing at a root cause.
+- **Lesson:** the flake exception's "live third-party endpoint" wording is narrow on purpose
+  and doesn't stretch to cover *any* network-shaped or timeout-shaped local failure — a test
+  that spawns a child process and hits its own loopback server is not exempt just because the
+  symptom is also "timeout". When the exception's own text names a specific mechanism (third
+  party), check for that mechanism literally instead of pattern-matching on the failure
+  *shape* alone.
+- **Applies to:** triage | prompt
+
+## 2026-08-01 — #5 escalation (CI-red flake-exception policy) resolved directly by the maintainer
+- **Outcome:** merged (maintainer implemented `0.21.0` directly, closed #5)
+- **What worked / what didn't:** Cycle 3 escalated #5 (a `templates/**` hard-gate edit) with
+  three options and a recommendation instead of touching the hard-gated file itself. The
+  maintainer adopted the recommended option verbatim in `0.21.0` and closed the issue same
+  day. The item sat as `Blocked` on the board after closing — GitHub issue state and board
+  state don't sync automatically — so this cycle moved it to `Done` by hand.
+- **Lesson:** a closed issue does not imply its board item moved; check board status against
+  live issue state for anything sitting in a non-terminal column and reconcile explicitly.
+  Also: escalate-with-options-and-a-recommendation is working as intended for hard-gate
+  edits — worth keeping as the default shape rather than second-guessing it.
+- **Applies to:** triage
+
 ## 2026-08-01 — `main` CI red turned out to be a transient DeepSeek flake, not a regression
 - **Outcome:** n/a (a policy judgment call during Sync, not a dispatched item; filed #5 to
   propose hardening the rule)
