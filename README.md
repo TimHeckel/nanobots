@@ -1,201 +1,154 @@
 # nanobots
 
-**Self-improving agent loops for any GitHub repo.** An outer loop triages, prioritizes,
-dispatches, reviews, and *learns*; nanobot workers claim cards and build in a disposable
-[Daytona](https://daytona.io) sandbox, then ship PRs. GitHub is the only state store —
-issues are the intake, a Projects v2 board is the kanban, PRs are the audit trail, and a
-pinned issue is the heartbeat. When the bots are out of their depth, they `summon-human`.
-
-Inspired by [Autoresearch/Introspection](https://www.latent.space/p/autoresearch-introspection):
-the durable product isn't the code, it's the loop that maintains it — with humans as a
-deliberate signal source, not a bottleneck.
-
-```
-                 ┌────────────────────────────────────────────────┐
-   signals ───▶  │  OUTER LOOP (control + learning)               │
-   issues,       │  ingest → triage → prioritize → dispatch       │
-   errors,       │  → review outcomes → LEARN (update its policy) │
-   humans        └───────────────┬────────────────▲───────────────┘
-                                 │ dispatch        │ outcomes (PRs, CI)
-                                 ▼                 │
-                 ┌────────────────────────────────┴───────────────┐
-                 │  NANOBOT WORKERS (inner loop)                  │
-                 │  claim card → branch → build → tests →         │
-                 │  PR (Closes #N) → gates → merged by outer loop │
-                 └────────────────────────────────────────────────┘
-```
-
-## Install (any repo)
-
-Install is an **AI onboarding agent** — the only way in. Give it an OpenAI-compatible
-inference endpoint first (the *same* provider your repo needs for the required OCR review,
-so it's not an extra key), then run `init`:
+**A self-improving agent loop you install onto any GitHub repo.** Issues come in, an outer
+loop triages and prioritizes them, workers build them inside disposable sandboxes, every PR
+gets an independent review, and the loop rewrites its own policy from what happened.
 
 ```bash
 cd your-repo
 export OCR_LLM_URL=https://api.deepseek.com/chat/completions
-export OCR_LLM_TOKEN=sk-...            # your provider key
+export OCR_LLM_TOKEN=sk-...
 export OCR_LLM_MODEL=deepseek-v4-flash
-npx nanobots-sh init                  # or: curl -fsSL nanobots.sh/install | sh
+npx nanobots-sh init
 ```
 
-The agent then drives the whole setup conversationally — no checklist to work through
-afterward. It:
+`init` is a conversation, not a flag soup. It reads your repo, asks a handful of questions,
+scaffolds the board, creates a GitHub App, sets your secrets, proves your sandbox works, and
+tells you the one thing GitHub's API can't do for you.
 
-1. auto-detects your repo (owner/branch/test commands), asks a handful of config
-   questions, and **renders the loop** into `.nanobots/` (prompts, triage rubric, recipes,
-   learnings log, runner script, the Daytona worker controller, `config.json`) plus GitHub
-   workflows + issue intake forms,
-2. **scaffolds GitHub state** via `gh`: the project board, Status/Priority/Size fields,
-   labels, and a pinned status issue,
-3. **collects and sets your secrets and variables for you** — the model credential,
-   `PROJECTS_PAT`, `DAYTONA_API_KEY` (verified with a live create/delete sandbox proof
-   *before* it's stored), and the OCR review config — explaining what each one is and how
-   to get it, and offering the optional autofix responder,
-4. walks you through the one board setting GitHub's API can't script (the "Auto-add to
-   project" workflow).
+Inspired by [Autoresearch/Introspection](https://www.latent.space/p/autoresearch-introspection):
+the durable product isn't the code, it's the loop that maintains it.
 
-After `init` the repo is **fully self-contained** — markdown prompts, one shell script,
-plain workflows. No runtime dependency on this package. Your repo's rubric and recipes
-are *supposed* to drift from the templates: that's the learning.
+---
 
-> The onboarding agent runs on any OpenAI-compatible `/chat/completions` endpoint with
-> tool-calling (DeepSeek, OpenAI, Together, OpenRouter, a local server, …). It talks to
-> you and sets things via `gh` on your machine — it never sees more than you type.
+## The opinions
 
-## Run it
+Most of this project is a small number of choices held firmly. If you disagree with these,
+you'll fight the tool.
 
-The **outer loop** is stateless and runtime-agnostic — it never touches product code, so
-run it wherever's convenient:
+**GitHub is the only state store.** Issues are intake. A Projects v2 board is the kanban. PRs
+are the audit trail. A pinned issue is the heartbeat. There is no database, no dashboard, no
+account. If the loop's state isn't visible on GitHub it doesn't exist — which means you can
+always see what it did and why, and you can always override it by hand.
 
-| Where | How |
-|---|---|
-| Laptop (interactive) | `/loop` in Claude Code with `.nanobots/LOOP-PROMPT.md` |
-| VM / your own box | `npx nanobots run outer` (or `bash .nanobots/run-cycle.sh outer`) on a systemd/launchd timer |
-| GitHub Actions | the installed `nanobots-outer.yml` cron (set `NANOBOTS_OUTER_ENABLED=1`) |
+**Workers never run on your machine.** Every worker builds inside a disposable
+[Daytona](https://daytona.io) sandbox, destroyed when the run ends. Not a launcher option —
+the only worker runtime. Arbitrary build and test commands written by an agent should not
+touch your laptop or your CI runner.
 
-The **worker** always builds inside a disposable [Daytona](https://daytona.io) sandbox —
-that's not a runtime choice, it's how nanobots keeps write credentials and arbitrary
-build/test commands off your laptop and CI runners. `npx nanobots run worker` (from a
-laptop, a VM cron, or the installed `nanobots-worker.yml` Actions cron — the trigger
-location doesn't matter) claims the next approved item, provisions the sandbox, builds,
-opens the PR, and deletes the sandbox when it's done. Run `npx nanobots-sh verify daytona`
-once you've set `DAYTONA_API_KEY`, before turning the worker cron on. See
-`.nanobots/RUNTIMES.md` after install for the full contract and security model.
+**The sandbox gets a credential that can't do much.** With a GitHub App configured, the
+controller mints a short-lived, repository-scoped installation token per run and revokes it
+afterwards. It grants `contents: write` and deliberately **not** `pull_requests`. A sandbox
+that outlives its run can push to a branch nobody is watching, and that is the entire blast
+radius — it cannot open, modify, or merge a PR, and it never sees the App's private key. The
+controller opens the PR, because the sandbox structurally can't.
 
-**Billing is an env var, not a feature.** `CLAUDE_CODE_OAUTH_TOKEN` runs everything on a
-Claude Pro/Max **subscription** (mint once: `claude setup-token`). `ANTHROPIC_API_KEY` is
-metered. Any Anthropic-compatible provider works — e.g. DeepSeek via
-`ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic`. Mix per runtime: cheap model
-workers, frontier model for the outer loop's judgment.
+**Review is not optional.** Every `nanobots:built` PR gets an
+[Open Code Review](https://github.com/alibaba/open-code-review) pass on that exact head SHA.
+Critical and high findings block merge. Isolated execution without an independent review of
+the result is only half the safety story. A failed or unparseable review is never treated as
+clean — it blocks.
 
-**Workers are swappable inside the sandbox.** Claude Code is the shipped implementation;
-a worker is anything that reads an issue's work-spec and opens a PR with `Closes #N`, so
-Copilot's coding agent, Codex, or OpenHands can run inside the same sandbox contract.
+**Humans are a gate, not a bottleneck.** Nothing gets built until a collaborator replies
+`/nanobots start <hash>` to a versioned plan. Hard-gate areas are triaged but never
+auto-dispatched. When the bots are out of their depth they `summon-human` and stop.
 
-**Every PR gets an OCR review — required, not optional.** `nanobots:built` PRs get a
-bounded [Open Code Review](https://github.com/alibaba/open-code-review) pass on the exact
-PR head, run as a normal Actions job — not inside Daytona, since it only reads a diff and
-calls an LLM. It submits a real GitHub review (inline comments + approve/request-changes)
-and writes a fingerprinted, machine-readable report. Critical/high findings block merge
-until addressed or a human overrides. Isolated execution without an independent review of
-the result is only half the safety story; this is the other half.
+**The loop edits its own policy.** Every finished or failed item gets a `LEARNINGS.md` entry.
+Every ~10 entries it distills them into the triage rubric, the recipes, and your agent
+instructions file — and commits that. The policy documents are its weights; GitHub history is
+the training log. Your rubric is *supposed* to drift from the template.
 
-**Optional: a surgical autofix responder.** Set `OCR_AUTOFIX_ENABLED=true` and eligible
-PRs (same-repo, non-draft, `nanobots:built`) get their blocking findings evaluated by a
-second model that proposes exact, atomic text replacements — never free-form patches or
-shell commands — validated mechanically (unique match in the real file, inside what the
-model was actually shown, no overlaps) before anything touches a file. The fix runs inside
-its own disposable Daytona sandbox, same as the worker; if your gates pass and the PR head
-hasn't moved, it pushes one repair commit, resolves the threads it fixed, and triggers a
-fresh OCR round — capped at 3 rounds per PR by default. Anything the model isn't sure
-about, or that touches a protected path (`.github/**`, `.nanobots/**`, lockfiles, auth,
-migrations, infra), comes back `needs_human` instead of a patch. Reviewer and fixer models
-are configured independently — DeepSeek V4 Flash is the shared default for both if you
-don't override either.
+**Billing is an env var, not a feature.** `CLAUDE_CODE_OAUTH_TOKEN` runs on a Claude
+subscription; `ANTHROPIC_API_KEY` is metered; `NANOBOTS_WORKER_CMD` swaps the engine entirely
+for Codex, OpenHands, aider, or a local server. Cheap models for labour and a frontier model
+for judgment, if you like.
 
-**Workers get a per-run credential, not your PAT.** Configure a GitHub App
-(`NANOBOTS_GITHUB_APP_ID` / `_INSTALLATION_ID` / `_PRIVATE_KEY`, offered during `init`) and the
-controller mints a **short-lived, repository-scoped installation token per run**, hands only
-that to the sandbox, and revokes it on the way out. It grants `contents: write` + `metadata:
-read` and deliberately **omits `pull_requests`** — so a sandbox that outlives its run can push
-to a branch nobody is watching, and that is the entire blast radius: it cannot open, modify, or
-merge a PR, or mint another credential. The App private key never enters the sandbox. Two
-honest limits: `contents: write` is repository-wide rather than ref-scoped (branch protection,
-not token scope, is what contains a stray push), and revocation is eventually consistent
-(~2–7s observed). Without an App, the PAT remains a documented fallback.
+---
 
-**Stacked PRs, off by default.** A loop that triages into small items produces dependent ones.
-nanobots supports [GitHub's native stacked PRs](https://github.blog/changelog/2026-07-30-stacked-pull-requests-are-now-in-public-preview/)
-(public preview) via `gh-stack` rather than building its own — set `stacks.enabled` in
-`config.json`. The outer loop owns stack topology; workers stay unaware. The rule that makes it
-safe: when a lower layer merges, GitHub auto-rebases every PR above it, silently changing their
-head SHAs — and OCR reviews *the exact head SHA*, so the loop treats any SHA mismatch as
-unreviewed and re-dispatches OCR before merge. Restack conflicts escalate to a human; an agent
-is never allowed to resolve one.
+## How it runs
 
-## How the learning works
+```
+signals ──▶  OUTER LOOP        ingest → triage → prioritize → dispatch
+             (anywhere)        → review outcomes → LEARN
+                  │                        ▲
+          dispatch│                        │ outcomes (PRs, CI, OCR)
+                  ▼                        │
+             WORKERS           claim → Daytona sandbox → build → gates
+             (always Daytona)  → push → controller opens PR
+```
 
-Every finished (or failed) work item gets an entry in `.nanobots/LEARNINGS.md` — an
-append-only memory. Every ~10 entries the outer loop runs a distill pass, promoting
-durable lessons into the triage rubric, the recipes, and your agent instructions file.
-The loop's policy documents are its weights; GitHub history is the training log.
+The **outer loop** never writes product code, so it runs anywhere: `/loop` in Claude Code, a
+cron on your own box, or the installed GitHub Actions workflow. The **worker** always runs in
+Daytona regardless of what triggered it.
+
+```bash
+npx nanobots-sh run outer     # one triage/review/learn cycle
+npx nanobots-sh run worker    # claim one approved item, build it in a sandbox
+```
+
+Set `NANOBOTS_OUTER_ENABLED=1` and `NANOBOTS_WORKER_ENABLED=1` when you want the installed
+crons to take over. Leave them off until you've watched a cycle by hand.
 
 ## Requirements
 
-- `gh` CLI authenticated, with the `project` scope (`gh auth refresh -s project`)
-- A [Daytona](https://daytona.io) account and API key — required, not optional. Workers
-  always build in a Daytona sandbox; there's no local/VM worker mode.
-- Secrets: `CLAUDE_CODE_OAUTH_TOKEN` (or another model credential), `PROJECTS_PAT` — a
-  **classic** PAT (`project` + `repo` + `read:org`) from a **human** account (the default `GITHUB_TOKEN`
-  cannot touch org Projects v2 at all), `DAYTONA_API_KEY`, and an OpenAI-compatible
-  inference endpoint/key for OCR: `OCR_LLM_URL` / `OCR_LLM_TOKEN` / `OCR_LLM_MODEL`.
-- Optional, but recommended: `NANOBOTS_GITHUB_APP_ID`, `NANOBOTS_GITHUB_APP_INSTALLATION_ID`,
-  and `NANOBOTS_GITHUB_APP_PRIVATE_KEY` — configure all three together (a partial setup is
-  treated as unconfigured and falls back to the PAT) to mint short-lived, repo-scoped
-  installation tokens per worker run instead of sharing the long-lived, org-wide PAT.
-- Optional, only for the autofix responder: `OCR_AUTOFIX_ENABLED=true` plus
-  `OCR_AUTOFIX_MODEL` / `OCR_AUTOFIX_URL` / `OCR_AUTOFIX_TOKEN` (each falls back to the
-  matching `OCR_LLM_*` reviewer setting, so a one-provider setup needs nothing extra).
+- **`gh`** authenticated with `project` scope (`gh auth refresh -s project`)
+- **A [Daytona](https://daytona.io) API key** — required; there is no local worker mode
+- **`PROJECTS_PAT`** — a *classic* PAT with `repo` + `project` + `read:org`, from a human
+  account. The default `GITHUB_TOKEN` cannot touch org Projects v2 at all, and `gh project`
+  needs `read:org` even for a personal account
+- **An OpenAI-compatible endpoint** (`OCR_LLM_URL` / `_TOKEN` / `_MODEL`) — powers both the
+  onboarding agent and the required review, so it isn't an extra key
+- **A model credential** for the loop and workers — `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`
+- Recommended: **a GitHub App** for per-run sandbox credentials. `nanobots app create` builds
+  and installs it for you with the correct permission set
 
 ## Commands
 
 ```bash
-npx nanobots-sh init                                    # AI onboarding agent (needs OCR_LLM_URL/TOKEN/MODEL)
-npx nanobots-sh update                                  # re-render engine-owned files
-npx nanobots-sh run <outer|worker>                      # one headless cycle (worker = Daytona sandbox)
-npx nanobots-sh app create                              # create + install the per-run credential GitHub App
-npx nanobots-sh app install <slug>                      # finish an interrupted app setup (stores the installation id)
-npx nanobots-sh verify daytona                          # connection + lifecycle proof before enabling the worker cron
-npx nanobots-sh extension                               # copy the browser extension here (+ load steps)
+npx nanobots-sh init                 # AI onboarding agent (needs OCR_LLM_URL/TOKEN/MODEL)
+npx nanobots-sh update               # re-render engine-owned files only
+npx nanobots-sh run <outer|worker>   # one headless cycle (worker = Daytona sandbox)
+npx nanobots-sh app create           # create + install the per-run credential GitHub App
+npx nanobots-sh app install <slug>   # finish an interrupted app setup
+npx nanobots-sh verify daytona       # connection + exec proof, before enabling the worker cron
+npx nanobots-sh extension            # copy the browser extension here (+ load steps)
 npx nanobots-sh version
 ```
 
-`update` never touches repo-owned files (TRIAGE.md, RECIPES.md, LEARNINGS.md,
-config.json) — those belong to your repo's loop. Engine-owned files carry a
-`nanobots:engine-owned` marker in their first lines.
+`update` re-renders **engine-owned** files only. `TRIAGE.md`, `RECIPES.md`, `LEARNINGS.md`,
+and `config.json` belong to your repo and are never touched — that drift is the point.
 
-## Browser extension (signal capture)
+## Browser extension
 
-[`extension/`](extension/) is a zero-dependency MV3 Chrome extension that feeds the loop
-from any webpage: click → screenshot → annotate (pen/box/arrow) → filed as a
-`nanobots:inbox` issue the board auto-adds for triage. Screenshots live in your
-Cloudflare R2 bucket (free tier; the issue embeds the link, git stays binary-free) —
-capture is disabled until R2 is connected, and the options page walks through the
-3-minute free setup. It keeps a local **history** of
-everything you've filed (with live state), and has a **repo chat** — a BYO-model agent
-with real repo tools (code/issue search, file read, report filing with your pasted
-screenshots). The chat agent's prompt lives in the repo (`.nanobots/EXTENSION-PROMPT.md`)
-and is refined by the outer loop based on how extension-filed reports fare in triage —
-the intake itself self-improves. Install: `chrome://extensions` → Developer mode → Load
-unpacked → `extension/`. See [extension/README.md](extension/README.md).
+[`extension/`](extension/) captures signal from any page: click → screenshot → annotate in
+place (pen, box, arrow, text; drag, resize, rotate) → filed as a `nanobots:inbox` issue the
+board picks up. Screenshots go to your own Cloudflare R2 bucket, so your repo stays free of
+binaries. It also has a repo-aware agent chat that searches your code and issues, reads
+screenshots you paste, and files for you — bring your own model, with a separate vision model
+if you want one.
+
+Its prompt lives in `.nanobots/EXTENSION-PROMPT.md` and the outer loop refines it based on how
+extension-filed reports fare in triage. The intake improves itself too.
+
+```bash
+npx nanobots-sh extension    # then chrome://extensions → Developer mode → Load unpacked
+```
+
+## Stacked PRs
+
+Off by default (`stacks.enabled`). When on, nanobots uses
+[GitHub's native stacked PRs](https://github.blog/changelog/2026-07-30-stacked-pull-requests-are-now-in-public-preview/)
+via `gh-stack` rather than building its own. The outer loop owns stack topology; workers stay
+unaware. The rule that makes it safe: merging a lower layer auto-rebases everything above it,
+silently changing their head SHAs — and review is bound to the exact SHA, so any mismatch is
+treated as unreviewed and re-dispatched. Restack conflicts escalate to a human; an agent is
+never allowed to resolve one.
 
 ## Docs
 
-- [docs/architecture.md](docs/architecture.md) — the two loops, the GitHub surface mapping,
-  the cycle spec, design decisions
-- [docs/research/](docs/research/) — the July 2026 tooling landscape + the GitHub Projects v2
-  automation reference this design is built on
+- [docs/architecture.md](docs/architecture.md) — the two loops, the GitHub surface mapping, design decisions
+- [docs/e2e-harness.md](docs/e2e-harness.md) — the test tiers, and what dogfooding this on itself actually broke
+- `.nanobots/RUNTIMES.md` after install — the security model, credential placement, and the honest limits
 
 ## License
 
