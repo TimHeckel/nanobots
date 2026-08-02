@@ -19,6 +19,34 @@ Entry format:
 
 ---
 
+## 2026-08-02 — #8 filed: shStdin's unquoted `encoding: utf8` crashes every worker run at claim(), upstream of #7
+- **Outcome:** escalated (filed #8, `summon-human`, Blocked, P0; cross-linked to #7 both
+  directions)
+- **What worked / what didn't:** Sync found `.github/workflows/nanobots-worker.yml`
+  (the scheduled dispatcher) had failed 3 times in a row since cycle 5's commit landed
+  (07:55, 08:44, 09:29), all with an identical stack trace. Read the actual Actions run
+  logs rather than trusting "board looks fine" — #2 had in fact stayed cleanly `Ready`
+  through all three crashes (no stuck `In Progress`, no reconciliation needed) because the
+  crash happens at `shStdin`'s `execSync(cmd, { encoding: utf8, input })` inside `claim()`,
+  which throws a `ReferenceError` (bareword `utf8` instead of the string `'utf8'`) *before*
+  the shell command runs and *before* the next line moves the board item — so the failure
+  is clean, just total. Traced it to `d2822b1` (0.25.0), the same commit cycle 5 credited
+  with fixing a shell-interpolation bug — the fix introduced this one in the same function.
+  Checked all 3 call sites of `shStdin`: `claim()`'s call is unguarded (fatal), the other two
+  are used via `shStdinTry` (caught, so they fail silently instead of crashing) — consistent
+  with cycle 5's separate observation that a failure-comment silently didn't post.
+- **Lesson:** a security fix and the bug it introduces can land in the same commit — "this
+  commit already fixed a bug near here" is not evidence the surrounding code is now correct,
+  it's a reason to read it more carefully. Also: when a dispatcher workflow (not `main` CI)
+  starts failing on every scheduled run, that's exactly as urgent as red `main` CI even
+  though LOOP-PROMPT.md's Sync step is worded around `main` — a cron that always crashes
+  before reaching the code a prior escalation (#7) was about means that escalation can't
+  even be exercised yet, which is worth surfacing explicitly rather than treating #7 as the
+  whole story. Confirming a fix landed by reading the code is not the same as confirming a
+  live run got past it — this is the second cycle in a row where "read the actual run logs"
+  found something a code-only read would have missed.
+- **Applies to:** triage | review | build
+
 ## 2026-08-02 — #7 filed: the worker sandbox has likely never completed real work, ever
 - **Outcome:** escalated (filed #7, `summon-human`, Blocked, P0); reconciled #2's stale
   claim (moved back to Ready) and added evidence to #6 (still open, left for the maintainer)
