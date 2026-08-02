@@ -60,12 +60,27 @@ async function toolboxBase(apiKey, sandboxId) {
   return `${proxy.replace(/\/$/, '')}/${sandboxId}`;
 }
 
+// Single-quote a value for POSIX sh: wrap in '…' and turn every embedded ' into '\''.
+function shQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
 export async function execInSandbox(apiKey, sandboxId, command, { cwd, timeout = 900, env } = {}) {
   const base = await toolboxBase(apiKey, sandboxId);
+  // The toolbox endpoint SILENTLY IGNORES an `env` field — verified against the live API with
+  // both `env` and `envVars`: the variable expanded to empty and the command ran anyway. That
+  // is the worst shape for this bug, because the command then fails somewhere far away for a
+  // reason that looks unrelated (here: run-cycle.sh exiting 2 on a missing GH_TOKEN).
+  // Prepend real exports instead, shell-quoted so token values cannot break out.
+  const exports = env && Object.keys(env).length
+    ? `${Object.entries(env).filter(([, v]) => v != null).map(([k, v]) => `export ${k}=${shQuote(v)};`).join(' ')} `
+    : '';
   const res = await fetch(`${base}/process/execute`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ command, cwd, timeout, env }),
+    // `command` may now embed credentials, so it must never be echoed into an error message
+    // or a log line — see redact() and the callers' logging.
+    body: JSON.stringify({ command: `${exports}${command}`, cwd, timeout }),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`Daytona toolbox exec -> ${res.status}: ${text.slice(0, 300)}`);
