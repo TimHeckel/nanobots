@@ -5,6 +5,28 @@
 <title>nanobots — chat</title>
 <link rel="stylesheet" href="shared.css">
 <style>
+  /* shared.css caps main at 900px, which suits the options wizard but wastes the window
+     here — chat answers are long and often contain code and tables. */
+  main { max-width: none; margin: 0; padding: 20px 28px 40px; }
+  #log { max-height: none; }
+  /* Markdown produced by md() below. */
+  .msg h3, .msg h4 { font-size: 14px; margin: 10px 0 4px; color: var(--text); }
+  .msg ul, .msg ol { margin: 4px 0 4px 20px; }
+  .msg li { margin: 2px 0; }
+  .msg p { margin: 6px 0; }
+  .msg code { background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 5px; font-size: 12.5px; }
+  .msg pre { background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; overflow-x: auto; margin: 8px 0; }
+  .msg pre code { background: none; border: 0; padding: 0; }
+  .msg strong { color: #e6edf3; }
+  /* The in-flight indicator: three dots that fade in sequence. */
+  .thinking .dots span { animation: nb-blink 1.2s infinite; }
+  .thinking .dots span:nth-child(2) { animation-delay: .2s; }
+  .thinking .dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes nb-blink { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
+</style>
+<style>
   #topbar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
   #topbar select { width: auto; }
   #log { border: 1px solid var(--border); border-radius: 8px; background: var(--panel);

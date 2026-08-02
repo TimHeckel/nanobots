@@ -156,7 +156,7 @@
         ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
           .map((c, i) => `<button class="dot${i === 0 ? ' on' : ''}" data-color="${c}" style="background:${c}"></button>`).join('')}
         <span class="spacer"></span>
-        <span style="color:#8b949e;font-size:11.5px">select: drag to move · ⌘C/⌘V duplicate · del removes · swatch recolors</span>
+        <span style="color:#8b949e;font-size:11.5px">select: drag to move · corners resize · knob rotates (pen/arrow) · ⌘C/⌘V duplicate · del removes · swatch recolors</span>
       </div>` : (ctx.shot ? '<div class="status">screenshots disabled — connect R2 in options to attach them</div>' : '')}
       <div class="canvas-slot canvas-wrap"></div>
       <input name="title" placeholder="title — short and specific" >
@@ -193,10 +193,27 @@
       canvas.addEventListener('pointerdown', (e) => {
         const [x, y] = pt(e);
         if (tool === 'select') {
+          // A handle on the CURRENT selection takes precedence over selecting something else.
+          const handle = hitHandle(x, y);
+          if (handle) {
+            const r = bounds(strokes[selected]);
+            const hs = handlesFor(r);
+            const opposite = { nw: 'se', ne: 'sw', sw: 'ne', se: 'nw' }[handle];
+            drag = {
+              mode: handle === 'rot' ? 'rotate' : 'resize',
+              start: [x, y],
+              orig: structuredClone(strokes[selected]),
+              anchor: opposite ? hs[opposite] : null,
+              center: [r.x + r.w / 2, r.y + r.h / 2],
+            };
+            canvas.setPointerCapture(e.pointerId);
+            canvas.style.cursor = handle === 'rot' ? 'grabbing' : 'nwse-resize';
+            return;
+          }
           selected = hitTest(x, y);
           delBtn.hidden = selected < 0;
           if (selected >= 0) {
-            drag = { start: [x, y], orig: structuredClone(strokes[selected]) };
+            drag = { mode: 'move', start: [x, y], orig: structuredClone(strokes[selected]) };
             canvas.setPointerCapture(e.pointerId);
             canvas.style.cursor = 'move';
           }
@@ -210,9 +227,30 @@
       canvas.addEventListener('pointermove', (e) => {
         const [x, y] = pt(e);
         if (drag && selected >= 0) {
-          strokes[selected] = translated(drag.orig, x - drag.start[0], y - drag.start[1]);
+          if (drag.mode === 'resize') {
+            const [ax, ay] = drag.anchor;
+            const w0 = drag.start[0] - ax, h0 = drag.start[1] - ay;
+            // A zero-width start would divide by zero; fall back to 1:1 on that axis.
+            const sx = Math.abs(w0) < 1e-6 ? 1 : (x - ax) / w0;
+            const sy = Math.abs(h0) < 1e-6 ? 1 : (y - ay) / h0;
+            // Clamp so a mark cannot be flipped inside-out or collapsed to nothing.
+            const cl = (v) => (Math.abs(v) < 0.05 ? 0.05 * Math.sign(v || 1) : v);
+            strokes[selected] = scaled(drag.orig, ax, ay, cl(sx), cl(sy));
+          } else if (drag.mode === 'rotate') {
+            const [cx, cy] = drag.center;
+            const a0 = Math.atan2(drag.start[1] - cy, drag.start[0] - cx);
+            const a1 = Math.atan2(y - cy, x - cx);
+            strokes[selected] = rotated(drag.orig, cx, cy, a1 - a0);
+          } else {
+            strokes[selected] = translated(drag.orig, x - drag.start[0], y - drag.start[1]);
+          }
           redraw();
           return;
+        }
+        // Hover feedback so the handles read as grabbable.
+        if (!current && tool === 'select') {
+          const h = hitHandle(x, y);
+          canvas.style.cursor = h === 'rot' ? 'grab' : h ? 'nwse-resize' : (hitTest(x, y) >= 0 ? 'move' : 'default');
         }
         if (!current) return;
         if (current.tool === 'pen') current.points.push([x, y]);
@@ -331,15 +369,87 @@
         g.lineWidth = Math.max(1.5, lw() / 2);
         g.strokeRect(r.x - p, r.y - p, r.w + 2 * p, r.h + 2 * p);
         g.setLineDash([]);
+        const hs = handlesFor(r);
+        const hr = handleRadius();
+        g.fillStyle = '#22d3ee';
+        for (const [name, [hx, hy]] of Object.entries(hs)) {
+          if (name === 'rot') {
+            if (!rotatable(strokes[selected])) continue;
+            g.beginPath();
+            g.moveTo((hs.nw[0] + hs.ne[0]) / 2, hs.nw[1]);
+            g.lineTo(hx, hy);
+            g.stroke();
+            g.beginPath();
+            g.arc(hx, hy, hr * 0.8, 0, Math.PI * 2);
+            g.fill();
+          } else {
+            g.fillRect(hx - hr / 2, hy - hr / 2, hr, hr);
+          }
+        }
       }
     }
 
-    function translated(s, dx, dy) {
+    // Every mark is a vector — pen is a point list, text an anchor, rect/arrow two corners —
+    // so a single point-mapper expresses move, resize and rotate for all of them.
+    function mapPoints(s, fn) {
       const c = structuredClone(s);
-      if (c.tool === 'pen') c.points = c.points.map(([px, py]) => [px + dx, py + dy]);
-      else if (c.tool === 'text') { c.x += dx; c.y += dy; }
-      else c.box = [c.box[0] + dx, c.box[1] + dy, c.box[2] + dx, c.box[3] + dy];
+      if (c.tool === 'pen') c.points = c.points.map(([px, py]) => fn(px, py));
+      else if (c.tool === 'text') { [c.x, c.y] = fn(c.x, c.y); }
+      else {
+        const [x1, y1] = fn(c.box[0], c.box[1]);
+        const [x2, y2] = fn(c.box[2], c.box[3]);
+        c.box = [x1, y1, x2, y2];
+      }
       return c;
+    }
+
+    function translated(s, dx, dy) {
+      return mapPoints(s, (px, py) => [px + dx, py + dy]);
+    }
+
+    // Scale about a fixed anchor (the corner opposite the one being dragged) so that corner
+    // stays put. Text has no width of its own to stretch, so its font size rides the larger
+    // axis instead of distorting.
+    function scaled(s, ax, ay, sx, sy) {
+      const c = mapPoints(s, (px, py) => [ax + (px - ax) * sx, ay + (py - ay) * sy]);
+      if (c.tool === 'text') c.size = Math.max(8, Math.round(c.size * Math.max(Math.abs(sx), Math.abs(sy))));
+      return c;
+    }
+
+    // Rotation is exact for pen and arrow, because their geometry IS their points. A rect
+    // stored as two corners cannot express rotation without a separate angle field, and text
+    // would need the same — so the rotate knob is offered only where it is honest.
+    function rotatable(s) { return Boolean(s) && (s.tool === 'pen' || s.tool === 'arrow'); }
+
+    function rotated(s, cx, cy, ang) {
+      const cos = Math.cos(ang), sin = Math.sin(ang);
+      return mapPoints(s, (px, py) => {
+        const dx = px - cx, dy = py - cy;
+        return [cx + dx * cos - dy * sin, cy + dx * sin + dy * cos];
+      });
+    }
+
+    // Four corners resize; a knob above rotates. Sized in canvas units so the targets stay
+    // grabbable on a high-DPI screenshot.
+    function handleRadius() { return Math.max(7, lw() * 2.2); }
+    function handlesFor(r) {
+      const p = lw() * 2;
+      const x1 = r.x - p, y1 = r.y - p, x2 = r.x + r.w + p, y2 = r.y + r.h + p;
+      return {
+        nw: [x1, y1], ne: [x2, y1], sw: [x1, y2], se: [x2, y2],
+        rot: [(x1 + x2) / 2, y1 - Math.max(22, lw() * 6)],
+      };
+    }
+    // Checked BEFORE mark hit-testing, so a handle overlapping another mark still wins.
+    function hitHandle(x, y) {
+      if (selected < 0 || !strokes[selected]) return null;
+      const hs = handlesFor(bounds(strokes[selected]));
+      const rr = handleRadius() * 1.7;
+      for (const [name, [hx, hy]] of Object.entries(hs)) {
+        if (name === 'rot' && !rotatable(strokes[selected])) continue;
+        if (Math.abs(x - hx) <= rr && Math.abs(y - hy) <= rr) return name;
+      }
+      return null;
     }
 
     function removeSelected() {
