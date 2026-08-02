@@ -162,9 +162,13 @@ The loop's policy documents are its weights; GitHub history is the training log.
 
 ```bash
 npx nanobots-sh init                                    # AI onboarding agent (needs OCR_LLM_URL/TOKEN/MODEL)
-npx nanobots-sh update                                  # re-render engine-owned files only
+npx nanobots-sh update                                  # re-render engine-owned files
 npx nanobots-sh run <outer|worker>                      # one headless cycle (worker = Daytona sandbox)
-npx nanobots-sh verify daytona                           # connection + lifecycle proof
+npx nanobots-sh app create                              # create + install the per-run credential GitHub App
+npx nanobots-sh app install <slug>                      # finish an interrupted app setup (stores the installation id)
+npx nanobots-sh verify daytona                          # connection + lifecycle proof before enabling the worker cron
+npx nanobots-sh extension                               # copy the browser extension here (+ load steps)
+npx nanobots-sh version
 ```
 
 `update` never touches repo-owned files (TRIAGE.md, RECIPES.md, LEARNINGS.md,
