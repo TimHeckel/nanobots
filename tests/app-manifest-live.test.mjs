@@ -34,16 +34,29 @@ const result = await new Promise((resolve) => {
   p.stdout.on('data', (d) => { out += d; });
   p.stderr.on('data', (d) => { out += d; });
 
-  // Answers: "Personal account" (option 1), then accept the default app name.
-  const lines = ['1\n', '\n'];
-  let i = 0;
-  const tick = setInterval(() => { if (i < lines.length) p.stdin.write(lines[i++]); }, 400);
+  // Answer each prompt WHEN IT APPEARS, never on a timer. Writing on a fixed interval races
+  // process startup: on a slower runner the first answer lands before readline is listening,
+  // the sequence desyncs, and the command never reaches the URL it is supposed to print.
+  // That made this test time out reproducibly in CI while passing locally — see issue #6.
+  const answers = [
+    { when: /choose 1-\d+:/, send: '1\n' },      // "Personal account"
+    { when: /App name/i, send: '\n' },           // accept the default
+  ];
+  let next = 0;
+  const drive = setInterval(() => {
+    if (next >= answers.length) return;
+    if (answers[next].when.test(out)) {
+      p.stdin.write(answers[next].send);
+      next += 1;
+      out += `\n<sent-${next}>\n`;   // consume the match so the next prompt is detected fresh
+    }
+  }, 100);
 
   // Poll stdout for the local URL the command prints, then fetch it.
   const watch = setInterval(async () => {
     const m = out.match(/http:\/\/127\.0\.0\.1:(\d+)\//);
     if (!m) return;
-    clearInterval(watch); clearInterval(tick);
+    clearInterval(watch); clearInterval(drive);
     try {
       const html = await (await fetch(m[0])).text();
       p.kill('SIGKILL');
@@ -54,7 +67,8 @@ const result = await new Promise((resolve) => {
     }
   }, 300);
 
-  setTimeout(() => { clearInterval(tick); clearInterval(watch); p.kill('SIGKILL'); resolve({ error: 'timed out', out }); }, 25000);
+  // Generous: a cold CI runner spends real time on process start before the first prompt.
+  setTimeout(() => { clearInterval(drive); clearInterval(watch); p.kill('SIGKILL'); resolve({ error: 'timed out', out }); }, 60000);
 });
 
 rmSync(dir, { recursive: true, force: true });

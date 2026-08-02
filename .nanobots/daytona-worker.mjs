@@ -233,13 +233,35 @@ function openPullRequest(number, projectNumber, statusField) {
   const prNumber = String(url).trim().split('/').pop();
   say(`opened PR #${prNumber} for ${branch}`);
 
-  // Hand the item to the review stage the outer loop watches.
-  const item = shJson(`gh project item-list ${projectNumber} --owner ${cfg.owner} -L 200 --format json --query 'status:"In Progress"'`)
-    .items.find((it) => it.content?.number === number);
-  if (item && statusField.options['In Review']) {
-    shTry(`gh project item-edit --project-id ${statusField.projectId} --id ${item.id} --field-id ${statusField.id} --single-select-option-id ${statusField.options['In Review']}`);
-    say('board: In Progress → In Review');
+  // Hand the item to the review stage the outer loop watches. Every failure here is soft — a
+  // PR that exists with the board a column behind is recoverable — but it must never be
+  // SILENT. The previous version called shTry and then logged success unconditionally, so a
+  // failed move reported "board: In Progress → In Review" anyway and the only evidence was a
+  // board that disagreed with GitHub. Say what actually happened, and leave a comment on the
+  // issue so it is visible outside this run's stdout.
+  const moveFailed = (why) => {
+    warn(`board not moved to In Review (${why}) — PR #${prNumber} is open and gated regardless; the outer loop will reconcile.`);
+    shStdinTry(
+      `gh issue comment ${number} --repo ${NWO} --body-file -`,
+      `<!-- nanobots:run issue=${number} run=${RUN_ID} board=stale -->\n`
+      + `⚠️ PR #${prNumber} opened, but this item could not be moved to **In Review** (${why}). CI and OCR still gate the PR.`,
+    );
+  };
+
+  let items = [];
+  try {
+    items = shJson(`gh project item-list ${projectNumber} --owner ${cfg.owner} -L 200 --format json --query 'status:"In Progress"'`).items ?? [];
+  } catch (err) {
+    moveFailed(`could not read the board: ${err.message}`);
+    return prNumber;
   }
+  const item = items.find((it) => it.content?.number === number);
+  if (!item) { moveFailed('item not found in In Progress'); return prNumber; }
+  if (!statusField.options['In Review']) { moveFailed('the board has no "In Review" status option'); return prNumber; }
+
+  const moved = shTry(`gh project item-edit --project-id ${statusField.projectId} --id ${item.id} --field-id ${statusField.id} --single-select-option-id ${statusField.options['In Review']}`);
+  if (moved === null) moveFailed('gh project item-edit failed');
+  else say('board: In Progress → In Review');
   return prNumber;
 }
 
