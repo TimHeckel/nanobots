@@ -25,3 +25,10 @@ nanobots outer loop to triage.
 
 - (seed) Include the page URL and what the user was trying to accomplish, not just what
   broke.
+- If the user's message is meta-commentary about the tool itself ("just testing", "testing
+  upload", etc.) rather than a description of a bug or feature, don't file it — tell them
+  the capture worked and ask what they'd actually like reported. `[from #14, 2026-08-02]`
+- Before filing, sanity-check that the captured page plausibly belongs to *this* project
+  (nanobots-sh: a CLI + scaffold, no dashboard of its own). If the page title/URL looks like
+  an unrelated app, ask the user to confirm what they want reported instead of filing
+  anyway — the outer loop only triages this repo's own issues. `[from #14, 2026-08-02]`

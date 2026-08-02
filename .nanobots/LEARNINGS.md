@@ -19,6 +19,48 @@ Entry format:
 
 ---
 
+## 2026-08-02 — #11/PR #12 merged: second real end-to-end worker run, clean on every check; board reconciled In Review→Done (cycle 11)
+- **Outcome:** merged (`TimHeckel` merged PR #12 at 17:01:17Z; OCR review on `976ae324578e`
+  came back `APPROVED` — "clean")
+- **What worked / what didn't:** Cycle 10 posted #11's versioned plan (hash `399852620514`),
+  the maintainer approved with `/nanobots start` and manually triggered the worker. Run
+  `28f5ac27` claimed #11, edited the README `## Commands` block to list all eight CLI
+  commands, ran `npm run test` (320/320) as the gate, and pushed
+  `nanobots/11-update-commands-section`. The controller opened PR #12 (`Closes #11`),
+  correctly moved the board item to **In Review** — `openPullRequest()` working as intended
+  this time, unlike the gap #10 recorded. OCR reviewed the exact head and approved clean.
+  The maintainer merged by hand, consistent with this repo's `mergePolicy` (`main` is
+  protected, `autoMergeNonProduction: false`) — expected human-in-the-loop behavior, not a
+  bug. What *did* need manual reconciliation: nothing in the pipeline moves a board item
+  In Review→Done on merge (no webhook triggers the outer loop off a merge event), so it sat
+  In Review until this cycle's Sync caught the closed issue + merged PR and moved it to Done
+  by hand. Diffed `.nanobots/daytona-worker.mjs` vs. the template copy — still identical.
+- **Lesson:** a board item stuck In Review with its issue already closed and PR already
+  merged is not a bug to chase — it's the loop's own job to reconcile every cycle, since
+  there is no merge-triggered board automation by design (board changes can't fire repo
+  workflows; the loop polls). Keep checking issue/PR state against board state for every
+  non-Done item every cycle, per the recipe already added after #2/#6/#10.
+- **Applies to:** review
+
+## 2026-08-02 — #14 (nanobots:ext) closed: filed with no actual report content, wrong app entirely
+- **Outcome:** rejected (closed `not planned`, explained why, not moved to the board)
+- **What worked / what didn't:** #14 arrived via the browser extension labeled
+  `nanobots:ext`/`enhancement`, body "testing the upload only" plus a screenshot of an
+  unrelated app ("Sleeper Hit Studio" at `localhost:5500/dashboard`) — not this repo's CLI
+  or docs. No bug, no feature ask, nothing triagable, and not even about `nanobots-sh`.
+  `EXTENSION-PROMPT.md` already instructs the extension agent to "push back once — briefly
+  — when the user's description is too vague to act on" before filing, but this got filed
+  anyway with literal meta-commentary ("testing...") as the entire body. Closed directly
+  with an explanation rather than asking clarifying questions on the issue, since the body
+  itself already says it was just a test — there was no real ask to clarify.
+- **Lesson:** "too vague" isn't the only failure mode worth pushing back on — "explicitly a
+  test of the extension itself, not a report about this repo" is a distinct, cheaply
+  detectable case (the message says "testing", or the captured page's app doesn't relate to
+  this project at all). Added both as explicit filing-guidance bullets to
+  `.nanobots/EXTENSION-PROMPT.md` this cycle per LOOP-PROMPT.md step 5's signal-quality
+  feedback loop.
+- **Applies to:** triage | prompt
+
 ## 2026-08-02 — #2/PR #9 closed: human merged the first real worker PR; board item needed manual reconciliation from Verify to Done
 - **Outcome:** merged (PR #9 merged by a human at 16:26:45Z per this repo's dogfood policy;
   issue #2 auto-closed via `Closes #2`)
