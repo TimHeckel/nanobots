@@ -78,7 +78,7 @@
       <style>
         :host { all: initial; }
         * { box-sizing: border-box; margin: 0; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; }
-        .veil { position: fixed; inset: 0; background: rgba(4,6,9,.55); cursor: crosshair; }
+        .veil { position: fixed; inset: 0; background: rgba(2,3,5,.72); cursor: crosshair; }
         .veil img { position: absolute; inset: 0; width: 100vw; height: 100vh; opacity: .45; }
         .selrect { position: absolute; border: 1.5px solid #4ade80; background: rgba(74,222,128,.08);
           box-shadow: 0 0 0 100000px rgba(4,6,9,.55); display: none; }
@@ -89,15 +89,22 @@
         /* Lighter than the page-dimming veil and lifted with a shadow, so the panel reads as
            a surface floating ABOVE the page rather than a hole cut into it. */
         .panel { position: fixed; top: 3vh; left: 50%; transform: translateX(-50%);
-          width: min(680px, 94vw); max-height: 94vh; overflow-y: auto; background: #161b22;
-          border: 1px solid #30363d; border-radius: 12px; padding: 16px; color: #e6edf3;
+          width: min(680px, 94vw); max-height: 94vh; overflow-y: auto; background: #1c2129;
+          border: 1px solid #3d444d; border-radius: 12px; padding: 16px; color: #e6edf3;
           box-shadow: 0 18px 60px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.04) inset; }
         /* The header is the drag handle — hence the grab cursor and the grip glyph. */
         .panel h1 { font-size: 14px; margin-bottom: 10px; cursor: grab; user-select: none;
-          display: flex; align-items: center; gap: 8px; }
+          line-height: 1.45; }
         .panel h1.dragging { cursor: grabbing; }
-        .panel h1 .grip { color: #6e7681; letter-spacing: -2px; font-size: 15px; }
+        .panel h1 .grip { color: #6e7681; letter-spacing: -2px; font-size: 15px;
+          margin-right: 8px; cursor: grab; }
         .panel h1 b { color: #4ade80; }
+        .wsep { width: 1px; height: 18px; background: #30363d; margin: 0 8px; display: inline-block; }
+        .wt { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; width: 34px; height: 26px;
+          display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+        .wt.on { border-color: #4ade80; }
+        .wt i { display: block; width: 18px; background: #c9d1d9; border-radius: 2px; }
+        .wt.on i { background: #4ade80; }
         .panel input, .panel textarea, .panel select { background: #0d1117; border-color: #30363d; }
         /* Confetti: plain divs, no canvas and no dependency. Removed when the burst ends. */
         .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 2147483647; }
@@ -222,6 +229,8 @@
       <div class="tools">
         ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7']
           .map((c, i) => `<button class="dot${i === 0 ? ' on' : ''}" data-color="${c}" style="background:${c}"></button>`).join('')}
+        <span class="wsep"></span>
+        ${[1, 2, 3].map((w) => `<button class="wt${w === 2 ? ' on' : ''}" data-weight="${w}" title="${['fine','medium','bold'][w-1]}"><i style="height:${w * 2 + 1}px"></i></button>`).join('')}
         <span class="spacer"></span>
         <span style="color:#8b949e;font-size:11.5px">select: drag to move · corners resize · knob rotates (pen/arrow) · ⌘C/⌘V duplicate · del removes · swatch recolors</span>
       </div>` : (ctx.shot ? '<div class="status">screenshots disabled — connect R2 in options to attach them</div>' : '')}
@@ -241,9 +250,13 @@
       </div>
       <div class="status"></div>`;
     root.appendChild(panel);
+    makeDraggable(panel);
 
     // annotation layer — marks carry their own color; select to delete/recolor
     let strokes = [], current = null, tool = 'pen', color = '#ef4444', selected = -1;
+    // 1 = fine, 2 = medium (default), 3 = bold. Marks capture their weight when drawn so a
+    // later change to the picker never rewrites existing annotations.
+    let weight = 2;
     let canvas = null, g = null, bmp = null;
     const wrap = panel.querySelector('.canvas-slot');
     const delBtn = panel.querySelector('[data-act=delsel]');
@@ -289,7 +302,7 @@
         }
         if (tool === 'text') { placeTextInput(e, x, y); return; }
         canvas.setPointerCapture(e.pointerId);
-        current = tool === 'pen' ? { tool, color, points: [[x, y]] } : { tool, color, box: [x, y, x, y] };
+        current = tool === 'pen' ? { tool, color, weight, points: [[x, y]] } : { tool, color, weight, box: [x, y, x, y] };
       });
       canvas.addEventListener('pointermove', (e) => {
         const [x, y] = pt(e);
@@ -336,7 +349,11 @@
       const r = canvas.getBoundingClientRect();
       return [((e.clientX - r.left) / r.width) * canvas.width, ((e.clientY - r.top) / r.height) * canvas.height];
     }
-    const lw = () => Math.max(3, canvas.width / 400);
+    // Base stroke, scaled by the chosen weight. The old value (canvas.width/400, min 3) was
+    // the "fine" end; medium is now the default because annotations sit on top of dense UI
+    // screenshots and a hairline disappears into them.
+    const WEIGHTS = { 1: 1, 2: 1.75, 3: 2.75 };
+    const lw = (w) => Math.max(3, canvas.width / 400) * (WEIGHTS[w ?? weight] ?? 1.75);
     const fontPx = () => Math.max(16, Math.round(canvas.width / 28));
 
     function bounds(s) {
@@ -400,7 +417,7 @@
 
     function drawMark(s) {
       g.strokeStyle = g.fillStyle = s.color ?? '#ef4444';
-      g.lineWidth = lw();
+      g.lineWidth = lw(s.weight);
       g.lineCap = g.lineJoin = 'round';
       g.beginPath();
       if (s.tool === 'pen') { s.points.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); }
@@ -411,14 +428,26 @@
         // through the tip; only the filled triangle forms the point
         const [a, b, c2, d] = s.box;
         const an = Math.atan2(d - b, c2 - a);
-        const h = g.lineWidth * 4.5;
-        g.moveTo(a, b);
-        g.lineTo(c2 - h * Math.cos(an), d - h * Math.sin(an));
-        g.stroke();
+        const h = g.lineWidth * 4.2;                 // head length
+        // Where the shaft stops and the head begins.
+        const bx = c2 - h * Math.cos(an), by = d - h * Math.sin(an);
+        // Perpendicular unit vector, used to give the shaft its two edges.
+        const px = -Math.sin(an), py = Math.cos(an);
+        const tailW = g.lineWidth * 0.28;            // nearly a point at the tail
+        const baseW = g.lineWidth * 0.95;            // full weight where it meets the head
+        // One filled polygon: tail edge → base edge → back, so the taper is continuous.
+        g.beginPath();
+        g.moveTo(a + px * tailW, b + py * tailW);
+        g.lineTo(bx + px * baseW, by + py * baseW);
+        g.lineTo(bx - px * baseW, by - py * baseW);
+        g.lineTo(a - px * tailW, b - py * tailW);
+        g.closePath();
+        g.fill();
+        // Head, slightly wider than the shaft base so the silhouette stays a clear arrow.
         g.beginPath();
         g.moveTo(c2, d);
-        g.lineTo(c2 - h * 1.15 * Math.cos(an - 0.32), d - h * 1.15 * Math.sin(an - 0.32));
-        g.lineTo(c2 - h * 1.15 * Math.cos(an + 0.32), d - h * 1.15 * Math.sin(an + 0.32));
+        g.lineTo(c2 - h * 1.1 * Math.cos(an - 0.34), d - h * 1.1 * Math.sin(an - 0.34));
+        g.lineTo(c2 - h * 1.1 * Math.cos(an + 0.34), d - h * 1.1 * Math.sin(an + 0.34));
         g.closePath();
         g.fill();
       }
@@ -566,14 +595,20 @@
         panel.querySelectorAll('.dot').forEach((b) => b.classList.toggle('on', b === btn));
         if (selected >= 0 && strokes[selected]) { strokes[selected].color = color; redraw(); }
       }
+      if (btn.dataset.weight) {
+        weight = Number(btn.dataset.weight);
+        panel.querySelectorAll('.wt').forEach((b) => b.classList.toggle('on', b === btn));
+        // Match the swatch behaviour: a change applies to whatever is selected right now.
+        if (selected >= 0 && strokes[selected]) { strokes[selected].weight = weight; redraw(); }
+        return;
+      }
       if (btn.dataset.act === 'delsel') removeSelected();
       if (btn.dataset.act === 'undo') { strokes.pop(); selected = -1; delBtn.hidden = true; redraw(); }
       if (btn.dataset.act === 'recrop') { panel.remove(); cropPhase(root, ctx); }
       if (btn.dataset.act === 'cancel') close();
       if (btn.dataset.act === 'page') chrome.runtime.sendMessage({ kind: 'nanobots-open-page', page: btn.dataset.page });
       if (btn.dataset.act === 'file') {
-        makeDraggable(panel);
-      const status = panel.querySelector('.status');
+        const status = panel.querySelector('.status');
         const title = panel.querySelector('[name=title]').value;
         if (!title.trim()) { status.innerHTML = '<span class="err">title required</span>'; return; }
         btn.disabled = true;
