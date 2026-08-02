@@ -297,6 +297,28 @@ async function main() {
     const gitCfg = await execInSandbox(sandboxId, 'git config --local --list', { cwd: 'repo', timeout: 60 });
     assertNoTokenInGitConfig(gitCfg.result ?? '', cloneToken);
 
+    // The sandbox image ships bash, git, node and claude, but NOT gh — and the worker prompt
+    // is built entirely on gh: read the work-spec, comment on the issue, open the PR with
+    // `Closes #N`. Without it the agent reads its brief, finds no way to act, and exits 0
+    // having done nothing, which reads as a successful run. Install it before handing over.
+    say('bootstrapping the sandbox toolchain (gh)...');
+    const ghBootstrap = [
+      'set -e',
+      'command -v gh >/dev/null 2>&1 && exit 0',
+      // Write the release JSON to a file rather than piping into grep: closing the pipe early
+      // makes curl exit 23 and, under `set -e`, kills the bootstrap.
+      'curl -fsSL -o /tmp/gh-release.json https://api.github.com/repos/cli/cli/releases/latest',
+      `V=$(grep -m1 '"tag_name"' /tmp/gh-release.json | sed -E 's/.*"v?([^"]+)".*/\\1/')`,
+      '[ -n "$V" ] || { echo "could not resolve a gh release" >&2; exit 1; }',
+      'curl -fsSL -o /tmp/gh.tgz "https://github.com/cli/cli/releases/download/v$V/gh_${V}_linux_amd64.tar.gz"',
+      'tar -xzf /tmp/gh.tgz -C /tmp',
+      'mkdir -p "$HOME/.local/bin"',
+      'cp "/tmp/gh_${V}_linux_amd64/bin/gh" "$HOME/.local/bin/gh"',
+      '"$HOME/.local/bin/gh" --version | head -1',
+    ].join('\n');
+    const boot = await execInSandbox(sandboxId, ghBootstrap, { timeout: 300 });
+    if (boot.exitCode !== 0) throw new Error(`sandbox toolchain bootstrap failed: ${redact(boot.result ?? '').slice(-500)}`);
+
     say('running the worker prompt inside the sandbox...');
     // Refresh before the long build: installation tokens last an hour and a build can run
     // longer, so the sandbox gets the newest token rather than one already partly spent.
@@ -312,6 +334,7 @@ async function main() {
       // nothing. The controller knows both — it just never passed them across.
       env: {
         GH_TOKEN: buildToken,
+        PATH: '/root/.local/bin:/home/daytona/.local/bin:/usr/local/share/nvm/current/bin:/usr/local/bin:/usr/bin:/bin',
         NANOBOTS_ISSUE: String(target.number),
         NANOBOTS_RUN_ID: RUN_ID,
         NANOBOTS_REPO: NWO,
