@@ -45,8 +45,20 @@ esac
 # Fresh view of the repo; the board is the source of truth, the default branch is the baseline.
 git fetch origin --quiet || true
 
+# Tool permissions differ by WHERE this runs, which is the whole point of the Daytona split.
+#
+#   worker-inline — inside the disposable sandbox. It must run gh, git and the repo's own
+#     build/test commands, and it is headless, so it cannot prompt for approval. Under
+#     `--permission-mode acceptEdits` it reached its task, tried gh, and reported "I need to
+#     request approval for the `gh` command" — a clean exit having done nothing. The sandbox
+#     IS the containment boundary (see RUNTIMES.md "Security model"): it holds one scoped,
+#     short-lived credential, no other repo's secrets, and is destroyed minutes later. Full
+#     permissions inside it is the trade nanobots deliberately makes.
+#
+#   outer — runs on a laptop, a VM, or an Actions runner with the operator's own credentials
+#     and no sandbox around it. It stays conservative and never writes product code anyway.
 PERM_ARGS=()
-if [ "${NANOBOTS_SKIP_PERMISSIONS:-0}" = "1" ]; then
+if [ "${NANOBOTS_SKIP_PERMISSIONS:-0}" = "1" ] || [ "$ROLE" = "worker-inline" ]; then
   PERM_ARGS+=(--dangerously-skip-permissions)
 else
   PERM_ARGS+=(--permission-mode acceptEdits)
