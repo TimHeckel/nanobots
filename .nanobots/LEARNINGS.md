@@ -19,6 +19,34 @@ Entry format:
 
 ---
 
+## 2026-08-02 — #7 filed: the worker sandbox has likely never completed real work, ever
+- **Outcome:** escalated (filed #7, `summon-human`, Blocked, P0); reconciled #2's stale
+  claim (moved back to Ready) and added evidence to #6 (still open, left for the maintainer)
+- **What worked / what didn't:** Review-outcomes on #2 found it stuck `In Progress` with a
+  dead sandbox and no completion comment — the step-6 stale-claim case. Read the Actions
+  logs for its last two runs instead of taking the board at face value: one exited 0 having
+  done nothing; the other's own transcript said it needed "gh command approval" and stopped.
+  Traced this to `run-cycle.sh`'s permission-mode branch (`acceptEdits` unless
+  `NANOBOTS_SKIP_PERMISSIONS=1`) and confirmed via a `claude-code-guide` agent that
+  `acceptEdits` does not auto-approve Bash/`gh` calls, and headless mode with no TTY denies
+  rather than queues an unapprovable tool call. `daytona-worker.mjs` never sets that env var
+  when it execs `worker-inline` in the sandbox — the code comment in `run-cycle.sh` describes
+  the intended behavior; it was just never wired through. Checked the repo's only two PRs
+  (#3, #4) and both were authored directly by the maintainer, not a worker — no evidence any
+  automated worker run has ever produced a PR since Daytona sandboxing shipped. This also
+  incidentally surfaced a second, already-fixed bug in passing: the `144c6898` run's own
+  failure-comment post broke on the shell-interpolation issue `d2822b1`/0.25.0 fixed hours
+  earlier — a reminder that a fix landing on `main` doesn't retroactively repair runs that
+  already failed against an older commit.
+- **Lesson:** a board item stuck `In Progress` with a dead sandbox is a symptom, not the
+  bug — read the actual Actions run logs (not just issue comments) before assuming a normal
+  retry will succeed next time. If the *same* failure mode recurs across multiple unrelated
+  claim attempts on different items, suspect the dispatch mechanism itself, not the item.
+  Also: cross-referencing "how many PRs exist and who authored them" is a cheap, high-signal
+  sanity check for "is the core pipeline working at all" that's easy to skip when triaging
+  item-by-item.
+- **Applies to:** triage | review | build
+
 ## 2026-08-01 — #6 CI red on e901e4b: filed P0 without a confirming judgment call, per the rule's own limits
 - **Outcome:** escalated (filed #6, `summon-human`, Blocked, P0)
 - **What worked / what didn't:** Cycle 4's Sync found `main` red on `e901e4b` — the `test`
