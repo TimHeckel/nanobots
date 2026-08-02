@@ -89,12 +89,12 @@
         /* Lighter than the page-dimming veil and lifted with a shadow, so the panel reads as
            a surface floating ABOVE the page rather than a hole cut into it. */
         .panel { position: fixed; top: 3vh; left: 50%; transform: translateX(-50%);
-          width: min(680px, 94vw); max-height: 94vh; overflow-y: auto; background: #1c2129;
+          width: min(1180px, 92vw); max-height: 94vh; overflow-y: auto; background: #1c2129;
           border: 1px solid #3d444d; border-radius: 12px; padding: 16px; color: #e6edf3;
           box-shadow: 0 18px 60px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.04) inset; }
         /* The header is the drag handle — hence the grab cursor and the grip glyph. */
         .panel h1 { font-size: 14px; margin-bottom: 10px; cursor: grab; user-select: none;
-          line-height: 1.45; }
+          line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .panel h1.dragging { cursor: grabbing; }
         .panel h1 .grip { color: #6e7681; letter-spacing: -2px; font-size: 15px;
           margin-right: 8px; cursor: grab; }
@@ -126,7 +126,7 @@
         button.on { border-color: #4ade80; color: #4ade80; }
         button.go { background: #4ade80; border: none; color: #05270f; font-weight: 700; padding: 9px 18px; }
         .spacer { flex: 1; }
-        canvas { display: block; max-width: 100%; max-height: 44vh; width: auto; height: auto;
+        canvas { display: block; max-width: 100%; max-height: 58vh; width: auto; height: auto;
           border: 1px solid #1e242e; border-radius: 6px; cursor: crosshair; margin: 0 auto 10px; }
         input, textarea, select { width: 100%; background: #11151b; border: 1px solid #1e242e;
           color: #c9d1d9; border-radius: 6px; padding: 7px 9px; font: inherit; margin-bottom: 8px; }
