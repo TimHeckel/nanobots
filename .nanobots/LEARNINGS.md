@@ -19,6 +19,49 @@ Entry format:
 
 ---
 
+## 2026-08-02 — #2/PR #9 closed: human merged the first real worker PR; board item needed manual reconciliation from Verify to Done
+- **Outcome:** merged (PR #9 merged by a human at 16:26:45Z per this repo's dogfood policy;
+  issue #2 auto-closed via `Closes #2`)
+- **What worked / what didn't:** Cycle 9 moved #2 to **Verify** and handed the merge decision
+  to a human, exactly per policy. By this cycle the PR was merged and the issue closed, but the
+  board item was still sitting in `Verify` — nothing moves a merged/closed issue's board status
+  automatically. Reconciled by hand (`Verify` → `Done`) rather than leaving it stale.
+- **Lesson:** the same "closed issue ≠ board moved" gap #5 (2026-08-01) already documented for
+  escalations recurred here for a **merge**, not just a maintainer-resolved escalation — it's a
+  general board-sync gap, not specific to one outcome path. Every cycle's review-outcomes step
+  should check board status against live issue/PR state for *every* non-Done item, not only ones
+  that look stuck.
+- **Applies to:** review
+
+## 2026-08-02 — #6 and #10 closed by the maintainer directly (`83f61b3`, 0.27.1); board reconciled Blocked→Done and Ready→Done
+- **Outcome:** merged (maintainer committed `83f61b3` straight to `main`, closing both issues;
+  neither issue's board item had moved)
+- **What worked / what didn't:** `83f61b3`'s commit message gives the real root causes, and
+  both differ from what the loop assumed while these were open. **#6:**
+  `tests/app-manifest-live.test.mjs` answered `app create`'s prompts on a fixed 400ms timer,
+  racing process startup — on a slower runner the first answer could land before readline was
+  listening, desyncing the whole sequence. It now answers each prompt when it actually appears
+  (stdout-watched), with a 60s ceiling; confirmed over six runs including three concurrent. This
+  confirms cycle 6's original P0 call was right to treat it as a real, reproducible failure
+  rather than a flake (it did not qualify for the transient-flake exception, and it wasn't one —
+  it was a genuine race, just not a regression in the diff under suspicion at the time). **#10:**
+  the loop's own hypothesis (cycle 9) was that `openPullRequest()` failed to move the board on
+  PR #9. The maintainer's second hypothesis was the real one: PR #9 was opened **by hand** ~16
+  seconds *before* the commit adding `openPullRequest()` landed — so that code had never run at
+  all on the occasion being investigated. The bug the loop went looking for didn't exist yet at
+  the time of the symptom. Verified `.nanobots/daytona-worker.mjs` still matches
+  `templates/nanobots/daytona-worker.mjs` byte-for-byte after the fix (recipe check, engine file).
+- **Lesson:** "the board item didn't move the way the code says it should" can mean the code is
+  buggy, **or** it can mean the code never ran at all on that instance — check *whether the
+  relevant code path executed* (timing, ordering, which commit was live) before concluding the
+  code itself is wrong. Also: this is the second and third board-reconciliation gap found in the
+  same cycle (see the #2/PR #9 entry above) — three in one cycle is a pattern, not a coincidence;
+  worth folding "check board vs. issue/PR state for every non-Done item, every cycle" into
+  RECIPES.md at the next distill pass rather than re-discovering it item by item.
+- **Applies to:** review | build
+
+---
+
 ## 2026-08-02 — #2/PR #9: first successful end-to-end worker run; merge deferred to a human per this repo's own dogfooding policy [distilled]
 - **Outcome:** n/a (not merged yet — moved to **Verify**, not Done; a human owns the merge call)
 - **What worked / what didn't:** After #7/#8 landed, the very next scheduled worker run
