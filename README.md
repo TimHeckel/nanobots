@@ -150,6 +150,10 @@ The loop's policy documents are its weights; GitHub history is the training log.
   **classic** PAT (`project` + `repo` + `read:org`) from a **human** account (the default `GITHUB_TOKEN`
   cannot touch org Projects v2 at all), `DAYTONA_API_KEY`, and an OpenAI-compatible
   inference endpoint/key for OCR: `OCR_LLM_URL` / `OCR_LLM_TOKEN` / `OCR_LLM_MODEL`.
+- Optional, but recommended: `NANOBOTS_GITHUB_APP_ID`, `NANOBOTS_GITHUB_APP_INSTALLATION_ID`,
+  and `NANOBOTS_GITHUB_APP_PRIVATE_KEY` — configure all three together (a partial setup is
+  treated as unconfigured and falls back to the PAT) to mint short-lived, repo-scoped
+  installation tokens per worker run instead of sharing the long-lived, org-wide PAT.
 - Optional, only for the autofix responder: `OCR_AUTOFIX_ENABLED=true` plus
   `OCR_AUTOFIX_MODEL` / `OCR_AUTOFIX_URL` / `OCR_AUTOFIX_TOKEN` (each falls back to the
   matching `OCR_LLM_*` reviewer setting, so a one-provider setup needs nothing extra).
