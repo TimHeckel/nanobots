@@ -12,7 +12,8 @@ export OCR_LLM_MODEL=deepseek-v4-flash
 npx nanobots-sh init
 ```
 
-`init` is a conversation, not a flag soup. It reads your repo, asks a handful of questions,
+`init` is a conversation, not a flag soup. It reads your actual code — then proposes which
+parts of *your* repo an agent should never touch unattended, and argues it out with you. It
 scaffolds the board, creates a GitHub App, sets your secrets, proves your sandbox works, and
 tells you the one thing GitHub's API can't do for you.
 
@@ -52,6 +53,12 @@ clean — it blocks.
 **Humans are a gate, not a bottleneck.** Nothing gets built until a collaborator replies
 `/nanobots start <hash>` to a versioned plan. Hard-gate areas are triaged but never
 auto-dispatched. When the bots are out of their depth they `summon-human` and stop.
+
+**Hard gates are decided by reading your repo, not from a template.** There is no default list
+of scary-sounding categories to rubber-stamp. During `init` the agent lists your tracked files,
+reads the ones that matter, and proposes specific paths with specific reasons — then you edit
+it. "Payments" is not a gate; `src/billing/stripe.ts` is. Credential files are refused by the
+reader, so your `.env` never enters the model's context.
 
 **The loop edits its own policy.** Every finished or failed item gets a `LEARNINGS.md` entry.
 Every ~10 entries it distills them into the triage rubric, the recipes, and your agent

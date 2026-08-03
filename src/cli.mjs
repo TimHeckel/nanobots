@@ -4,7 +4,7 @@
 
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, cpSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import readline from 'node:readline/promises';
 import { Writable } from 'node:stream';
@@ -229,6 +229,10 @@ function defaultAnswers(d) {
     humanLabel: 'summon-human',
     wipCap: 2,
     gates: d.gates,
+    // ONLY reached by --headless, which has nobody to ask. The onboarding agent must derive
+    // hard gates by reading THIS repo and discussing what it found: where an autonomous change
+    // would actually hurt is a property of the codebase and its owner's judgement. A generic
+    // list offered as "[the default]" gets accepted unthinkingly, which is worse than asking.
     hardGates: [
       'payments / billing',
       'auth / sessions',
@@ -566,6 +570,8 @@ const ONBOARDING_TOOLS = [
   { type: 'function', function: { name: 'ask_choice', description: 'Ask a multiple-choice question; the user picks by number and the chosen option string is returned. Use this for every yes/no and every "do you have X or should I help you get it" decision — it is far better than an open question when the user may not have the thing yet.', parameters: { type: 'object', properties: { question: { type: 'string' }, options: { type: 'array', items: { type: 'string' }, minItems: 2 } }, required: ['question', 'options'] } } },
   { type: 'function', function: { name: 'create_github_app', description: 'CREATE the GitHub App for the user via GitHub\'s App Manifest flow: opens their browser, they press one button, and this returns the App ID and private key with the correct permissions (contents:write + metadata:read, no pull_requests) already baked in. Then it waits for them to install it and captures the installation id. Use this instead of asking them to create an App by hand.', parameters: { type: 'object', properties: { appName: { type: 'string', description: 'Globally unique App name, e.g. nanobots-<owner>' }, isOrg: { type: 'boolean', description: 'true if the repo owner is an organization' } }, required: ['appName'] } } },
   { type: 'function', function: { name: 'render_scaffold', description: 'Write the .nanobots/ prompts, workflows, and config.json into the repo. Call once after gathering config.', parameters: { type: 'object', properties: { board: { type: 'string' }, humanLabel: { type: 'string' }, wipCap: { type: 'integer' }, gates: { type: 'array', items: { type: 'string' } }, hardGates: { type: 'array', items: { type: 'string' } }, actionsEnabled: { type: 'boolean' } }, required: ['board', 'humanLabel', 'wipCap', 'gates', 'hardGates', 'actionsEnabled'] } } },
+  { type: 'function', function: { name: 'list_files', description: 'List the repository\'s tracked files. Use this to learn what this repo actually is before proposing anything about it.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'read_file', description: 'Read a tracked file so you can reason about what it does. Large files are truncated; credential files are refused.', parameters: { type: 'object', properties: { path: { type: 'string', description: 'Repository-relative path, exactly as list_files reported it' } }, required: ['path'] } } },
   { type: 'function', function: { name: 'check_gh', description: 'Report gh auth status and whether the token has the project scope needed for Projects v2.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'scaffold_github', description: 'Create the project board, Status/Priority/Size fields, labels, and pinned status issue. Requires render_scaffold first.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'set_secret', description: 'Set a GitHub Actions secret (encrypted) on this repo via gh. Use for tokens/keys.', parameters: { type: 'object', properties: { name: { type: 'string' }, value: { type: 'string' } }, required: ['name', 'value'] } } },
@@ -598,7 +604,37 @@ Target repo: ${nwo} (default branch ${d.defaultBranch}). Detected gate/test comm
 
 Run the setup in this order:
 
-A. CONFIG — greet, name the repo, then gather (ask_user, accepting the bracketed default on empty input): board name [Nanobots]; human-gate label [summon-human]; WIP cap [2]; gate/test commands, comma-separated [the detected ones above]; hard-gate areas never auto-worked, comma-separated [payments, auth, db migrations, secrets, prod infra, destructive ops]; install the scheduled outer-loop + worker Actions crons? [yes]. Then call render_scaffold with the collected values (split comma lists into arrays).
+A. CONFIG — greet, name the repo, then gather (ask_user, accepting the bracketed default on empty input): board name [Nanobots]; human-gate label [summon-human]; WIP cap [2]; gate/test commands, comma-separated [the detected ones above]; install the scheduled outer-loop + worker Actions crons? [yes]. Do NOT call render_scaffold yet — hard gates are settled in the next step and are part of the same call.
+
+A2. HARD GATES — READ THIS REPO FIRST, THEN PROPOSE, THEN DISCUSS. Never offer a generic list,
+   never guess from a file name alone, and never ask the user to invent the answer cold.
+
+   Start with list_files. Then read_file the handful of files that actually tell you what this
+   repo is and where its dangerous parts live — the package manifest, a README or AGENTS/CLAUDE
+   file, a schema, anything that looks like configuration, deployment, auth or payment code. Open
+   the ones you are unsure about; a directory named "core" or "lib" tells you nothing until you
+   look inside. Read enough to hold a real opinion. This is the one step in onboarding where
+   spending extra tool calls is obviously worth it.
+
+   Then explain what a hard gate does, concretely: the loop still triages and specs those items,
+   but never dispatches a worker to them and never auto-merges them — they get the human-gate
+   label and wait for a person. Gating something costs you automation on it; gating nothing means
+   an agent may open a PR touching it unattended.
+
+   Now propose 3-6 gates for THIS repo. Each one names a real path you actually read and gives a
+   one-line reason grounded in what was in it — not a category. "src/billing/stripe.ts — this
+   creates live charges, so a wrong change moves real money" beats "payments". If you found
+   nothing genuinely risky, say so honestly and propose a short list or none rather than padding
+   it. If the repo publishes or deploys something other people consume, point at the code that
+   produces that artifact and explain that a bad change there reaches users, not just the repo.
+
+   Present it as a proposal, not a verdict. Ask what you got wrong, what you missed, and what they
+   are happy to let the loop touch unattended — they know things the files cannot tell you. Accept
+   removals without arguing. If they want nothing gated, accept that too, and say plainly what it
+   means: any item can be dispatched and built unattended, with plan approval as the only
+   remaining checkpoint.
+
+   Then call render_scaffold with everything from step A plus the agreed hardGates.
 
 B. GITHUB STATE — call check_gh. If the token lacks the project scope, tell the user to run \`gh auth refresh -s project\` in another terminal, then ask_user to continue and re-check. Once ready, call scaffold_github.
 
@@ -685,6 +721,8 @@ function dryRunTools(transcript) {
     },
     create_github_app: async ({ appName }) => rec('create_github_app', { appName },
       'GitHub App created (id 999999), installed (installation 888888), all three secrets stored. Nothing further to ask the user for.'),
+    list_files: async () => rec('list_files', {}, '5 tracked files:\npackage.json\nsrc/index.ts\nsrc/auth/session.ts\nsrc/billing/stripe.ts\nprisma/schema.prisma'),
+    read_file: async ({ path }) => rec('read_file', { path }, '{ "name": "demo", "scripts": { "test": "vitest run" } }'),
     check_gh: async () => rec('check_gh', {}, 'authenticated. project scope: present.'),
     scaffold_github: async () => rec('scaffold_github', {}, 'board ready (project #1), status issue #1, labels + fields created.'),
     set_secret: async ({ name, value }) => rec('set_secret', { name, hasValue: Boolean(value) }, `secret ${name} set.`),
@@ -772,6 +810,33 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
       });
       renderScaffold(d, state.cfg);
       return `scaffold written for ${nwo} (board "${state.cfg.board}", WIP cap ${state.cfg.wipCap}, actions ${state.cfg.actionsEnabled ? 'on' : 'off'}).`;
+    },
+    // The agent reads the repo and forms its own view. Deliberately no filtering, ranking or
+    // pattern-matching here — inferring what is RISKY from file names produces confident
+    // nonsense, and the point is that the model looks at the actual code and then asks.
+    list_files: async () => {
+      const out = shTry('git ls-files', { cwd: d.root, maxBuffer: 8 * 1024 * 1024 });
+      if (out === null) return 'error: could not list files — is this a git repo with at least one commit?';
+      const all = out.split('\n').filter(Boolean);
+      const shown = all.slice(0, 600);
+      const note = all.length > shown.length ? ` (showing the first ${shown.length})` : '';
+      return `${all.length} tracked files${note}:\n${shown.join('\n')}`;
+    },
+    read_file: async ({ path: rel }) => {
+      if (!rel) return 'error: path required';
+      const full = resolve(d.root, rel);
+      // Two guards, and neither one judges risk: stay inside the repo, and never pull credential
+      // material into the model's context just because it was asked for.
+      if (full !== resolve(d.root) && !full.startsWith(resolve(d.root) + sep)) return 'error: path is outside the repository';
+      const base = rel.split('/').pop() || '';
+      if (base.startsWith('.env') || /\.(pem|key|p12|pfx)$/i.test(base) || /^id_(rsa|ecdsa|ed25519)/.test(base)) {
+        return `refused: ${rel} may hold credentials, so it is not read into this conversation. Ask the user what is in it instead.`;
+      }
+      if (!existsSync(full)) return `error: ${rel} not found`;
+      let text;
+      try { text = readFileSync(full, 'utf8'); } catch (e) { return `error: could not read ${rel}: ${e.message}`; }
+      const cap = 12000;
+      return text.length > cap ? `${text.slice(0, cap)}\n… [truncated — ${text.length} chars total]` : text;
     },
     check_gh: async () => {
       const status = shTry('gh auth status') ?? '';
