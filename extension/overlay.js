@@ -134,6 +134,9 @@
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .status { min-height: 18px; margin-top: 6px; }
         .ok { color: #4ade80; } .err { color: #ef4444; }
+        .status .dim { color: #8b949e; }
+        .status code { background: #11151b; border: 1px solid #30363d; border-radius: 4px;
+          padding: 1px 5px; user-select: all; }
         a { color: #22d3ee; }
       </style>`;
 
@@ -613,9 +616,10 @@
         if (!title.trim()) { status.innerHTML = '<span class="err">title required</span>'; return; }
         btn.disabled = true;
         status.textContent = canvas ? 'uploading screenshot…' : 'filing…';
+        const nwoFiled = panel.querySelector('[name=repo]').value;
         const resp = await chrome.runtime.sendMessage({
           kind: 'nanobots-file',
-          nwo: panel.querySelector('[name=repo]').value,
+          nwo: nwoFiled,
           title,
           note: panel.querySelector('[name=note]').value,
           type: panel.querySelector('[name=type]').value,
@@ -624,9 +628,21 @@
           pageTitle: ctx.title,
         });
         if (resp?.ok) {
-        burstConfetti(root);
-          status.innerHTML = `<span class="ok">filed → <a href="${resp.url}" target="_blank" rel="noreferrer">#${resp.number}</a> — the loop takes it from here.</span>`;
-          setTimeout(close, 1800);   // confetti runs ~2s; close as it settles
+          const link = `<a href="${resp.url}" target="_blank" rel="noreferrer">#${resp.number}</a>`;
+          if (resp.loop === false) {
+            // The issue is filed and fine — but nothing over there will ever pick it up, and
+            // silently claiming "the loop takes it from here" would be a lie. No confetti for
+            // a report going nowhere. The panel stays open so the command can be copied, but
+            // "file it" stays DISABLED — the report succeeded, and re-enabling it here would
+            // read as "retry" and just file a duplicate. Cancel closes.
+            status.innerHTML = `<span class="ok">filed → ${link}</span> <span class="err">`
+              + `— but ${esc(nwoFiled)} has no nanobots loop, so nothing will triage it.</span>`
+              + `<br><span class="dim">Install it: <code>curl -fsSL nanobots.sh/install | sh</code> in that repo.</span>`;
+          } else {
+            burstConfetti(root);
+            status.innerHTML = `<span class="ok">filed → ${link} — the loop takes it from here.</span>`;
+            setTimeout(close, 1800);   // confetti runs ~2s; close as it settles
+          }
         } else {
           status.innerHTML = `<span class="err">${esc(resp?.error ?? 'failed')}</span>`;
           btn.disabled = false;

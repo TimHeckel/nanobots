@@ -112,13 +112,17 @@
   th { color: var(--dim); font-weight: 600; }
   td:first-child { color: #fff; white-space: nowrap; }
 
+  .shot { margin: 8px 0 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .shot img { display: block; width: 100%; height: auto; }
+  .caption { color: var(--dim); font-size: 13px; margin-bottom: 24px; }
+
   footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--dim); font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <div class="prompt dim">npx nanobots init</div>
+    <div class="prompt dim">npx nanobots-sh init</div>
     <h1>nano<span class="bot">bots</span></h1>
     <p class="tagline">
       Self-improving agent loops for any GitHub repo. An <b>outer loop</b> triages,
@@ -132,7 +136,12 @@
     <code id="cmd">curl -fsSL nanobots.sh/install | sh</code>
     <button onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent)">copy</button>
   </div>
-  <p class="subnote">or <code>npx nanobots-sh init</code> — runs in the repo you want the loop on. No API key needed to install; you'll need a <a href="https://daytona.io">Daytona</a> key before the worker builds anything, and an LLM key before OCR reviews anything.</p>
+  <p class="subnote">or <code>npx nanobots-sh init</code> — runs in the repo you want the loop on.
+  <code>init</code> is an <b>agent</b>, so export an OpenAI-compatible endpoint first — the same one
+  your repo will use for the required review, not an extra key:<br>
+  <code>OCR_LLM_URL</code> · <code>OCR_LLM_TOKEN</code> · <code>OCR_LLM_MODEL</code>.
+  You'll also want a <a href="https://daytona.io">Daytona</a> key before a worker builds anything;
+  <code>init</code> collects and verifies it for you.</p>
 
   <div class="diagram-bleed">
     <div class="diagram-panel">
@@ -166,10 +175,12 @@ flowchart LR
   </p>
 
   <h2>what init does</h2>
+  <p>It's a conversation, not a flag soup. An agent runs the whole setup and talks to you through it.</p>
   <ul>
+    <li><b>Reads your actual code.</b> It lists your tracked files, opens the ones that matter, and then proposes which parts of <i>your</i> repo an agent should never touch unattended — specific paths with specific reasons, which you edit. There is no canned list of scary-sounding categories to rubber-stamp: "payments" is not a gate, <code>src/billing/stripe.ts</code> is. Files that look like credentials are refused by the reader, so your <code>.env</code> never enters the model's context.</li>
     <li>Renders the loop into <code>.nanobots/</code> — prompts, triage rubric, recipes, an append-only learnings log, the Daytona worker controller.</li>
     <li>Writes GitHub workflows + issue intake forms; scaffolds the Projects v2 board, Priority/Size fields, labels, and a pinned status issue via <code>gh</code>.</li>
-    <li>Auto-detects your gate commands from <code>package.json</code>; asks ~6 questions; <code>--smart</code> optionally drafts repo-specific recipes with the <code>claude</code> CLI.</li>
+    <li><b>Creates your GitHub App for you</b> via the App Manifest flow — one browser click — and stores all three credentials itself. Collects your secrets, and proves your Daytona key works by creating and destroying a real sandbox before storing it.</li>
     <li>Then gets out of the way: the repo is <b>fully self-contained</b> — no runtime dependency on nanobots. Your rubric and recipes are <i>supposed</i> to drift from the templates. That drift is the learning.</li>
   </ul>
 
@@ -177,14 +188,14 @@ flowchart LR
   <table>
     <tr><th>where</th><th>outer loop</th></tr>
     <tr><td>laptop</td><td><code>/loop</code> in Claude Code with <code>.nanobots/LOOP-PROMPT.md</code></td></tr>
-    <tr><td>vm / your own box</td><td><code>npx nanobots run outer</code> on a systemd/launchd timer</td></tr>
+    <tr><td>vm / your own box</td><td><code>npx nanobots-sh run outer</code> on a systemd/launchd timer</td></tr>
     <tr><td>github actions</td><td>installed cron workflow — set <code>NANOBOTS_OUTER_ENABLED=1</code></td></tr>
   </table>
   <p class="dim">
     The outer loop never writes product code, so it runs anywhere. The <b>worker</b> does
     — arbitrary build/test commands, a fresh branch, a push — so it always builds inside a
     disposable Daytona sandbox, created for one item and deleted the moment it's done.
-    <code>npx nanobots run worker</code> works the same from a laptop, a VM cron, or the
+    <code>npx nanobots-sh run worker</code> works the same from a laptop, a VM cron, or the
     installed <code>nanobots-worker.yml</code> Actions cron; only the trigger location
     changes, never where the code actually runs. Run <code>npx nanobots-sh verify daytona</code>
     once <code>DAYTONA_API_KEY</code> is set, before turning the worker cron on.
@@ -220,9 +231,55 @@ flowchart LR
     </div>
     <div class="card">
       <h3><span class="summon">summon-human</span></h3>
-      <p>Payments, auth, schema, prod infra, protected branches — hard-gated areas are never auto-worked. The bots post one crisp escalation with options and a recommendation, then wait for you.</p>
+      <p>Hard-gated paths — the ones <code>init</code> read your repo and agreed with you on — are triaged and specced but never auto-dispatched. The bots post one crisp escalation with options and a recommendation, then wait for you.</p>
+    </div>
+    <div class="card">
+      <h3>the plan gate</h3>
+      <p>Nothing is built until a collaborator replies <code>/nanobots start &lt;hash&gt;</code> to a versioned plan comment. The hash covers the plan text, so an edited plan invalidates the approval instead of silently shipping something you didn't read.</p>
+    </div>
+    <div class="card">
+      <h3>per-run credentials</h3>
+      <p>Each run mints a short-lived, repo-scoped GitHub App token, then revokes it. It grants <code>contents:write</code> and deliberately <b>not</b> <code>pull_requests</code> — a leaked sandbox token can push to a branch nobody watches, and that's the whole blast radius. The controller opens the PR because the sandbox structurally can't.</p>
     </div>
   </div>
+
+  <h2>signal capture — the browser extension</h2>
+  <p>
+    A loop is only as good as what reaches it, and the highest-signal bug report is the one
+    filed at the moment someone sees the bug. Click the toolbar icon on any page: it screenshots,
+    then hands you an annotation layer <b>on the page itself</b> — pen, box, arrow, text, with
+    select-drag-resize-rotate on anything you've drawn. Describe it, pick a repo, file it. It
+    lands as a <code>nanobots:inbox</code> issue and the outer loop triages it like any other.
+  </p>
+
+  <div class="shot">
+    <img src="/img/extension-annotate.jpg" width="1280" height="800" loading="lazy"
+         alt="The nanobots overlay open on a web page: a toolbar with pen, box, arrow, text and select tools above an annotated screenshot, with title, description, type and repo fields and a 'file it' button.">
+  </div>
+  <p class="caption">
+    Screenshots go to <b>your own</b> Cloudflare R2 bucket, so your repo stays free of binaries —
+    the issue just links the image. No bucket connected? Reports file as text.
+  </p>
+
+  <p>
+    It also carries a repo-aware chat that searches your code and issues before you file, so you
+    find the duplicate rather than open it. Bring your own model — with a separate vision model if
+    your main one can't read images.
+  </p>
+  <p>
+    The extension knows when a repo <b>isn't</b> running the loop and says so before you file into
+    a void. Its prompt lives in <code>.nanobots/EXTENSION-PROMPT.md</code>, and the outer loop
+    refines that prompt based on how extension-filed reports actually fare in triage. The intake
+    improves itself too.
+  </p>
+  <div class="install">
+    <code id="extcmd">npx nanobots-sh extension</code>
+    <button onclick="navigator.clipboard.writeText(document.getElementById('extcmd').textContent)">copy</button>
+  </div>
+  <p class="subnote">
+    Copies it locally, then <code>chrome://extensions</code> → Developer mode → Load unpacked.
+    A Chrome Web Store listing is in review.
+  </p>
 
   <footer>
     <a href="https://github.com/TimHeckel/nanobots">github</a>

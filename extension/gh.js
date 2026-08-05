@@ -110,6 +110,44 @@ export async function createIssue(pat, nwo, { title, body, labels }) {
   return gh(pat, 'POST', `/repos/${nwo}/issues`, { title, body, labels });
 }
 
+// ── "is the loop actually installed over there?" ─────────────────────────────
+// Filing into a repo with no .nanobots/ is a silent no-op: the issue lands, looks filed, and
+// nothing ever triages it. Nobody finds out until they go looking days later. So check, and
+// say so. `.nanobots/config.json` is the marker — it is written by every install and is the
+// one file `update` will not clobber, so its presence means a real install, not a stray dir.
+
+const LOOP_TTL_MS = 6 * 60 * 60 * 1000;
+
+export async function repoHasLoop(pat, nwo, { fresh = false } = {}) {
+  if (!pat || !nwo) return null; // unknown, not "missing" — never warn on a config problem
+  const { loopByRepo = {} } = await chrome.storage.local.get('loopByRepo');
+  const hit = loopByRepo[nwo];
+  if (!fresh && hit && Date.now() - hit.at < LOOP_TTL_MS) return hit.ok;
+
+  let ok;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${nwo}/contents/.nanobots/config.json`, {
+      headers: {
+        Authorization: `Bearer ${pat}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+    if (res.status === 404) ok = false;
+    else if (res.ok) ok = true;
+    // Anything else — 401, 403, rate limit, a network blip — is NOT evidence of absence.
+    // Returning "unknown" keeps a token-scope problem from being reported as a missing loop.
+    else return hit ? hit.ok : null;
+  } catch {
+    return hit ? hit.ok : null;
+  }
+
+  await chrome.storage.local.set({ loopByRepo: { ...loopByRepo, [nwo]: { ok, at: Date.now() } } });
+  return ok;
+}
+
+export const INSTALL_CMD = 'curl -fsSL nanobots.sh/install | sh';
+
 // ── history ──────────────────────────────────────────────────────────────────
 
 export async function logFiledIssue(entry) {

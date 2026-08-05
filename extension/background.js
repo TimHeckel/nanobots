@@ -1,6 +1,6 @@
 // Module service worker: owns capture + all network (MV3 content scripts are
 // subject to the page's CORS, so GitHub/R2 calls must happen here).
-import { getConfig, createIssue, logFiledIssue, tokenFor } from './gh.js';
+import { getConfig, createIssue, logFiledIssue, tokenFor, repoHasLoop } from './gh.js';
 import { uploadToR2, r2Configured } from './storage.js';
 
 chrome.action.onClicked.addListener(async (tab) => {
@@ -86,5 +86,9 @@ async function fileReport({ nwo, title, note, type, image, page, pageTitle }) {
     type, page, filedAt: new Date().toISOString(),
   });
   await chrome.storage.local.set({ lastRepo: nwo });
-  return { ok: true, url: issue.html_url, number: issue.number };
+
+  // Checked AFTER filing, deliberately. The issue is worth having either way, so this must
+  // never block or fail the report — it only changes what we tell the user happens next.
+  const loop = await repoHasLoop(pat, nwo).catch(() => null);
+  return { ok: true, url: issue.html_url, number: issue.number, loop };
 }

@@ -1,4 +1,4 @@
-import { getConfig, saveConfig, GITHUB_OAUTH_CLIENT_ID, deviceFlowStart, deviceFlowPoll, reposForToken, isFineGrained } from './gh.js';
+import { getConfig, saveConfig, GITHUB_OAUTH_CLIENT_ID, deviceFlowStart, deviceFlowPoll, reposForToken, isFineGrained, tokenFor, repoHasLoop, INSTALL_CMD } from './gh.js';
 import { r2Configured, r2AutoSetup } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -62,7 +62,36 @@ async function paintReview() {
   $('rev-ai').innerHTML = stepDone(3, cfg)
     ? `<span class="ok">✓ ${cfg.ai.model}</span>`
     : 'skipped — chat disabled';
+  paintLoopStatus(cfg); // network-bound; don't hold up the rest of the review
 }
+
+// Which of the configured repos actually run the loop. Worth surfacing at config time and
+// not just after filing: a report filed into a repo with no .nanobots/ is a silent no-op —
+// the issue lands, looks filed, and nothing ever picks it up.
+async function paintLoopStatus(cfg) {
+  const help = $('loop-help');
+  const row = $('rev-loop');
+  if (!cfg.repos.length) { row.textContent = 'no repos configured — step 1'; help.hidden = true; return; }
+
+  row.textContent = `checking ${cfg.repos.length} repo${cfg.repos.length === 1 ? '' : 's'}…`;
+  const checked = await Promise.all(cfg.repos.map(async (nwo) => [nwo, await repoHasLoop(tokenFor(cfg, nwo), nwo)]));
+  const without = checked.filter(([, ok]) => ok === false).map(([nwo]) => nwo);
+  const unknown = checked.filter(([, ok]) => ok === null).length;
+
+  if (!without.length) {
+    row.innerHTML = `<span class="ok">✓ installed on all ${checked.length - unknown} checked</span>`
+      + (unknown ? ` <span class="sub">(${unknown} unreachable)</span>` : '');
+    help.hidden = true;
+    return;
+  }
+  row.innerHTML = `<span class="err">missing on ${without.length} of ${checked.length}</span>`;
+  help.innerHTML = `Reports filed to <b>${without.map(esc).join('</b>, <b>')}</b> won't be triaged — `
+    + `those repos have no <code>.nanobots/</code>. Install the loop by running `
+    + `<code>${esc(INSTALL_CMD)}</code> inside each one. Filing still works; nothing acts on it.`;
+  help.hidden = false;
+}
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ── persist (runs on every save & continue / rail jump) ─────────────────────
 

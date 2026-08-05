@@ -666,6 +666,14 @@ G. CRONS. Explain the consequence before asking, because this is the switch that
 
 H. MANUAL STEP — message_user the one thing the GitHub API can't do: in the Project's Workflows settings, enable "Auto-add to project" with filter \`is:issue is:open label:nanobots:inbox\`, set "Item added to project" → Status: Inbox, and confirm "Issue closed"/"PR merged" → Done.
 
+H2. SIGNAL CAPTURE — mention the browser extension once, briefly, and do not oversell it.
+   A loop is only as good as what reaches it, and the highest-signal report is the one filed at
+   the moment someone sees the problem. The extension screenshots any page, lets them annotate
+   it in place, and files a \`nanobots:inbox\` issue this board picks up. It is entirely optional
+   — the issue forms you just installed work fine on their own.
+   Tell them it is \`npx nanobots-sh extension\` (copies it locally, then chrome://extensions →
+   Developer mode → Load unpacked). Do not ask a question here; just say it and move on.
+
 I. Call finish with a concise summary: what got set, what's optional/left, and how to start the loop (\`/loop\` in Claude Code with .nanobots/LOOP-PROMPT.md, or \`npx nanobots-sh run outer\`).
 
 If any tool returns an error, tell the user plainly and offer to retry or skip. Respect skips. Keep going until the required steps are done or the user asks to stop, then finish.`;

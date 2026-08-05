@@ -1,4 +1,4 @@
-import { getConfig, createIssue, logFiledIssue, tokenFor } from './gh.js';
+import { getConfig, createIssue, logFiledIssue, tokenFor, repoHasLoop, INSTALL_CMD } from './gh.js';
 import { uploadToR2, r2Configured } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -179,7 +179,15 @@ $('form').addEventListener('submit', async (e) => {
       nwo, number: issue.number, title: issue.title, url: issue.html_url,
       type: issueType, page: pending.url, filedAt: new Date().toISOString(),
     });
-    setStatus(`filed → <a href="${issue.html_url}" target="_blank">#${issue.number}</a> — the loop will triage it.`, false, true);
+    // Same honesty as the in-page overlay: a repo without .nanobots/ will never triage this.
+    const link = `<a href="${issue.html_url}" target="_blank">#${issue.number}</a>`;
+    const loop = await repoHasLoop(tokenFor(cfg, nwo), nwo).catch(() => null);
+    if (loop === false) {
+      setStatus(`filed → ${link} — but <b>${nwo}</b> has no nanobots loop, so nothing will `
+        + `triage it. Install it in that repo: <code>${INSTALL_CMD}</code>`, true, true);
+    } else {
+      setStatus(`filed → ${link} — the loop will triage it.`, false, true);
+    }
   } catch (err) {
     setStatus(err.message, true);
     btn.disabled = false;
