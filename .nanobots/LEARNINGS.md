@@ -19,6 +19,40 @@ Entry format:
 
 ---
 
+## 2026-08-05 — #16 filed: main CI red on b49f8ac, `test` job fails deterministically; `onboarding-agent` job was a same-run transient flake (cycle 35)
+- **Outcome:** n/a (escalated — filed #16, P0/Size M, Ready with a versioned plan; not yet
+  Done)
+- **What worked / what didn't:** Sync found `main` CI red on `b49f8ac` with **two** jobs
+  failing: `test` (2 assertions in `tests/install-sh.test.mjs`) and `onboarding-agent` (a
+  live-DeepSeek e2e that reported "the agent never produced a transcript"). Two red jobs
+  means the flake exception's first condition ("exactly one job is red") already fails, so
+  filed the P0 without further judgement, per the rule's own text — then ran
+  `gh run rerun --failed` anyway for the issue's evidence, same as cycle 4's #6. The rerun
+  came back informative: `onboarding-agent` went green (consistent with a live-endpoint
+  blip, the same shape as the 2026-08-01 DeepSeek flake entry below), but `test` failed
+  **again, identically** — confirming it's a real, reproducible regression, not a flake, and
+  not eligible for the exception in isolation either (no third-party call in that failing
+  path). Traced it to `1097eae`/`d3865d0` (0.32.0-0.33.0): those two commits were pushed
+  together and `fffba4a` was the first push whose CI run actually exercised them (GitHub
+  only checks the push's head SHA, not each commit individually) — so this had been broken
+  since landing, just never caught until a push finally triggered a full run. Could not
+  reproduce or capture the actual failing output locally from this outer-loop session (no
+  local product-code execution here by design), so filed #16 with a stated hypothesis (the
+  `/dev/tty` open probe behaving differently under a GitHub Actions runner) rather than a
+  confirmed root cause, and said so explicitly in the plan so the worker investigates before
+  patching blind.
+- **Lesson:** "exactly one job is red" is a real gate, not a formality — when a Sync read
+  finds two+ red jobs on the same head, don't spend time deciding whether either one
+  individually "would have" qualified for the flake exception; file immediately, then use
+  the rerun for evidence/triage quality rather than for the file-or-skip decision. Also:
+  jobs failing together on the same push don't imply the same cause — rerunning separates a
+  genuine regression from a same-run coincidental flake, and conflating them in one
+  escalation would have buried the real bug's evidence under flake noise. Finally: a bundled
+  push (multiple commits, one CI run) means "CI was green on the prior push" is not evidence
+  that every commit in the *next* push was individually exercised — check whether the
+  commits under suspicion ever got their own run before assuming a regression is fresh.
+- **Applies to:** triage | prompt
+
 ## 2026-08-02 — #15 (nanobots:ext) closed: same "test" pattern as #14, guidance held (cycle 12)
 - **Outcome:** closed `not planned` (not added to board)
 - **What worked / what didn't:** New inbox item, body just "test" plus a screenshot of
