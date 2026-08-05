@@ -137,6 +137,9 @@ if you want one.
 Its prompt lives in `.nanobots/EXTENSION-PROMPT.md` and the outer loop refines it based on how
 extension-filed reports fare in triage. The intake improves itself too.
 
+[**Install from the Chrome Web Store**](https://chromewebstore.google.com/detail/nanobots-%E2%80%94-report-to-the/iadlgbpjodliifalppmigpekddiahmgf),
+or run the unpacked build:
+
 ```bash
 npx nanobots-sh extension    # then chrome://extensions → Developer mode → Load unpacked
 ```
