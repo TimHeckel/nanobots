@@ -188,6 +188,35 @@ Entry format:
   the stale board or silently re-deriving the "right" status without a paper trail.
 - **Applies to:** triage | review
 
+## 2026-08-06 — `nanobots-worker.yml` scheduled runs failed twice in a row on "job was not acquired by Runner", resolved on manual retry
+- **Outcome:** n/a (a Sync-time judgment call during cycle 40, not a dispatched item; no
+  code change)
+- **What worked / what didn't:** the 17:17 and 18:45 scheduled `nanobots-worker.yml` runs
+  both failed with the single annotation "The job was not acquired by Runner of type hosted
+  even after multiple attempts" — a GitHub-hosted-runner capacity error, not a step
+  failure (`gh run view --log-failed` showed no failed steps; the job itself never started).
+  TRIAGE.md's hard rule treats a scheduled dispatcher failing "on every run" as urgent as
+  red `main` CI, so before treating this as a symptom of the same #16 CI-red situation (or
+  filing a fresh P0), manually re-dispatched the same workflow
+  (`gh workflow run nanobots-worker.yml`) as a cheap, low-risk probe — low-risk specifically
+  because #16 has no `/nanobots start` approval yet, so a real claim wasn't possible either
+  way. It completed clean in under a minute (job acquired immediately, "not claimable yet"
+  as expected). Two consecutive failures out of ~10+ prior clean runs, with an immediate
+  clean manual retry, reads as a transient GitHub Actions runner-capacity blip, not a
+  regression in our workflow config or code — nothing in the repo's recent history touches
+  `nanobots-worker.yml`.
+- **Lesson:** the transient-flake exception in LOOP-PROMPT.md's Sync step is worded around
+  live third-party endpoints and `main` CI specifically, but the same judgment — a cheap,
+  evidence-gathering retry before escalating — generalizes to the scheduled-dispatcher rule
+  in TRIAGE.md too, since that rule borrows CI-red's urgency without borrowing CI-red's
+  retry playbook. A manual `workflow_dispatch` is a safe probe here only because nothing
+  was approved to claim; if an item had a live approval, a manual dispatch would risk a
+  real claim racing the next scheduled run and should be avoided. If this recurs across
+  another cycle (a third failure, or failures resuming after this one), that crosses from
+  "one retry resolved it" into "the same job flaking repeatedly" and should get a chore per
+  TRIAGE.md, not another silent retry.
+- **Applies to:** triage | build
+
 ## 2026-08-02 — #8 closed: shStdin's `utf8` `ReferenceError` fixed in `0.25.1`, confirmed by a live worker run, not just a code read [distilled]
 - **Outcome:** merged (fix already on `main` since cycle 7's window; closed the issue and moved
   the board item to Done this cycle once confirmed)
