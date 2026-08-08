@@ -1,7 +1,16 @@
 # nanobots:engine-owned v0.2 — re-rendered by `nanobots update`
 #
-# Required, always installed — every nanobots:built PR gets reviewed before merge, no
-# opt-out. Runs as a plain Actions job, deliberately NOT inside the Daytona sandbox for the
+# Required, always installed — every nanobots-authored PR gets reviewed before merge, no
+# opt-out.
+#
+# SCOPE: this reviews the loop's OWN pull requests and nothing else. Installing nanobots must
+# not quietly start reviewing (and blocking) the pull requests your team opens by hand — a repo
+# usually already has its own review process, and hijacking it is not nanobots' business. The
+# gate is the `nanobots/<issue>-<slug>` head branch the worker prompt mandates, or the
+# `nanobots:built` label the controller applies. Human PRs match neither and are skipped.
+# Set the NANOBOTS_OCR_ALL_PRS variable to 'true' if you DO want it on every PR.
+#
+# Runs as a plain Actions job, deliberately NOT inside the Daytona sandbox for the
 # review step — OCR only reads a diff and calls an LLM, so the isolation an ephemeral
 # runner already gives you is enough. See .nanobots/RUNTIMES.md "OCR review gate" for why.
 #
@@ -37,6 +46,13 @@ concurrency:
 
 jobs:
   ocr:
+    # Only the loop's own PRs. workflow_dispatch is always allowed — that is a human
+    # explicitly asking for a review on a specific PR, which is a different decision.
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || vars.NANOBOTS_OCR_ALL_PRS == 'true'
+      || startsWith(github.head_ref, 'nanobots/')
+      || contains(github.event.pull_request.labels.*.name, 'nanobots:built')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

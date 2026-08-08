@@ -117,7 +117,7 @@ export OCR_LLM_MODEL=deepseek-v4-flash
   <h2>the three variables</h2>
   <p>
     These name the endpoint <a href="https://github.com/alibaba/open-code-review">Open Code
-    Review</a> (<b>OCR</b>) uses to review every PR — and nanobots <b>reuses them for its own
+    Review</a> (<b>OCR</b>) uses to review the loop's PRs — and nanobots <b>reuses them for its own
     agentic work</b> rather than asking for a second key. The same endpoint runs the
     <code>init</code> conversation, the review, and the optional autofix responder.
   </p>
@@ -164,9 +164,10 @@ export OCR_LLM_MODEL=deepseek-v4-flash
       GitHub App token per run, revoked after. It grants <code>contents:write</code> and
       deliberately <b>not</b> <code>pull_requests</code>: a leaked token can push to a branch
       nobody watches, and that's the whole blast radius. The controller opens the PR.</li>
-    <li><b>Review is not optional.</b> Every PR gets an independent review on that exact head
-      SHA. Critical and high findings block the merge. A failed or unparseable review blocks
-      too — it is never read as clean.</li>
+    <li><b>Review is not optional.</b> Every PR <i>a nanobot opens</i> gets an independent
+      review on that exact head SHA. Critical and high findings block the merge; a failed or
+      unparseable review blocks too, and is never read as clean. Your team's own pull requests
+      are left alone — installing nanobots does not take over your review process.</li>
     <li><b>Humans are a gate, not a bottleneck.</b> Nothing is built until someone replies
       <code>/nanobots start &lt;hash&gt;</code> to a versioned plan. The hash covers the plan
       text, so an edited plan invalidates the approval instead of quietly shipping.</li>

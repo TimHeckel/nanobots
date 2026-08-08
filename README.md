@@ -1,8 +1,8 @@
 # nanobots
 
 **A self-improving agent loop you install onto any GitHub repo.** Issues come in, an outer
-loop triages and prioritizes them, workers build them inside disposable sandboxes, every PR
-gets an independent review, and the loop rewrites its own policy from what happened.
+loop triages and prioritizes them, workers build them inside disposable sandboxes, every PR the
+loop opens gets an independent review, and it rewrites its own policy from what happened.
 
 ```bash
 cd your-repo
@@ -44,11 +44,16 @@ that outlives its run can push to a branch nobody is watching, and that is the e
 radius — it cannot open, modify, or merge a PR, and it never sees the App's private key. The
 controller opens the PR, because the sandbox structurally can't.
 
-**Review is not optional.** Every `nanobots:built` PR gets an
+**Review is not optional — on the loop's own PRs.** Every PR a nanobot opens gets an
 [Open Code Review](https://github.com/alibaba/open-code-review) pass on that exact head SHA.
 Critical and high findings block merge. Isolated execution without an independent review of
-the result is only half the safety story. A failed or unparseable review is never treated as
-clean — it blocks.
+the result is only half the safety story, and a failed or unparseable review is never treated
+as clean — it blocks.
+
+It is scoped to `nanobots/*` head branches and the `nanobots:built` label, so installing
+nanobots does **not** start reviewing and blocking the pull requests your team opens by hand.
+Your repo almost certainly has its own review process and taking it over isn't nanobots'
+business. Set `NANOBOTS_OCR_ALL_PRS=true` if you do want it on everything.
 
 **Humans are a gate, not a bottleneck.** Nothing gets built until a collaborator replies
 `/nanobots start <hash>` to a versioned plan. Hard-gate areas are triaged but never

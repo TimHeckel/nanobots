@@ -26,7 +26,7 @@ deliberate signal source — not a bottleneck. Inspired by
    that's created for one work item and deleted the moment it's done. This is the one
    non-optional runtime choice nanobots makes — see `.nanobots/RUNTIMES.md` "Security
    model" for exactly what does and doesn't enter the box, and why.
-7. **Every PR gets reviewed, always.** OCR runs on every `nanobots:built` PR, not just the
+7. **Every nanobot PR gets reviewed, always.** OCR runs on every `nanobots:built` PR, not just the
    ones a repo opted into. Isolated execution without an independent review of what came
    out of it is only half the safety story — this is the other, non-optional half.
 8. **The one opt-in write path is bounded, atomic, and re-verified at every step.** The
