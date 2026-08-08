@@ -65,29 +65,48 @@ async function paintReview() {
   paintLoopStatus(cfg); // network-bound; don't hold up the rest of the review
 }
 
-// Which of the configured repos actually run the loop. Worth surfacing at config time and
-// not just after filing: a report filed into a repo with no .nanobots/ is a silent no-op —
-// the issue lands, looks filed, and nothing ever picks it up.
+// Which of the configured repos actually run the loop.
+//
+// Framing matters here and the first version got it backwards. "discover repos" auto-fills
+// every repo a token can reach — often ~100 — and virtually none of them run a loop, nor
+// should they. Reporting "missing on 93 of 94" and then listing 93 names presented the normal
+// case as a defect and buried the one useful fact. So: report the POSITIVE (which repos are
+// loop-enabled, a short list), and treat it as a problem only when the answer is none, which
+// is the one case that really is broken — the extension is configured to file nowhere useful.
 async function paintLoopStatus(cfg) {
   const help = $('loop-help');
   const row = $('rev-loop');
   if (!cfg.repos.length) { row.textContent = 'no repos configured — step 1'; help.hidden = true; return; }
 
-  row.textContent = `checking ${cfg.repos.length} repo${cfg.repos.length === 1 ? '' : 's'}…`;
-  const checked = await Promise.all(cfg.repos.map(async (nwo) => [nwo, await repoHasLoop(tokenFor(cfg, nwo), nwo)]));
-  const without = checked.filter(([, ok]) => ok === false).map(([nwo]) => nwo);
-  const unknown = checked.filter(([, ok]) => ok === null).length;
+  // Throttled: a 94-repo list must not fire 94 simultaneous requests just to paint a summary.
+  // Nothing is capped — a cap would silently misreport "none" when the loop repo fell outside
+  // it — so every repo is checked, a few at a time. Results are cached for 6h.
+  const queue = [...cfg.repos];
+  const withLoop = [];
+  let done = 0, unknown = 0;
+  const worker = async () => {
+    for (let nwo = queue.shift(); nwo; nwo = queue.shift()) {
+      const ok = await repoHasLoop(tokenFor(cfg, nwo), nwo);
+      if (ok === true) withLoop.push(nwo);
+      else if (ok === null) unknown++;
+      row.textContent = `checking… ${++done}/${cfg.repos.length}`;
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(8, cfg.repos.length) }, worker));
 
-  if (!without.length) {
-    row.innerHTML = `<span class="ok">✓ installed on all ${checked.length - unknown} checked</span>`
-      + (unknown ? ` <span class="sub">(${unknown} unreachable)</span>` : '');
-    help.hidden = true;
+  if (withLoop.length) {
+    row.innerHTML = `<span class="ok">✓ ${withLoop.length} of ${cfg.repos.length}</span>`;
+    help.innerHTML = `Running the loop: <b>${withLoop.map(esc).join('</b>, <b>')}</b>. `
+      + `Reports filed to any other repo still land as issues, but nothing will triage them.`;
+    help.hidden = false;
     return;
   }
-  row.innerHTML = `<span class="err">missing on ${without.length} of ${checked.length}</span>`;
-  help.innerHTML = `Reports filed to <b>${without.map(esc).join('</b>, <b>')}</b> won't be triaged — `
-    + `those repos have no <code>.nanobots/</code>. Install the loop by running `
-    + `<code>${esc(INSTALL_CMD)}</code> inside each one. Filing still works; nothing acts on it.`;
+  // Genuinely worth flagging: every configured repo is a dead drop.
+  row.innerHTML = `<span class="err">none of ${cfg.repos.length}</span>`;
+  help.innerHTML = `No configured repo has a <code>.nanobots/</code> loop, so nothing will `
+    + `triage what you file. Install it with <code>${esc(INSTALL_CMD)}</code> inside the repo `
+    + `you want to report against.`
+    + (unknown ? ` <span class="dim">(${unknown} couldn't be checked — token scope?)</span>` : '');
   help.hidden = false;
 }
 
@@ -186,6 +205,16 @@ async function persist() {
 })();
 
 $('pats').addEventListener('input', () => { tokensDirty = true; });
+
+// Masked by default; reveal is per-field and never sticky, so a token cannot end up
+// permanently in cleartext on a page that gets screen-shared or screenshotted.
+for (const b of document.querySelectorAll('.reveal')) {
+  b.addEventListener('click', () => {
+    const field = $(b.dataset.reveals);
+    const hidden = field.classList.toggle('secret');
+    b.textContent = hidden ? 'show' : 'hide';
+  });
+}
 
 // ── model provider presets ───────────────────────────────────────────────────
 // Picking a provider fills base URL + a multimodal default model; Manual

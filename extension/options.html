@@ -29,6 +29,13 @@
   input, textarea { width: 100%; background: var(--panel); border: 1px solid var(--border);
     color: var(--text); border-radius: 6px; padding: 9px 11px; font: inherit; }
   textarea { min-height: 64px; resize: vertical; }
+  /* Tokens are masked by default. A textarea can't be type=password, and these are pasted
+     several-at-a-time so a password input isn't an option — but they should not sit in
+     cleartext on a page people screen-share and screenshot. */
+  textarea.secret, input.secret { -webkit-text-security: disc; }
+  .reveal { float: right; background: none; border: 0; color: var(--dim); font: inherit;
+    font-size: 11px; cursor: pointer; padding: 0; }
+  .reveal:hover { color: var(--text); }
 
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
   button.mini { background: var(--panel); border: 1px solid var(--border); color: var(--text);
@@ -90,7 +97,8 @@
 
     <div class="bigstep"><span class="k">b.</span><div class="body">
       paste it below (repeat per org — fine-grained tokens cover one org each)
-      <textarea id="pats" placeholder="github_pat_…&#10;github_pat_… (another org)&#10;ghp_… (classic works too)"></textarea>
+      <button type="button" class="reveal" data-reveals="pats">show</button>
+      <textarea id="pats" class="secret" placeholder="github_pat_…&#10;github_pat_… (another org)&#10;ghp_… (classic works too)"></textarea>
     </div></div>
 
     <div class="bigstep"><span class="k">c.</span><div class="body">

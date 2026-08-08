@@ -109,8 +109,11 @@ function inPty(cmd, cwd) {
   for (const argv of [['-q', '/dev/null', 'sh', '-c', cmd], ['-q', '-c', cmd, '/dev/null']]) {
     clearMarker();
     try {
+      // stdin MUST be pinned to /dev/null, not inherited: `script` fails outright when it
+      // inherits certain stdin (this test passed under `npm test` and failed when run by
+      // hand, purely from that). The pty it allocates for the child is what matters here.
       execFileSync('script', argv, {
-        cwd, encoding: 'utf8', stdio: ['inherit', 'pipe', 'pipe'], timeout: 30000,
+        cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 30000,
         env: { PATH, HOME: root, ...ENV_OK },
       });
     } catch { /* exit status is not the signal — the marker is */ }

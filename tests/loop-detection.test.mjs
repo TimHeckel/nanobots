@@ -121,6 +121,31 @@ const okBranch = overlay.slice(overlay.indexOf('if (resp?.ok)'), overlay.indexOf
 ok(!/btn\.disabled = false/.test(okBranch),
   'the overlay never re-enables "file it" after a successful file (a retry would duplicate the issue)');
 
+// ── 6. the options review must not invert the normal case ───────────────────
+// "discover repos" fills in every reachable repo, so most having no loop is EXPECTED.
+// Reporting that as a deficiency (and listing ~93 repo names) buried the useful fact.
+const opts = readFileSync(join(EXT, 'options.js'), 'utf8');
+ok(!/missing on \$\{/.test(opts) && !/missing on ' \+/.test(opts),
+  'the review reports which repos DO run the loop, not a count of those that do not');
+ok(/withLoop\.map/.test(opts) && !/without\.map/.test(opts),
+  'only loop-enabled repos are listed by name; the majority without are never enumerated');
+ok(/none of \$\{cfg\.repos\.length\}/.test(opts),
+  'zero loop-enabled repos is still flagged — that case really is broken');
+// A cap would silently misreport "none" whenever the loop repo fell outside it.
+ok(/Math\.min\(8, cfg\.repos\.length\)/.test(opts),
+  'checks are throttled rather than fired all at once');
+ok(!/slice\(0,\s*\d+\)/.test(opts.slice(opts.indexOf('paintLoopStatus'), opts.indexOf('const esc'))),
+  'no silent cap on how many repos get checked');
+
+// ── 7. tokens are not left sitting in cleartext ──────────────────────────────
+const html = readFileSync(join(EXT, 'options.html'), 'utf8');
+ok(/-webkit-text-security/.test(html), 'the token field is masked with text-security');
+ok(/id="pats"[^>]*class="secret"/.test(html), 'the PAT textarea starts masked');
+ok(/data-reveals="pats"/.test(html), 'there is a reveal toggle so tokens can still be verified');
+for (const id of ['r2token', 'aikey', 'vkey', 'r2token-quick']) {
+  ok(new RegExp(`id="${id}"[^>]*type="password"`).test(html), `${id} is a password field`);
+}
+
 if (fails.length) {
   console.error(`\n${fails.length} FAILED:`);
   for (const f of fails) console.error(`  ✗ ${f}`);
