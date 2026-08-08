@@ -112,9 +112,10 @@
 
   <h2>the three variables</h2>
   <p>
-    One OpenAI-compatible endpoint powers three things: the setup conversation, the required
-    review on every PR a nanobot opens, and the optional autofix responder. <b>One key, not
-    three.</b>
+    These name the endpoint <a href="https://github.com/alibaba/open-code-review">Open Code
+    Review</a> (<b>OCR</b>) uses to review every PR — and nanobots <b>reuses them for its own
+    agentic work</b> rather than asking for a second key. The same endpoint runs the
+    <code>init</code> conversation, the review, and the optional autofix responder.
   </p>
   <dl>
     <dt><code>OCR_LLM_URL</code></dt>
@@ -124,14 +125,27 @@
     <dd>Your provider key. <code>init</code> stores it as a repo secret via <code>gh</code>,
       on stdin — it never passes through a command line.</dd>
     <dt><code>OCR_LLM_MODEL</code></dt>
-    <dd>Any model that supports tool calling. The setup agent and the reviewer both need it.</dd>
+    <dd>Any model with tool calling. Cheap is fine; this is reviewing and asking questions,
+      not writing your code.</dd>
   </dl>
-  <p class="ext-note">
-    <b>OCR</b> is <a href="https://github.com/alibaba/open-code-review">Open Code Review</a>, the
-    reviewer that gates every PR. These are its own environment variables, passed through
-    unchanged rather than renamed and translated behind your back — so what you set is exactly
-    what runs.
+
+  <h2>and the ones init collects</h2>
+  <p>
+    Those three are only what <code>init</code> needs to <i>start</i>. It gathers the rest in
+    conversation, so you don't need them in hand first.
   </p>
+  <dl>
+    <dt><code>CLAUDE_CODE_OAUTH_TOKEN</code> or <code>ANTHROPIC_API_KEY</code></dt>
+    <dd>A <b>separate</b> credential, and the one that actually writes code — it powers the outer
+      loop and the workers. Subscription or metered; any Anthropic-compatible base URL also
+      works, and <code>NANOBOTS_WORKER_CMD</code> swaps the engine entirely.</dd>
+    <dt><code>DAYTONA_API_KEY</code></dt>
+    <dd>Required. Workers only ever build in a Daytona sandbox. <code>init</code> proves the key
+      works by creating and destroying a real sandbox before it stores it.</dd>
+    <dt><code>PROJECTS_PAT</code></dt>
+    <dd>A classic PAT with <code>repo</code> + <code>project</code> + <code>read:org</code>. The
+      default <code>GITHUB_TOKEN</code> cannot touch org Projects v2 at all.</dd>
+  </dl>
 
   <h2>the opinions</h2>
   <p>Most of this is a small number of choices held firmly. Disagree with them and you'll fight the tool.</p>
