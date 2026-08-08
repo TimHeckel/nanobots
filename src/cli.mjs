@@ -664,7 +664,11 @@ G. CRONS. Explain the consequence before asking, because this is the switch that
    Then ask_choice: ["Not yet — I'll run a cycle by hand first and watch what it does (recommended)", "Yes — enable both crons now"].
    Only on "Yes": set_variable NANOBOTS_OUTER_ENABLED=1 and NANOBOTS_WORKER_ENABLED=1.
 
-H. MANUAL STEP — message_user the one thing the GitHub API can't do: in the Project's Workflows settings, enable "Auto-add to project" with filter \`is:issue is:open label:nanobots:inbox\`, set "Item added to project" → Status: Inbox, and confirm "Issue closed"/"PR merged" → Done.
+H. MANUAL STEP — MANDATORY, and the easiest thing to drop when a run gets long. Everything
+   else can be perfectly configured and the board will still never fill, because nothing is
+   adding issues to it. State it with message_user AND repeat it in your finish summary; a run
+   that omits it has quietly left the install incomplete. Tell them the one thing the GitHub
+   API can't do: in the Project's Workflows settings, enable "Auto-add to project" with filter \`is:issue is:open label:nanobots:inbox\`, set "Item added to project" → Status: Inbox, and confirm "Issue closed"/"PR merged" → Done.
 
 H2. SIGNAL CAPTURE — mention the browser extension once, briefly, and do not oversell it.
    A loop is only as good as what reaches it, and the highest-signal report is the one filed at
@@ -674,7 +678,7 @@ H2. SIGNAL CAPTURE — mention the browser extension once, briefly, and do not o
    Tell them it is \`npx nanobots-sh extension\` (copies it locally, then chrome://extensions →
    Developer mode → Load unpacked). Do not ask a question here; just say it and move on.
 
-I. Call finish with a concise summary: what got set, what's optional/left, and how to start the loop (\`/loop\` in Claude Code with .nanobots/LOOP-PROMPT.md, or \`npx nanobots-sh run outer\`).
+I. Call finish with a concise summary: what got set, what's optional/left, the MANUAL "Auto-add to project" step from H restated in one line, and how to start the loop (\`/loop\` in Claude Code with .nanobots/LOOP-PROMPT.md, or \`npx nanobots-sh run outer\`).
 
 If any tool returns an error, tell the user plainly and offer to retry or skip. Respect skips. Keep going until the required steps are done or the user asks to stop, then finish.`;
 }
@@ -704,12 +708,34 @@ function dryRunAnswer(question) {
 // Every tool becomes a recorder. Secret VALUES are never captured — a transcript can land in
 // CI logs — only the name and whether a value was supplied.
 function dryRunTools(transcript) {
-  const rec = (tool, detail, result) => { transcript.push({ tool, ...detail }); return result; };
+  // Scrub at the RECORDER, not at individual call sites. A credential value can reach the
+  // transcript through any string field — an echoed message, an `answered`, a variable value —
+  // and patching them one at a time is how one slips through. The transcript can end up in CI
+  // logs, so this is the single chokepoint where nothing credential-shaped gets written.
+  const rec = (tool, detail, result) => {
+    const clean = {};
+    for (const [k, v] of Object.entries(detail)) {
+      if (typeof v === 'string') clean[k] = scrub(v);
+      else if (Array.isArray(v)) clean[k] = v.map((x) => (typeof x === 'string' ? scrub(x) : x));
+      else clean[k] = v;
+    }
+    transcript.push({ tool, ...clean });
+    return result;
+  };
+  // Whatever was handed back for a masked prompt. The agent routinely reads a value back to
+  // the user ("storing sk-… as a secret"), so recording message_user text verbatim would put
+  // a credential in the transcript — and a transcript can land in CI logs. Scrub on the way in.
+  const dryState = { daytonaVerified: false };
+  const givenSecrets = ['DRYRUN-NOT-A-REAL-CREDENTIAL'];
+  const scrub = (text) => givenSecrets.reduce((t, s) => (s ? t.split(s).join('<redacted>') : t), text || '');
   return {
-    message_user: async ({ text }) => rec('message_user', { chars: (text || '').length }, 'shown'),
+    // The text is recorded, not just its length, so tests can assert the user was actually
+    // TOLD what matters rather than that one particular tool was called.
+    message_user: async ({ text }) => rec('message_user', { chars: (text || '').length, text: scrub(text) }, 'shown'),
     ask_user: async ({ question, secret }) => {
       const answer = dryRunAnswer(question || '');
       const masked = isCredentialPrompt(question, secret);
+      if (masked && answer) givenSecrets.push(answer);
       return rec('ask_user', {
         question,
         secret: !!secret,                 // what the model claimed
@@ -733,9 +759,20 @@ function dryRunTools(transcript) {
     read_file: async ({ path }) => rec('read_file', { path }, '{ "name": "demo", "scripts": { "test": "vitest run" } }'),
     check_gh: async () => rec('check_gh', {}, 'authenticated. project scope: present.'),
     scaffold_github: async () => rec('scaffold_github', {}, 'board ready (project #1), status issue #1, labels + fields created.'),
-    set_secret: async ({ name, value }) => rec('set_secret', { name, hasValue: Boolean(value) }, `secret ${name} set.`),
+    set_secret: async ({ name, value }) => {
+      // Mirrors the live refusal exactly — a dry run that permits an ordering the real tool
+      // rejects would certify a flow that cannot actually happen.
+      if (name === 'DAYTONA_API_KEY' && !dryState.daytonaVerified) {
+        return rec('set_secret', { name, hasValue: Boolean(value), refused: 'unverified' },
+          'error: call verify_daytona with this key first — an unproven Daytona key is not stored.');
+      }
+      return rec('set_secret', { name, hasValue: Boolean(value) }, `secret ${name} set.`);
+    },
     set_variable: async ({ name, value }) => rec('set_variable', { name, value }, `variable ${name}=${value} set.`),
-    verify_daytona: async () => rec('verify_daytona', {}, 'daytona ok — created and deleted sandbox sbx-dryrun.'),
+    verify_daytona: async () => {
+      dryState.daytonaVerified = true;
+      return rec('verify_daytona', {}, 'daytona ok — created and deleted sandbox sbx-dryrun.');
+    },
   };
 }
 
@@ -783,7 +820,7 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
   console.log(c.dim(`running on ${model} @ ${url}\n`));
 
   const nwo = `${d.owner}/${d.repo}`;
-  const state = { cfg: null };
+  const state = { cfg: null, daytonaVerified: false };
 
   const liveTools = {
     message_user: async ({ text }) => { console.log(`\n${text}\n`); return 'shown'; },
@@ -858,6 +895,13 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
     },
     set_secret: async ({ name, value }) => {
       if (!name || value == null) return 'error: name and value required.';
+      // Structural, not advisory. The prompt tells the agent to prove the Daytona key before
+      // storing it; observed across runs, the model skips straight to set_secret roughly a
+      // third of the time. Storing an unverified key leaves an install that looks complete and
+      // fails at the first worker claim, so refuse instead of relying on instruction-following.
+      if (name === 'DAYTONA_API_KEY' && !state.daytonaVerified) {
+        return 'error: call verify_daytona with this key first — an unproven Daytona key is not stored.';
+      }
       const r = spawnSync('gh', ['secret', 'set', name, '--repo', nwo], { input: String(value) });
       return r.status === 0 ? `secret ${name} set.` : `error: gh secret set ${name} failed: ${(r.stderr || '').toString().slice(0, 200)}`;
     },
@@ -868,7 +912,11 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
     },
     verify_daytona: async ({ apiKey }) => {
       if (!apiKey) return 'error: apiKey required.';
-      try { const p = await daytonaProof(apiKey); return `daytona ok — created and ${p.cleaned ? 'deleted' : 'FAILED to delete'} sandbox ${p.sandboxId}.${p.cleaned ? '' : ' Check the dashboard and remove it manually.'}`; }
+      try {
+        const p = await daytonaProof(apiKey);
+        state.daytonaVerified = true;
+        return `daytona ok — created and ${p.cleaned ? 'deleted' : 'FAILED to delete'} sandbox ${p.sandboxId}.${p.cleaned ? '' : ' Check the dashboard and remove it manually.'}`;
+      }
       catch (e) { return `daytona verification FAILED: ${e.message}`; }
     },
   };

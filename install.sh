@@ -62,7 +62,13 @@ fi
 # `[ -r /dev/tty ]` is NOT a sufficient probe: with no controlling terminal the device node
 # still exists and tests readable, then the open fails with a raw "Device not configured".
 # Actually opening it is the only honest check.
-if { : < /dev/tty; } 2>/dev/null; then
+#
+# The subshell is load-bearing, not style. `:` is a POSIX SPECIAL builtin, and a redirection
+# error on a special builtin terminates a non-interactive shell outright — even as an `if`
+# condition. On dash (Ubuntu's /bin/sh, i.e. most `curl | sh` users) the unsubshelled form
+# exits 2 right here and prints none of the help below. A subshell contains the exit and
+# just yields a false condition.
+if ( : < /dev/tty ) 2>/dev/null; then
   exec npx --yes nanobots-sh init "$@" < /dev/tty
 fi
 

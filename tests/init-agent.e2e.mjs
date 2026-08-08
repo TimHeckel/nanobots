@@ -62,7 +62,26 @@ ok(typeof finished === 'string' && finished.length > 0, 'agent called finish() w
 ok(calls.length >= 5, `agent made a real sequence of tool calls (got ${calls.length})`);
 
 // ── it talked to the user, and only through its tools ────────────────────────
-ok(byTool('message_user').length > 0, 'agent spoke to the user via message_user');
+// WHICH tool carries the prose is nondeterministic: across runs the model has used
+// message_user, and has folded the same explanation into the ask_user/ask_choice question
+// text instead. The user cannot tell the difference. Asserting message_user specifically
+// held CI red for many cycles (see LEARNINGS cycles 35/40/55) over nothing a user would ever
+// notice, so assert the OUTCOME — that the user was told things, and specifically that the
+// one step no tool can perform for them got through.
+const userFacing = [
+  ...byTool('message_user').map((c) => c.text || ''),
+  ...byTool('ask_user').map((c) => c.question || ''),
+  ...byTool('ask_choice').map((c) => c.question || ''),
+  finished,
+].join('\n');
+ok(userFacing.trim().length > 200, 'agent conveyed substantive user-facing prose through its tools');
+// Step H: enabling "Auto-add to project" is the one thing the GitHub API cannot do, so if the
+// agent never says it, the install is quietly incomplete no matter how clean the run looks.
+// Matches "Auto-add" ONLY. A looser /workflows/ pattern false-matched the unrelated
+// "install the scheduled cron workflows?" question, which would let a genuinely missing
+// step H pass — the agent does drop it roughly one run in six without the prompt insisting.
+ok(/auto-?add/i.test(userFacing),
+  'the manual board step reached the user (no tool can do it for them)');
 ok(byTool('ask_user').length > 0, 'agent collected input via ask_user');
 ok(byTool('ask_user').some((c) => c.secret === true), 'agent marked at least one prompt as secret (masked input)');
 // The model's secret flag is nondeterministic — observed set and unset for the same prompt
@@ -77,7 +96,17 @@ ok(scaffold, 'agent called render_scaffold');
 if (scaffold) {
   ok(typeof scaffold.board === 'string' && scaffold.board.length > 0, 'scaffold has a board name');
   ok(Number.isInteger(Number(scaffold.wipCap)) && Number(scaffold.wipCap) > 0, `scaffold has a positive WIP cap (got ${scaffold.wipCap})`);
-  ok(Array.isArray(scaffold.hardGates) && scaffold.hardGates.length > 0, 'scaffold carries hard-gate areas');
+  // NOT "length > 0". The A2 step tells the agent to propose gates and then accept the user's
+  // edits, including "none" — an empty list is a legitimate answer for a small repo, and the
+  // dry run's scripted user answers vaguely, so it lands there sometimes. What must hold is
+  // that the agent READ THE REPO before deciding, and did so before rendering: a list arrived
+  // at without looking is the canned default this step exists to eliminate.
+  ok(Array.isArray(scaffold.hardGates), 'scaffold carries a hard-gate list (empty is allowed)');
+  const firstLook = calls.findIndex((c) => c.tool === 'list_files' || c.tool === 'read_file');
+  const rendered = calls.findIndex((c) => c.tool === 'render_scaffold');
+  ok(firstLook !== -1, 'agent inspected the repo rather than guessing at hard gates');
+  ok(firstLook !== -1 && firstLook < rendered, 'it inspected BEFORE rendering the scaffold');
+  ok(byTool('read_file').length >= 2, `agent opened real files, not just the tree (${byTool('read_file').length})`);
 }
 
 // ── it set up GitHub state ───────────────────────────────────────────────────

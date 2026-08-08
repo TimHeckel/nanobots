@@ -38,11 +38,24 @@ for (const f of ['npx', 'gh']) chmodSync(join(bin, f), 0o755);
 const PATH = `${bin}:${process.env.PATH}`;
 const ENV_OK = { OCR_LLM_URL: 'https://example.test/v1/chat/completions', OCR_LLM_TOKEN: 'sk-test', OCR_LLM_MODEL: 'test-model' };
 
+// Every POSIX shell we can find, not just the default one. macOS /bin/sh is bash-in-sh-mode
+// and is far more forgiving than dash, which is /bin/sh on Debian and Ubuntu — i.e. most
+// people running `curl | sh`. A redirection error on a POSIX SPECIAL builtin kills a
+// non-interactive dash outright, so a probe written as `{ : < /dev/tty; }` silently exited 2
+// there while passing perfectly on a Mac. That shipped, and only CI caught it.
+const SHELLS = ['sh', 'dash', 'bash', 'busybox sh'].filter((s) => {
+  const [bin, ...rest] = s.split(' ');
+  try { execFileSync(bin, [...rest, '-c', 'exit 0'], { stdio: 'ignore' }); return true; }
+  catch { return false; }
+});
+let SHELL_UNDER_TEST = SHELLS[0];
+
 // Run install.sh the way curl does: piped into sh, so the script itself occupies stdin.
-function curlPipeSh(env, { cwd = repo } = {}) {
+function curlPipeSh(env, { cwd = repo, shell = SHELL_UNDER_TEST } = {}) {
   const script = readFileSync(INSTALL, 'utf8');
+  const [bin, ...rest] = shell.split(' ');
   try {
-    const stdout = execFileSync('sh', ['-c', 'sh'], {
+    const stdout = execFileSync(bin, [...rest, '-c', shell], {
       cwd, input: script, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
       env: { PATH, HOME: root, ...env },
     });
@@ -139,6 +152,31 @@ clearMarker();
 r = curlPipeSh(ENV_OK, { cwd: root });
 ok(r.code !== 0 && /inside the git repo/.test(r.out), 'refuses to run outside a git repo');
 ok(readMarker() === '', 'never reaches npx outside a git repo');
+
+// ── 9. the same behaviour in EVERY shell we can find ─────────────────────────
+// The failure mode this guards against is silent: the script exits non-zero having printed
+// nothing, so the user sees a dead command with no explanation. Asserting the help text is
+// present is what distinguishes "refused with a reason" from "died".
+for (const shell of SHELLS) {
+  clearMarker();
+  const noEnv = curlPipeSh({}, { shell });
+  ok(noEnv.code !== 0, `${shell}: missing env exits non-zero`);
+  ok(/OCR_LLM_URL/.test(noEnv.out), `${shell}: missing env still EXPLAINS itself (not a silent exit)`);
+  ok(readMarker() === '', `${shell}: missing env never reaches npx`);
+
+  clearMarker();
+  const noTty = curlPipeSh(ENV_OK, { shell });
+  ok(readMarker() === '' || readMarker().includes('STDIN=tty'),
+    `${shell}: the CLI is never handed the exhausted curl pipe`);
+  if (!readMarker()) {
+    // Took the no-terminal path — it MUST say so rather than dying quietly. dash exits 2 in
+    // silence if the /dev/tty probe is not wrapped in a subshell.
+    ok(/no terminal available/i.test(noTty.out),
+      `${shell}: the no-terminal path explains itself instead of exiting silently`);
+    ok(/npx nanobots-sh init/.test(noTty.out), `${shell}: offers a command that does work`);
+  }
+}
+console.log(`   (shells exercised: ${SHELLS.join(', ')})`);
 
 rmSync(root, { recursive: true, force: true });
 

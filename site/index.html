@@ -69,6 +69,12 @@
   .ext { font-size: 15px; margin-bottom: 8px; }
   .ext-note { color: var(--dim); font-size: 13px; }
 
+  .step { margin-top: 34px; }
+  .step h3 { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+  .step h3 .n { color: var(--dim); }
+  .step .what { color: var(--dim); font-size: 13px; margin-bottom: 0; }
+  .step .what b { color: var(--text); font-weight: 600; }
+
   h2 { font-size: 14px; color: var(--accent); margin: 48px 0 14px; text-transform: lowercase; }
   h2::before { content: "## "; color: var(--dim); }
   p { margin: 0 0 14px; max-width: 68ch; }
@@ -96,6 +102,13 @@
     </p>
   </header>
 
+  <div class="step">
+    <h3><span class="n">1.</span> install the loop <span class="n">— required</span></h3>
+    <p class="what">Scaffolds <b>your repo</b>: prompts and policy into <code>.nanobots/</code>,
+      the Actions workflows, the Projects board, labels, and your secrets. A browser can't do
+      any of that, so this part is a terminal.</p>
+  </div>
+
   <div class="install">
     <button onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent)">copy</button>
 <pre id="cmd"><span class="c"># one OpenAI-compatible endpoint — runs init, the review, and autofix</span>
@@ -109,10 +122,16 @@ export OCR_LLM_MODEL=deepseek-v4-flash
   <code>sk-...</code>. That's everything you need to start — <code>init</code> asks for the rest
   in conversation.</p>
 
-  <p class="ext">
-    <a href="https://chromewebstore.google.com/detail/nanobots-%E2%80%94-report-to-the/iadlgbpjodliifalppmigpekddiahmgf"><b>Browser extension →</b></a>
+  <div class="step">
+    <h3><span class="n">2.</span> add the extension <span class="n">— optional</span></h3>
+    <p class="what">Feeds the loop. Screenshot any page, annotate it in place, file it as an
+      issue the board picks up. The loop runs fine without it — GitHub issues are intake
+      either way — but this is the fastest way to get a real bug in front of it.</p>
+  </div>
+  <p class="ext" style="margin-top:14px">
+    <a href="https://chromewebstore.google.com/detail/nanobots-%E2%80%94-report-to-the/iadlgbpjodliifalppmigpekddiahmgf"><b>Chrome Web Store →</b></a>
   </p>
-  <p class="ext-note">Screenshot any page, annotate it in place, file it as an issue the loop picks up.</p>
+  <p class="ext-note">It will tell you if a repo you file to has no loop installed yet.</p>
 
   <h2>the three variables</h2>
   <p>
