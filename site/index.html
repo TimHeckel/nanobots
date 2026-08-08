@@ -37,21 +37,22 @@
   .tagline b { color: var(--text); font-weight: 600; }
 
   .install {
+    position: relative;
     margin: 36px 0 8px;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 14px 18px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
     overflow-x: auto;
   }
-  .install code { color: #fff; white-space: nowrap; }
-  .install code::before { content: "$ "; color: var(--accent); }
+  .install pre { color: #fff; font: inherit; margin: 0; }
+  .install .c { color: var(--dim); }
+  .install .run { color: var(--accent); }
   .install button {
-    margin-left: auto;
-    background: transparent;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--panel);
     border: 1px solid var(--border);
     color: var(--dim);
     border-radius: 6px;
@@ -96,11 +97,17 @@
   </header>
 
   <div class="install">
-    <code id="cmd">curl -fsSL nanobots.sh/install | sh</code>
     <button onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent)">copy</button>
+<pre id="cmd"><span class="c"># one OpenAI-compatible endpoint — runs init, the review, and autofix</span>
+export OCR_LLM_URL=https://api.deepseek.com/chat/completions
+export OCR_LLM_TOKEN=sk-...            <span class="c"># ← your provider key</span>
+export OCR_LLM_MODEL=deepseek-v4-flash
+
+<span class="run">curl -fsSL nanobots.sh/install | sh</span></pre>
   </div>
-  <p class="subnote">Run it in the repo you want the loop on. <code>init</code> is an
-  <b>agent</b>, so export three variables first — one endpoint, explained below.</p>
+  <p class="subnote">Run it in the repo you want the loop on, with your real key in place of
+  <code>sk-...</code>. That's everything you need to start — <code>init</code> asks for the rest
+  in conversation.</p>
 
   <p class="ext">
     <a href="https://chromewebstore.google.com/detail/nanobots-%E2%80%94-report-to-the/iadlgbpjodliifalppmigpekddiahmgf"><b>Browser extension →</b></a>

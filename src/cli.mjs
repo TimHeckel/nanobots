@@ -889,7 +889,14 @@ Any OpenAI-compatible /chat/completions endpoint with tool-calling works (DeepSe
   for (let step = 0; step < 60; step++) {
     let msg;
     try { msg = await llmChat({ url, token, model, messages, tools: ONBOARDING_TOOLS }); }
-    catch (e) { die(`onboarding agent call failed: ${e.message}`); }
+    catch (e) {
+      // The quickstart snippet ships a `sk-...` placeholder, so pasting it unedited is a
+      // predictable first failure. Name the likely cause instead of just echoing the status.
+      const auth = /\b(401|403)\b/.test(e.message)
+        ? '\n\nThat is an auth rejection from the provider. Check OCR_LLM_TOKEN is your real key\n(the quickstart shows a `sk-...` placeholder) and that OCR_LLM_URL is that provider\'s endpoint.'
+        : '';
+      die(`onboarding agent call failed: ${e.message}${auth}`);
+    }
     messages.push(msg);
 
     const calls = msg.tool_calls || [];
