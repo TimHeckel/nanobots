@@ -19,6 +19,39 @@ Entry format:
 
 ---
 
+## 2026-08-08 — #16 still open: `test` job persists across 3 more docs-only pushes; `onboarding-agent` flaked twice more, cleared on rerun both times (cycle 55)
+- **Outcome:** n/a (Sync-time confirmation during cycle 55, not a dispatched item; #16 still
+  Ready, unapproved)
+- **What worked / what didn't:** `main` advanced three commits since the last report
+  (`76fa9e1` → `75d6ff4` → `99e3249`), all `docs:`, all touching only `site/index.html` — none
+  plausibly touch `install.sh` or `tests/install-sh.test.mjs`. `CI`'s `test` job failed
+  identically on all three heads, same two assertions #16 already documents. On the two most
+  recent heads, `onboarding-agent` was *also* red alongside `test` (2 jobs red), but with
+  different specific failures each time ("agent spoke to the user via message_user" /
+  "scaffold carries hard-gate areas" this time vs. "never produced a transcript" at #16's
+  original filing) — the varying failure shape across unrelated, non-onboarding-agent diffs is
+  itself evidence for live-LLM nondeterminism rather than a fixed regression. Ran
+  `gh run rerun --failed` on the current head's run for confirming evidence (not for the
+  file-or-skip decision, since 2 red jobs already fails the flake exception's first condition
+  outright): `onboarding-agent` came back green, `test` failed again with the identical
+  assertions — same split result as #16's original rerun. Posted this as a comment on #16
+  rather than a new issue (TRIAGE.md dedupe: same `test`-job symptom already tracked there;
+  `onboarding-agent`'s recurrence matches the pattern #16 itself already logged as transient).
+  Also re-confirmed #16's plan (hash `3d9a51a91c83`) still has exactly one comment — no
+  `/nanobots start` reply — so `main` CI has now been red on this cause for ~3 days across 7
+  consecutive pushes with a ready, unclaimed fix.
+- **Lesson:** a live-LLM e2e job flaking with a *different* specific assertion each time,
+  across pushes whose diffs don't touch it, is stronger flake evidence than the same failure
+  repeating verbatim would be — a deterministic bug reproduces identically; nondeterministic
+  model behavior degrades differently each time. Don't require the failure shape to match
+  exactly before treating a recurrence as "the same known flake" — check whether the diff
+  explains it and whether a rerun clears it, same as the first time. Also: when a P0 fix has
+  sat `Ready` with a valid plan for days awaiting `/nanobots start`, a periodic comment
+  reiterating the block (evidence + a reminder, not a new escalation) is cheap and keeps the
+  issue's own thread as the up-to-date source of truth, rather than only the cycle report on
+  #1 tracking the staleness.
+- **Applies to:** triage | prompt
+
 ## 2026-08-05 — #16 filed: main CI red on b49f8ac, `test` job fails deterministically; `onboarding-agent` job was a same-run transient flake (cycle 35)
 - **Outcome:** n/a (escalated — filed #16, P0/Size M, Ready with a versioned plan; not yet
   Done)
