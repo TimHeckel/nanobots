@@ -70,6 +70,18 @@
   .ext { font-size: 15px; margin-bottom: 8px; }
   .ext-note { color: var(--dim); font-size: 13px; }
 
+  h2 { font-size: 14px; color: var(--accent); margin: 48px 0 14px; text-transform: lowercase; }
+  h2::before { content: "## "; color: var(--dim); }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  p code, dd code, dt code { background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px; font-size: 13px; }
+  dl { margin: 0 0 16px; }
+  dt { color: #fff; margin-top: 12px; font-size: 13.5px; }
+  dd { color: var(--dim); margin: 2px 0 0; font-size: 13.5px; max-width: 66ch; }
+  .ops { list-style: none; }
+  .ops li { margin-bottom: 12px; color: var(--dim); font-size: 13.5px; max-width: 68ch; }
+  .ops b { color: var(--text); }
+
   footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--dim); font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap; }
 </style>
 </head>
@@ -91,14 +103,65 @@
     <button onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent)">copy</button>
   </div>
   <p class="subnote">Run it in the repo you want the loop on. <code>init</code> is an
-  <b>agent</b>, so export an OpenAI-compatible endpoint first — the same one your repo uses for
-  the required review, not an extra key:
-  <code>OCR_LLM_URL</code> · <code>OCR_LLM_TOKEN</code> · <code>OCR_LLM_MODEL</code>.</p>
+  <b>agent</b>, so export three variables first — one endpoint, explained below.</p>
 
   <p class="ext">
     <a href="https://chromewebstore.google.com/detail/nanobots-%E2%80%94-report-to-the/iadlgbpjodliifalppmigpekddiahmgf"><b>Browser extension →</b></a>
   </p>
   <p class="ext-note">Screenshot any page, annotate it in place, file it as an issue the loop picks up.</p>
+
+  <h2>the three variables</h2>
+  <p>
+    One OpenAI-compatible endpoint powers three things: the setup conversation, the required
+    review on every PR a nanobot opens, and the optional autofix responder. <b>One key, not
+    three.</b>
+  </p>
+  <dl>
+    <dt><code>OCR_LLM_URL</code></dt>
+    <dd>Any OpenAI-compatible <code>/chat/completions</code> endpoint — DeepSeek, OpenAI,
+      Together, Fireworks, or a local server.</dd>
+    <dt><code>OCR_LLM_TOKEN</code></dt>
+    <dd>Your provider key. <code>init</code> stores it as a repo secret via <code>gh</code>,
+      on stdin — it never passes through a command line.</dd>
+    <dt><code>OCR_LLM_MODEL</code></dt>
+    <dd>Any model that supports tool calling. The setup agent and the reviewer both need it.</dd>
+  </dl>
+  <p class="ext-note">
+    <b>OCR</b> is <a href="https://github.com/alibaba/open-code-review">Open Code Review</a>, the
+    reviewer that gates every PR. These are its own environment variables, passed through
+    unchanged rather than renamed and translated behind your back — so what you set is exactly
+    what runs.
+  </p>
+
+  <h2>the opinions</h2>
+  <p>Most of this is a small number of choices held firmly. Disagree with them and you'll fight the tool.</p>
+  <ul class="ops">
+    <li><b>GitHub is the only state store.</b> Issues are intake, a Projects board is the kanban,
+      PRs are the audit trail. No database, no dashboard, no account. If it isn't on GitHub it
+      didn't happen — so you can always see what the loop did, and always override it by hand.</li>
+    <li><b>Workers never run on your machine.</b> Every worker builds in a disposable
+      <a href="https://daytona.io">Daytona</a> sandbox, destroyed when the run ends. Not an
+      option — the only worker runtime. Agent-written build commands don't touch your laptop.</li>
+    <li><b>The sandbox gets a credential that can't do much.</b> A short-lived, repo-scoped
+      GitHub App token per run, revoked after. It grants <code>contents:write</code> and
+      deliberately <b>not</b> <code>pull_requests</code>: a leaked token can push to a branch
+      nobody watches, and that's the whole blast radius. The controller opens the PR.</li>
+    <li><b>Review is not optional.</b> Every PR gets an independent review on that exact head
+      SHA. Critical and high findings block the merge. A failed or unparseable review blocks
+      too — it is never read as clean.</li>
+    <li><b>Humans are a gate, not a bottleneck.</b> Nothing is built until someone replies
+      <code>/nanobots start &lt;hash&gt;</code> to a versioned plan. The hash covers the plan
+      text, so an edited plan invalidates the approval instead of quietly shipping.</li>
+    <li><b>Hard gates come from reading your repo.</b> No canned list of scary categories.
+      <code>init</code> reads your code and proposes specific paths with reasons, and you edit
+      them. "Payments" is not a gate; <code>src/billing/stripe.ts</code> is.</li>
+    <li><b>The loop edits its own policy.</b> Every outcome appends to <code>LEARNINGS.md</code>;
+      periodically it distills those into the triage rubric and recipes, and commits that. The
+      policy docs are its weights. Your rubric is <i>supposed</i> to drift from the template.</li>
+    <li><b>Billing is an env var.</b> <code>CLAUDE_CODE_OAUTH_TOKEN</code> runs on a subscription,
+      <code>ANTHROPIC_API_KEY</code> is metered, <code>NANOBOTS_WORKER_CMD</code> swaps the engine
+      entirely. Cheap models for labour, a frontier model for judgment.</li>
+  </ul>
 
   <footer>
     <a href="https://github.com/TimHeckel/nanobots">github</a>
