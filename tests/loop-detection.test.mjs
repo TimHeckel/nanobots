@@ -146,6 +146,19 @@ for (const id of ['r2token', 'aikey', 'vkey', 'r2token-quick']) {
   ok(new RegExp(`id="${id}"[^>]*type="password"`).test(html), `${id} is a password field`);
 }
 
+// ── 8. the crop-phase hints must describe things that actually work ─────────
+// "F full view" was bound to the shadow root, so it only fired while focus was inside the
+// overlay — one click on the page and the advertised key did nothing.
+const ov = readFileSync(join(EXT, 'overlay.js'), 'utf8');
+ok(/window\.addEventListener\('keydown', onFullKey, true\)/.test(ov),
+  'F is bound at the window with capture, like Escape, so focus cannot break it');
+ok(/if \(!veil\.isConnected\) \{ window\.removeEventListener\('keydown', onFullKey, true\)/.test(ov),
+  'the F listener removes itself once the crop phase ends');
+ok(/e\.metaKey \|\| e\.ctrlKey \|\| e\.altKey/.test(ov),
+  'F ignores modified keypresses so it does not hijack browser shortcuts');
+ok(/querySelector\('\.fullbtn'\)[\s\S]{0,120}stopPropagation/.test(ov),
+  'clicking the hint works too, and does not start a crop drag');
+
 if (fails.length) {
   console.error(`\n${fails.length} FAILED:`);
   for (const f of fails) console.error(`  ✗ ${f}`);

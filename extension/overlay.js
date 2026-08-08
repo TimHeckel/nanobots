@@ -86,6 +86,8 @@
           background: #11151b; color: #c9d1d9; border: 1px solid #1e242e; border-radius: 8px;
           padding: 8px 16px; }
         .hintbar b { color: #4ade80; }
+        .hintbar .fullbtn { cursor: pointer; border-bottom: 1px dashed #30363d; }
+        .hintbar .fullbtn:hover { border-bottom-color: #4ade80; }
         /* Lighter than the page-dimming veil and lifted with a shadow, so the panel reads as
            a surface floating ABOVE the page rather than a hole cut into it. */
         .panel { position: fixed; top: 3vh; left: 50%; transform: translateX(-50%);
@@ -158,7 +160,7 @@
     const veil = document.createElement('div');
     veil.className = 'veil';
     veil.innerHTML = `<img src="${ctx.shot}"><div class="selrect"></div>
-      <div class="hintbar"><b>drag</b> to select the region · <b>F</b> full view · <b>esc</b> cancel</div>`;
+      <div class="hintbar"><b>drag</b> to select the region · <span class="fullbtn"><b>F</b> full view</span> · <b>esc</b> cancel</div>`;
     root.appendChild(veil);
     const rect = veil.querySelector('.selrect');
 
@@ -182,10 +184,27 @@
       if (r.w < 8 || r.h < 8) { rect.style.display = 'none'; return; } // stray click
       toCanvas(ctx.shot, r).then((cropped) => { veil.remove(); panelPhase(root, ctx, cropped); });
     });
-    root.addEventListener('keydown', (e) => {
-      if (e.key.toLowerCase() === 'f' && veil.isConnected) {
-        toCanvas(ctx.shot, null).then((full) => { veil.remove(); panelPhase(root, ctx, full); });
-      }
+    const fullView = () => {
+      if (!veil.isConnected) return;
+      window.removeEventListener('keydown', onFullKey, true);
+      toCanvas(ctx.shot, null).then((full) => { veil.remove(); panelPhase(root, ctx, full); });
+    };
+    // F has to work wherever focus happens to be. Bound to the shadow root it only fired while
+    // focus was inside the overlay, and a single click on the page took it away — so the hint
+    // advertised a key that did nothing. Escape was already a window-level capture listener;
+    // this needs the same. Self-removing, so it cannot outlive the crop phase.
+    function onFullKey(e) {
+      if (!veil.isConnected) { window.removeEventListener('keydown', onFullKey, true); return; }
+      if (e.key.toLowerCase() !== 'f' || e.metaKey || e.ctrlKey || e.altKey) return;
+      e.preventDefault();
+      e.stopPropagation();
+      fullView();
+    }
+    window.addEventListener('keydown', onFullKey, true);
+    // Discoverability: the hint is also the button. A key nobody presses is a feature nobody has.
+    veil.querySelector('.fullbtn').addEventListener('pointerdown', (e) => {
+      e.stopPropagation();  // must not start a crop drag
+      fullView();
     });
     veil.querySelector('img').ondragstart = () => false;
     setTimeout(() => host.focus(), 0);
