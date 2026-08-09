@@ -19,6 +19,43 @@ Entry format:
 
 ---
 
+## 2026-08-09 — PR #17: a maintainer direct-push gets OCR review for free via a `nanobots/`-prefixed branch name, no board item involved (cycle 61)
+- **Outcome:** n/a (observational, not a dispatched item; PR #17 is not on the board and is
+  explicitly not meant to be merged)
+- **What worked / what didn't:** `main` advanced by two feature commits (`548a467`,
+  `bc25528`, dashboard/badge/push-notification work) pushed directly by the maintainer, then
+  a third (`8e2106b`, "fix: address OCR findings on PR #17, including a file-exfiltration
+  bug (0.34.0)") — all landed on `main` outside the loop's own dispatch path, same shape as
+  `#5`/`#16` before it. What's new this time: the maintainer opened PR #17 from a
+  `nanobots/dashboard-and-push` branch against a throwaway `review-base-0.34.0` branch
+  pinned at the prior `main` tip, purely so `nanobots-ocr.yml`'s trigger condition
+  (`startsWith(github.head_ref, 'nanobots/')`) would fire and review the diff — the PR body
+  says outright "This code is already on `main`... this PR exists so the loop's own OCR pass
+  reviews the diff; it is not meant to be merged." The first OCR pass (head `bc25528`) came
+  back `CHANGES_REQUESTED` with 25 findings, one HIGH: `curl -d` treats a body starting with
+  `@` as a filename to read and POST, and the escalation path's `BODY` was an attacker-
+  controlled issue title verbatim — a real file-exfiltration vector confirmed against a local
+  listener before the maintainer fixed it (switched to `--data-raw`) directly on the same
+  branch in `8e2106b`, which is also now `main`'s tip. Checked `main`'s own push-triggered
+  `CI` (green) separately from the PR's pull_request-triggered `CI` (one job red,
+  `onboarding-agent`, "fetch failed" against live DeepSeek — the same well-documented
+  transient flake as #16/#6, not a regression) before concluding no P0 applies: LOOP-PROMPT's
+  red-CI rule is scoped to `main`, and `main`'s actual CI is clean. OCR on the new head
+  (`8e2106b`) was still `in_progress` at ~16 minutes in when checked; left it for next cycle
+  per the "OCR still running" rule rather than waiting on it mid-cycle.
+- **Lesson:** a PR whose head branch matches `nanobots/*` is not necessarily a worker-
+  dispatched, board-tracked item — a maintainer can deliberately name a branch that way to
+  get the required OCR gate to review code already pushed directly to `main`, with a
+  throwaway base branch and a PR body that says explicitly it's not for merging. Check the
+  board (`gh project item-list`) before treating any open PR as an In Progress/In Review item
+  needing the merge-or-remediate treatment in LOOP-PROMPT step 4 — if it isn't on the board,
+  it's informational: read the OCR outcome for the institutional record, but never attempt to
+  merge it or dispatch remediation against it. Separately: this is a concrete validation of
+  why OCR is a required, non-optional gate rather than something only worker PRs need — it
+  caught a real HIGH-severity vuln the maintainer introduced in hand-written code, not just
+  in agent output.
+- **Applies to:** review | triage
+
 ## 2026-08-09 — #16 closed: maintainer fixed the dash/`:` subshell bug directly in `dfb59f7` (0.33.0); board reconciled Ready→Done (cycle 56)
 - **Outcome:** merged (`dfb59f7`, committed directly by the maintainer, not via a worker PR)
 - **What worked / what didn't:** Sync found `main` at `dfb59f7`, `CI` green on both jobs
