@@ -45,7 +45,7 @@
     padding: 14px 18px;
     overflow-x: auto;
   }
-  .install pre { color: #fff; font: inherit; margin: 0; }
+  .install pre { color: #fff; font: inherit; font-size: 13px; margin: 0; }
   .install .c { color: var(--dim); }
   .install .run { color: var(--accent); }
   .install button {
@@ -71,7 +71,8 @@
 
   /* minmax(0,1fr) — not 1fr — or the <pre> inside a column refuses to shrink and blows the
      grid out past the viewport instead of scrolling inside its own column. */
-  .steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: 44px; }
+  .steps { display: grid; grid-template-columns: 1.25fr 1fr; gap: 48px; margin-top: 44px; }
+  .steps > * { min-width: 0; }
   .step { min-width: 0; }
   .step-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 10px; }
   .num { font-size: 52px; line-height: 0.85; font-weight: 700; color: var(--accent); }
@@ -122,7 +123,7 @@
 
       <div class="install">
         <button onclick="navigator.clipboard.writeText(document.getElementById('cmd').textContent)">copy</button>
-<pre id="cmd"><span class="c"># one OpenAI-compatible endpoint — runs init, the review, and autofix</span>
+<pre id="cmd"><span class="c"># one OpenAI-compatible endpoint</span>
 export OCR_LLM_URL=https://api.deepseek.com/chat/completions
 export OCR_LLM_TOKEN=sk-...            <span class="c"># ← your provider key</span>
 export OCR_LLM_MODEL=deepseek-v4-flash
