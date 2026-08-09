@@ -108,8 +108,12 @@ async function addAttachment(dataUrl) {
   // ?issue=owner/repo#N — arriving from the dashboard or a notification. Select that repo and
   // prime the box rather than dropping the user on a blank chat with the context in their head.
   const wanted = new URLSearchParams(location.search).get('issue');
-  const ctx = wanted && wanted.match(/^(.+?)#(\d+)$/);
-  if (ctx && cfg.repos.includes(ctx[1])) $('repo').value = ctx[1];
+  const parsed = wanted && wanted.match(/^(.+?)#(\d+)$/);
+  // Only honour it if that repo is actually configured. Otherwise the prefill would ask about
+  // issue #N while the dropdown still points at an unrelated repo — a confidently wrong answer.
+  const ctx = parsed && cfg.repos.includes(parsed[1]) ? parsed : null;
+  if (ctx) $('repo').value = ctx[1];
+  else if (parsed) addMsg('agent', 'nanobots', `<b>${esc(parsed[1])}</b> isn't in your configured repos — add it in <a href="options.html">options</a> to chat about it.`);
 
   $('repo').addEventListener('change', resetForRepo);
   await resetForRepo();

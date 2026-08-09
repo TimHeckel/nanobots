@@ -19,9 +19,22 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create(POLL_ALARM, { periodInMinutes: POLL_MINUTES, delayInMinutes: 0.2 });
 });
-chrome.alarms.onAlarm.addListener((a) => { if (a.name === POLL_ALARM) poll(); });
+chrome.alarms.onAlarm.addListener((a) => {
+  // .catch: an unhandled rejection in a service worker kills the whole poll silently.
+  if (a.name === POLL_ALARM) poll().catch((e) => console.warn('[nanobots] poll failed:', e?.message));
+});
 
-async function poll() {
+// Two things start a poll — the alarm, and the dashboard asking for a refresh — and they read
+// `notified` at the start and write it at the end. Overlapping runs therefore lose each
+// other's writes and re-notify about the same blocked item. One in-flight run at a time; a
+// concurrent caller joins the run already going rather than starting a second.
+let inFlight = null;
+function poll() {
+  if (!inFlight) inFlight = runPoll().finally(() => { inFlight = null; });
+  return inFlight;
+}
+
+async function runPoll() {
   const cfg = await getConfig();
   if (!cfg.repos?.length) return setBadge(0);
 

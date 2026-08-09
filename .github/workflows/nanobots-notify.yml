@@ -28,9 +28,9 @@ on:
   issue_comment:
     types: [created]
 
-permissions:
-  contents: read
-  issues: read
+# Nothing here checks out code or calls the GitHub API — it reads the event payload and POSTs
+# to ntfy. So it needs no token at all.
+permissions: {}
 
 concurrency:
   group: nanobots-notify-${{ github.event.issue.number }}
@@ -92,11 +92,16 @@ jobs:
           # Click goes to the GitHub issue, never to the extension: this is opened on a phone.
           # --fail-with-body so a rejected push fails the step loudly instead of silently
           # leaving you thinking you are covered.
+          #
+          # --data-raw, NOT -d. `-d` treats a body starting with @ as a FILENAME to read and
+          # POST. BODY is the issue title, which anyone able to open an issue controls, so
+          # `-d` turned an issue titled `@/etc/passwd` into file exfiltration to the ntfy
+          # topic the moment it got labelled. --data-raw sends the string literally.
           curl --fail-with-body -sS -X POST "${SERVER}/${NTFY_TOPIC}" \
             -H "Title: ${TITLE}" \
             -H "Priority: ${PRIORITY}" \
             -H "Tags: ${TAGS}" \
             -H "Click: ${ISSUE_URL}" \
             ${NTFY_ACCESS_TOKEN:+-H "Authorization: Bearer ${NTFY_ACCESS_TOKEN}"} \
-            -d "${BODY}"
+            --data-raw "${BODY}"
           echo "pushed to ${SERVER}/${NTFY_TOPIC}"

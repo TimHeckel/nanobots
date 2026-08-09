@@ -86,7 +86,7 @@ ok(/\$\{i\.hash \|\| ''\}/.test(notify) || /i\.hash/.test(notify),
 
 // ── the poll must not scan every repo a token can reach ──────────────────────
 const bg = readFileSync(join(EXT, 'background.js'), 'utf8');
-const pollFn = bg.slice(bg.indexOf('async function poll()'), bg.indexOf('function setBadge'));
+const pollFn = bg.slice(bg.indexOf('async function runPoll()'), bg.indexOf('function setBadge'));
 ok(/repoHasLoop/.test(pollFn) && /withLoop\.push\(nwo\)/.test(pollFn) && /for \(const nwo of withLoop\)/.test(pollFn),
   'only repos that actually run a loop are scanned (a 94-repo token must not be swept)');
 ok(pollFn.indexOf('repoHasLoop') < pollFn.indexOf('scanRepo'),
@@ -94,6 +94,12 @@ ok(pollFn.indexOf('repoHasLoop') < pollFn.indexOf('scanRepo'),
 ok(/setBadge\(needsYou\.length\)/.test(bg), 'the badge counts exactly the blocked items');
 ok(/if \(!live\.has\(k\)\) delete notified\[k\]/.test(bg),
   'a resolved item is forgotten, so the same issue blocking again re-notifies');
+// Two triggers (alarm + dashboard) both read `notified` then write it; overlapping runs lose
+// writes and re-notify. Flagged by OCR on PR #17.
+ok(/let inFlight = null/.test(bg) && /inFlight = runPoll\(\)\.finally/.test(bg),
+  'concurrent polls join the run already in flight instead of racing');
+ok(/poll\(\)\.catch\(/.test(bg),
+  'the alarm-triggered poll catches, so a rejection cannot silently kill the whole cycle');
 
 // ── declared permissions ─────────────────────────────────────────────────────
 const mf = JSON.parse(readFileSync(join(EXT, 'manifest.json'), 'utf8'));
@@ -137,6 +143,46 @@ ok(!mf.host_permissions.some((h) => h === '<all_urls>' || h === '*://*/*'),
     'it has them subscribe before the test, or the test push lands nowhere');
   ok(cli.indexOf('F2. OPTIONAL PHONE PUSH') < cli.indexOf('G. CRONS'),
     'it runs before the crons step, while setup context is still fresh');
+}
+
+// ── the workflow's shell grep must accept exactly what the JS regex accepts ──
+// A shell script cannot import the JS regex, so the marker pattern exists three times: the
+// worker, loop.js, and this workflow. OCR flagged the duplication; the mitigation is to make
+// divergence fail here rather than silently stop notifying.
+{
+  const wf = readFileSync(join(ROOT, 'templates', 'github', 'workflows', 'nanobots-notify.yml'), 'utf8');
+  const grepPat = wf.match(/grep -oE '(<!--\[\[:space:\]\]\*nanobots:plan[^']*)'/)?.[1];
+  ok(Boolean(grepPat), 'the workflow greps for the plan marker');
+  if (grepPat) {
+    // POSIX ERE → JS: [[:space:]] is the only class used, and it maps to \s.
+    const asJs = new RegExp(grepPat.replace(/\[\[:space:\]\]/g, '\\s'));
+    const cases = [
+      ['<!-- nanobots:plan issue=7 hash=a1b2c3d4e5f6 -->', true, 'the canonical marker'],
+      ['<!--nanobots:plan issue=7 hash=a1b2c3d4e5f6-->', true, 'no surrounding spaces'],
+      ['<!--  nanobots:plan   issue=42   hash=0123456789ab  -->', true, 'extra whitespace'],
+      ['<!-- nanobots:plan issue=7 hash=SHORT -->', false, 'a non-hex hash'],
+      ['<!-- nanobots:plan issue=7 hash=a1b2c3d4e5f -->', false, 'an 11-char hash'],
+      ['reply with /nanobots start a1b2c3d4e5f6 to approve', false, 'prose, not a marker'],
+      ['see the nanobots:plan docs', false, 'a bare mention of the protocol'],
+    ];
+    for (const [input, want, label] of cases) {
+      const shellSays = asJs.test(input);
+      const jsSays = PLAN_MARKER.test(input);
+      ok(shellSays === want, `workflow grep: ${label} → ${want ? 'match' : 'no match'}`);
+      ok(shellSays === jsSays, `workflow grep AGREES with the JS regex on: ${label}`);
+    }
+  }
+}
+
+// ── the HIGH finding from OCR on PR #17 ──────────────────────────────────────
+// `curl -d` reads a body starting with @ as a FILENAME and POSTs its contents. BODY is the
+// issue title, which anyone able to open an issue controls, so an issue titled `@/etc/passwd`
+// exfiltrated that file to the ntfy topic the moment it was labelled.
+{
+  const wf = readFileSync(join(ROOT, 'templates', 'github', 'workflows', 'nanobots-notify.yml'), 'utf8');
+  ok(/--data-raw "\$\{BODY\}"/.test(wf), 'the body is sent with --data-raw');
+  ok(!/[^-]-d "\$\{BODY\}"/.test(wf), 'never plain -d, which would read @filename off the runner');
+  ok(/permissions: \{\}/.test(wf), 'the job requests no token — it never calls the GitHub API');
 }
 
 if (fails.length) {

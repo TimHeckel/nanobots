@@ -51,22 +51,39 @@ function renderLive(state) {
         <a href="${esc(i.url)}" target="_blank">${esc(i.nwo)}#${i.number}</a> — ${esc(i.title)}</div>`).join('')
     : '<div>Nothing in flight.</div>';
 
-  // Arriving from a notification: scroll to and highlight the item it was about.
+  // Arriving from a notification: scroll to and highlight the item it was about. ONCE —
+  // renderLive re-runs on every poll, and yanking the viewport back every 10 minutes on a page
+  // someone deliberately left open would be maddening.
   const focus = new URLSearchParams(location.hash.slice(1)).get('focus');
-  if (focus) {
+  if (focus && !focusDone) {
     const el = document.getElementById(`i-${focus.replace('#', '-')}`);
-    if (el) { el.classList.add('row-focus'); el.scrollIntoView({ block: 'center' }); }
+    if (el) { el.classList.add('row-focus'); el.scrollIntoView({ block: 'center' }); focusDone = true; }
   }
 }
+let focusDone = false;
 
 (async function live() {
-  const { loopState } = await chrome.storage.local.get('loopState');
+  let loopState;
+  try {
+    ({ loopState } = await chrome.storage.local.get('loopState'));
+  } catch {
+    // Extension context invalidated — reloaded or updated while this page was open.
+    document.getElementById('beats').innerHTML =
+      '<div class="beat">Extension was reloaded — refresh this page.</div>';
+    return;
+  }
   renderLive(loopState);
   // Repaint when the next poll lands, so a page left open stays truthful.
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.loopState) renderLive(changes.loopState.newValue);
   });
-  chrome.runtime.sendMessage({ kind: 'nanobots-poll-now' }).catch(() => {});
+  // Ask for a refresh, but only if the stored scan is actually stale. Without this, opening
+  // the dashboard N times asks for N scans — which contradicted the comment above claiming
+  // this page is free to open. The background side also de-dupes concurrent runs.
+  const STALE_MS = 2 * 60 * 1000;
+  if (!loopState || Date.now() - (loopState.at || 0) > STALE_MS) {
+    chrome.runtime.sendMessage({ kind: 'nanobots-poll-now' }).catch(() => {});
+  }
 })();
 
 // ── what you filed from this browser ─────────────────────────────────────────
