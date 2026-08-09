@@ -12,12 +12,15 @@ import { notifyChrome, notifyNtfy, itemKey } from './notify.js';
 
 const POLL_ALARM = 'nanobots-poll';
 const POLL_MINUTES = 10;
+// 0.5 min, not less: Chrome clamps alarm delays below 30s, so a smaller value does not fire
+// sooner — it just makes the code claim something untrue.
+const FIRST_POLL_MINUTES = 0.5;
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms.create(POLL_ALARM, { periodInMinutes: POLL_MINUTES, delayInMinutes: 0.2 });
+  chrome.alarms.create(POLL_ALARM, { periodInMinutes: POLL_MINUTES, delayInMinutes: FIRST_POLL_MINUTES });
 });
 chrome.runtime.onStartup.addListener(() => {
-  chrome.alarms.create(POLL_ALARM, { periodInMinutes: POLL_MINUTES, delayInMinutes: 0.2 });
+  chrome.alarms.create(POLL_ALARM, { periodInMinutes: POLL_MINUTES, delayInMinutes: FIRST_POLL_MINUTES });
 });
 chrome.alarms.onAlarm.addListener((a) => {
   // .catch: an unhandled rejection in a service worker kills the whole poll silently.
@@ -36,7 +39,13 @@ function poll() {
 
 async function runPoll() {
   const cfg = await getConfig();
-  if (!cfg.repos?.length) return setBadge(0);
+  if (!cfg.repos?.length) {
+    // Clear the derived state too. Leaving a stale `notified` map behind means re-adding a
+    // repo later can silently suppress the first alert for an item still blocked.
+    setBadge(0);
+    await chrome.storage.local.set({ loopState: { at: Date.now(), repos: [], needsYou: [] }, notified: {} });
+    return;
+  }
 
   // Only repos that actually run a loop. Scanning the other ~90 a token can reach would burn
   // rate limit to learn nothing — repoHasLoop is cached, so this is close to free.

@@ -41,11 +41,21 @@ jobs:
     # Cheap gate first so the runner isn't started for every comment on the repo. The plan
     # marker check has to happen in the step (expressions can't do regex), but this keeps the
     # job to label events and comments that at least mention the marker.
+    #
+    # author_association matters on a public repo: the plan marker is just text, so without
+    # this any drive-by commenter could forge one and push a notification saying whatever they
+    # liked to your phone. Only people who could actually approve work can trigger the
+    # approval alert. (The label branch needs no such check — applying a label already
+    # requires write access.)
     if: >-
       vars.NTFY_TOPIC != ''
       && (
         (github.event_name == 'issues' && github.event.label.name == '{{HUMAN_LABEL}}')
-        || (github.event_name == 'issue_comment' && contains(github.event.comment.body, 'nanobots:plan'))
+        || (
+             github.event_name == 'issue_comment'
+             && contains(github.event.comment.body, 'nanobots:plan')
+             && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+           )
       )
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -74,9 +84,14 @@ jobs:
             # Only a REAL plan marker counts. The loop's prose routinely mentions the protocol
             # while explaining approval, and notifying on that would cry wolf constantly.
             # Same literal shape daytona-worker.mjs matches on.
-            HASH=$(printf '%s' "$COMMENT_BODY" \
+            # grep exits 1 on no-match, which is an expected outcome here, not an error — but
+            # a blanket `|| true` would also swallow a real failure and silently look like
+            # "no plan". Take the no-match branch explicitly instead.
+            MARKER=$(printf '%s' "$COMMENT_BODY" \
               | grep -oE '<!--[[:space:]]*nanobots:plan[[:space:]]+issue=[0-9]+[[:space:]]+hash=[0-9a-f]{12}[[:space:]]*-->' \
-              | grep -oE 'hash=[0-9a-f]{12}' | cut -d= -f2 | tail -1 || true)
+              | tail -1) || MARKER=""
+            HASH=${MARKER##*hash=}
+            HASH=${HASH%%[![:alnum:]]*}
             if [ -z "$HASH" ]; then
               echo "comment mentions the protocol but carries no plan marker — not a plan, no push."
               exit 0
@@ -102,6 +117,13 @@ jobs:
             -H "Priority: ${PRIORITY}" \
             -H "Tags: ${TAGS}" \
             -H "Click: ${ISSUE_URL}" \
+            `# The quotes inside ${VAR:+...} are shell syntax, not literal characters: the` \
+            `# alternate value is parsed as part of the word, so this yields exactly two args` \
+            `# (-H and the full header) when set, and nothing at all when unset. Verified in` \
+            `# sh, dash and bash, including a token containing spaces.` \
             ${NTFY_ACCESS_TOKEN:+-H "Authorization: Bearer ${NTFY_ACCESS_TOKEN}"} \
             --data-raw "${BODY}"
-          echo "pushed to ${SERVER}/${NTFY_TOPIC}"
+          # Deliberately does NOT echo the topic. On the public server the topic name is the
+          # only thing keeping strangers out, and workflow logs are readable by anyone with
+          # read access to the repo — printing it here would hand the alert channel away.
+          echo "pushed to ${SERVER}"

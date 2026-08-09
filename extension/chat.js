@@ -113,10 +113,15 @@ async function addAttachment(dataUrl) {
   // issue #N while the dropdown still points at an unrelated repo — a confidently wrong answer.
   const ctx = parsed && cfg.repos.includes(parsed[1]) ? parsed : null;
   if (ctx) $('repo').value = ctx[1];
-  else if (parsed) addMsg('agent', 'nanobots', `<b>${esc(parsed[1])}</b> isn't in your configured repos — add it in <a href="options.html">options</a> to chat about it.`);
 
   $('repo').addEventListener('change', resetForRepo);
   await resetForRepo();
+
+  // AFTER resetForRepo, which clears #log — saying this before it would append the warning and
+  // then immediately wipe it, so the user would never see why their link did nothing.
+  if (parsed && !ctx) {
+    addMsg('agent', 'nanobots', `<b>${esc(parsed[1])}</b> isn't in your configured repos, so I can't open issue #${esc(parsed[2])} — add it in <a href="options.html">options</a>.`);
+  }
 
   if (ctx) {
     $('input').value = `Catch me up on issue #${ctx[2]} — what is it, what has the loop done so far, and what is it waiting on?`;

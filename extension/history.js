@@ -75,7 +75,11 @@ let focusDone = false;
   renderLive(loopState);
   // Repaint when the next poll lands, so a page left open stays truthful.
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.loopState) renderLive(changes.loopState.newValue);
+    if (area !== 'local' || !changes.loopState) return;
+    // A throw here would leave the page frozen on stale data with no clue why, since nothing
+    // else repaints it.
+    try { renderLive(changes.loopState.newValue); }
+    catch (e) { console.warn('[nanobots] dashboard repaint failed:', e?.message); }
   });
   // Ask for a refresh, but only if the stored scan is actually stale. Without this, opening
   // the dashboard N times asks for N scans — which contradicted the comment above claiming

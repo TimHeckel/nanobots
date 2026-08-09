@@ -185,6 +185,31 @@ ok(!mf.host_permissions.some((h) => h === '<all_urls>' || h === '*://*/*'),
   ok(/permissions: \{\}/.test(wf), 'the job requests no token — it never calls the GitHub API');
 }
 
+// ── second OCR round on PR #17 ───────────────────────────────────────────────
+{
+  const wf = readFileSync(join(ROOT, 'templates', 'github', 'workflows', 'nanobots-notify.yml'), 'utf8');
+  // A plan marker is just text. On a public repo anyone could comment a forged one and push
+  // whatever they liked to the owner's phone.
+  ok(/author_association/.test(wf) && /OWNER","MEMBER","COLLABORATOR/.test(wf),
+    'only people who could actually approve work can trigger the approval alert');
+  // The topic IS the access control on the public server, and workflow logs are readable.
+  ok(!/echo "pushed to \$\{SERVER\}\/\$\{NTFY_TOPIC\}"/.test(wf),
+    'the topic is never printed to the workflow log');
+  // A blanket `|| true` swallowed real failures as well as grep's expected no-match.
+  ok(!/\|\| true\)/.test(wf), 'no blanket `|| true` masking real pipeline failures');
+
+  const bgSrc = readFileSync(join(EXT, 'background.js'), 'utf8');
+  ok(/FIRST_POLL_MINUTES = 0\.5/.test(bgSrc),
+    'the first-poll delay is >= Chrome/s 30s alarm floor, so the code does not claim a delay it cannot get');
+  ok(/notified: \{\}/.test(bgSrc),
+    'clearing the repo list clears derived state too, so re-adding one cannot suppress its first alert');
+
+  // The warning has to come AFTER resetForRepo, which wipes the log.
+  const chatSrc = readFileSync(join(EXT, 'chat.js'), 'utf8');
+  ok(chatSrc.indexOf('await resetForRepo()') < chatSrc.indexOf("isn't in your configured repos"),
+    'the unconfigured-repo warning survives resetForRepo clearing the log');
+}
+
 if (fails.length) {
   console.error(`\n${fails.length} FAILED:`);
   for (const f of fails) console.error(`  ✗ ${f}`);
