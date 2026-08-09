@@ -19,6 +19,33 @@ Entry format:
 
 ---
 
+## 2026-08-09 — #16 closed: maintainer fixed the dash/`:` subshell bug directly in `dfb59f7` (0.33.0); board reconciled Ready→Done (cycle 56)
+- **Outcome:** merged (`dfb59f7`, committed directly by the maintainer, not via a worker PR)
+- **What worked / what didn't:** Sync found `main` at `dfb59f7`, `CI` green on both jobs
+  (`test`: "46 install.sh tests passed"; `onboarding-agent`: "29 onboarding-agent e2e
+  assertions passed") — the exact two jobs #16 reported red. The commit message confirms the
+  root cause matched #16's own stated hypothesis almost exactly: `:` is a POSIX special
+  builtin, so a redirection error on it (the unsubshelled `/dev/tty` probe,
+  `: < /dev/tty`) kills a non-interactive shell outright, even inside an `if` condition — on
+  dash (Ubuntu's default `/bin/sh`) this exited 2 and printed nothing, so the no-terminal help
+  text the test asserted on never appeared; macOS's bash-in-sh-mode is forgiving, which is why
+  it only surfaced in CI. Fix wraps the probe in a subshell. Verified by reading the actual CI
+  run log (not just the diff) before closing, consistent with the "confirm a live run got past
+  it, not just that the code changed" lesson from #7/#8. #16 had never been claimed by a worker
+  (plan posted cycle 35, no `/nanobots start` reply ever landed) — the maintainer fixed it
+  out-of-band, same shape as `#5`, `#2`/PR #9, and `#6`/`#10` before it. Closed the issue with
+  the confirming evidence, then moved the board item Ready→Done by hand — nothing does this
+  automatically for a direct-commit resolution.
+- **Lesson:** this is the fifth time a board item needed manual Ready/Verify/In
+  Review→Done reconciliation after a maintainer resolved the underlying issue outside the
+  loop's own dispatch path. Promoted to a standing rule this cycle (`RECIPES.md` "touching the
+  GitHub API" #11): diff board status against live issue/PR state for every non-Done item,
+  every cycle, as the default first check rather than something reached for only once an item
+  already looks stuck. Also distilled the 2026-08-06 scheduled-dispatcher retry entry into the
+  same recipe (#12) while doing this pass, since both entries were sitting in the ~10-entry
+  buffer this file's own header calls for distilling.
+- **Applies to:** review | triage
+
 ## 2026-08-08 — #16 still open: `test` job persists across 3 more docs-only pushes; `onboarding-agent` flaked twice more, cleared on rerun both times (cycle 55)
 - **Outcome:** n/a (Sync-time confirmation during cycle 55, not a dispatched item; #16 still
   Ready, unapproved)
@@ -86,7 +113,7 @@ Entry format:
   commits under suspicion ever got their own run before assuming a regression is fresh.
 - **Applies to:** triage | prompt
 
-## 2026-08-02 — #15 (nanobots:ext) closed: same "test" pattern as #14, guidance held (cycle 12)
+## 2026-08-02 — #15 (nanobots:ext) closed: same "test" pattern as #14, guidance held (cycle 12) [distilled]
 - **Outcome:** closed `not planned` (not added to board)
 - **What worked / what didn't:** New inbox item, body just "test" plus a screenshot of
   `sleeperhit.studio/writer` — an unrelated app, not this repo. Same shape as #14
@@ -109,7 +136,7 @@ Entry format:
   asked).
 - **Applies to:** triage
 
-## 2026-08-02 — #11/PR #12 merged: second real end-to-end worker run, clean on every check; board reconciled In Review→Done (cycle 11)
+## 2026-08-02 — #11/PR #12 merged: second real end-to-end worker run, clean on every check; board reconciled In Review→Done (cycle 11) [distilled]
 - **Outcome:** merged (`TimHeckel` merged PR #12 at 17:01:17Z; OCR review on `976ae324578e`
   came back `APPROVED` — "clean")
 - **What worked / what didn't:** Cycle 10 posted #11's versioned plan (hash `399852620514`),
@@ -132,7 +159,7 @@ Entry format:
   non-Done item every cycle, per the recipe already added after #2/#6/#10.
 - **Applies to:** review
 
-## 2026-08-02 — #14 (nanobots:ext) closed: filed with no actual report content, wrong app entirely
+## 2026-08-02 — #14 (nanobots:ext) closed: filed with no actual report content, wrong app entirely [distilled]
 - **Outcome:** rejected (closed `not planned`, explained why, not moved to the board)
 - **What worked / what didn't:** #14 arrived via the browser extension labeled
   `nanobots:ext`/`enhancement`, body "testing the upload only" plus a screenshot of an
@@ -151,7 +178,7 @@ Entry format:
   feedback loop.
 - **Applies to:** triage | prompt
 
-## 2026-08-02 — #2/PR #9 closed: human merged the first real worker PR; board item needed manual reconciliation from Verify to Done
+## 2026-08-02 — #2/PR #9 closed: human merged the first real worker PR; board item needed manual reconciliation from Verify to Done [distilled]
 - **Outcome:** merged (PR #9 merged by a human at 16:26:45Z per this repo's dogfood policy;
   issue #2 auto-closed via `Closes #2`)
 - **What worked / what didn't:** Cycle 9 moved #2 to **Verify** and handed the merge decision
@@ -165,7 +192,7 @@ Entry format:
   that look stuck.
 - **Applies to:** review
 
-## 2026-08-02 — #6 and #10 closed by the maintainer directly (`83f61b3`, 0.27.1); board reconciled Blocked→Done and Ready→Done
+## 2026-08-02 — #6 and #10 closed by the maintainer directly (`83f61b3`, 0.27.1); board reconciled Blocked→Done and Ready→Done [distilled]
 - **Outcome:** merged (maintainer committed `83f61b3` straight to `main`, closing both issues;
   neither issue's board item had moved)
 - **What worked / what didn't:** `83f61b3`'s commit message gives the real root causes, and
@@ -221,7 +248,7 @@ Entry format:
   the stale board or silently re-deriving the "right" status without a paper trail.
 - **Applies to:** triage | review
 
-## 2026-08-06 — `nanobots-worker.yml` scheduled runs failed twice in a row on "job was not acquired by Runner", resolved on manual retry
+## 2026-08-06 — `nanobots-worker.yml` scheduled runs failed twice in a row on "job was not acquired by Runner", resolved on manual retry [distilled]
 - **Outcome:** n/a (a Sync-time judgment call during cycle 40, not a dispatched item; no
   code change)
 - **What worked / what didn't:** the 17:17 and 18:45 scheduled `nanobots-worker.yml` runs

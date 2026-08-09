@@ -101,6 +101,24 @@ are expensive to find later.
     exist and who authored them — a cheap, high-signal sanity check for "is the core pipeline
     working at all" that's easy to skip when triaging item-by-item. `[distilled from
     2026-08-02 #7]`
+11. **Every review-outcomes pass, diff board status against live issue/PR state for *every*
+    non-Done item — not only ones that already look stuck.** Nothing moves a board item when
+    a merge, a maintainer direct-commit, or a maintainer-driven close happens outside the
+    loop's own dispatch path (board changes can't fire repo workflows; the loop only polls on
+    its cadence). This has recurred on five separate occasions (`#5`/2026-08-01,
+    `#2`/PR #9/2026-08-02, `#6`+`#10`/2026-08-02, `#11`/PR #12/2026-08-02, `#16`/2026-08-09) —
+    each time the issue or PR was already resolved on GitHub and only the board field was
+    stale. Treat this as the default first check on every non-Done item, not a special case
+    you reach for only when something already looks wrong. `[distilled from 2026-08-02
+    #2/PR #9, #6/#10, #11/PR #12; 2026-08-09 #16]`
+12. **A scheduled dispatcher cron failing is worth one cheap manual retry before treating it
+    as the same severity as red `main` CI.** A `workflow_dispatch` re-run of the same workflow
+    is a safe, evidence-gathering probe — but only when nothing has an active `/nanobots
+    start` approval that a manual dispatch could race into a duplicate real claim. If the
+    manual retry comes back clean, log it as a transient infra blip (e.g. GitHub-hosted-runner
+    capacity) rather than escalating; if the *same* job keeps flaking across multiple cycles,
+    that crosses into "file a chore to make it resilient" per TRIAGE.md, not another silent
+    retry. `[distilled from 2026-08-06]`
 
 ## recipe: trusting a gate
 
