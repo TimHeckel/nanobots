@@ -100,6 +100,9 @@ const ENGINE_OWNED = [
   { src: 'nanobots/ocr-autofix-worker.mjs', dest: '.nanobots/ocr-autofix-worker.mjs' },
   { src: 'nanobots/ocr-autofix-controller.mjs', dest: '.nanobots/ocr-autofix-controller.mjs' },
   { src: 'github/workflows/nanobots-ocr.yml', dest: '.github/workflows/nanobots-ocr.yml' },
+  // Always installed, but inert unless NTFY_TOPIC is set — the job's own `if` gates it, so an
+  // unconfigured repo never starts a runner for it.
+  { src: 'github/workflows/nanobots-notify.yml', dest: '.github/workflows/nanobots-notify.yml' },
   { src: 'github/ISSUE_TEMPLATE/feature-request.yml', dest: '.github/ISSUE_TEMPLATE/feature-request.yml' },
   { src: 'github/ISSUE_TEMPLATE/bug-report.yml', dest: '.github/ISSUE_TEMPLATE/bug-report.yml' },
   { src: 'github/ISSUE_TEMPLATE/chore-tech-debt.yml', dest: '.github/ISSUE_TEMPLATE/chore-tech-debt.yml' },
@@ -660,6 +663,32 @@ F. OPTIONAL AUTOFIX RESPONDER. Explain what it actually does before asking: when
    Then ask_choice: ["Yes — let it try to fix blocking findings", "No — review only, I'll fix them myself"].
    If yes: set_secret OCR_AUTOFIX_TOKEN (falls back to OCR_LLM_TOKEN), set_variable OCR_AUTOFIX_MODEL and OCR_AUTOFIX_URL (fall back to OCR_LLM_*), set_variable OCR_AUTOFIX_ENABLED=true.
 
+F2. OPTIONAL PHONE PUSH (ntfy). Offer it, do not push it — but explain WHY it exists, because
+   the problem it solves is invisible until it bites: the loop stops dead on two things, a
+   summon-human escalation and a plan nobody has approved, and until someone notices, nothing
+   moves. People discover this a day later. An installed workflow pushes the moment either
+   happens; it needs no browser, no extension, and no account.
+   ask_choice: ["Yes — set up phone notifications", "No thanks"].
+   If yes, walk them through it in this order and do not skip a step:
+   1. message_user: install the ntfy app (iOS/Android/desktop, https://ntfy.sh) or just open
+      the website — it works in a browser tab too.
+   2. Explain the topic honestly: a topic is a plain string, and on the public server it is the
+      ONLY thing keeping strangers out. Anyone who guesses it reads your alerts. So it must be
+      long and random, not "nanobots" or your repo name. OFFER TO GENERATE ONE and, unless they
+      supply their own, use exactly this shape: nanobots- followed by 12 random lowercase
+      alphanumerics that you make up on the spot. Tell them the topic verbatim and have them
+      subscribe to it in the app BEFORE continuing, so the test below actually lands.
+   3. ask_choice whether the topic is protected by an access token (self-hosted or a paid
+      account): ["It's a public topic — no token", "I have an access token"]. Only if they have
+      one, ask_user (secret:true) and set_secret NTFY_ACCESS_TOKEN. A public topic needs none.
+   4. If they use a self-hosted server rather than ntfy.sh, ask for the base URL and
+      set_variable NTFY_SERVER. Otherwise skip it — the workflow defaults to ntfy.sh.
+   5. set_variable NTFY_TOPIC to the topic. The notify workflow does nothing at all until this
+      is set, so this is the switch.
+   6. Tell them to expect a real alert the first time the loop escalates or posts a plan, and
+      that they can prove it now with:
+      curl -d "nanobots test" ntfy.sh/<their-topic>
+
 G. CRONS. Explain the consequence before asking, because this is the switch that makes the loop autonomous: enabling them means the outer loop starts triaging on a timer and workers start claiming approved work without you present. Note what still gates it — a worker will not claim anything until a human replies "/nanobots start <hash>" to the plan comment — and note that the crons do nothing until the workflow files are committed and pushed.
    Then ask_choice: ["Not yet — I'll run a cycle by hand first and watch what it does (recommended)", "Yes — enable both crons now"].
    Only on "Yes": set_variable NANOBOTS_OUTER_ENABLED=1 and NANOBOTS_WORKER_ENABLED=1.
@@ -698,6 +727,9 @@ function dryRunAnswer(question) {
       }
     } catch { /* malformed script — fall through to the heuristics */ }
   }
+  // Asked BEFORE the credential rule: an ntfy topic is not a credential on the public server
+  // and the agent should get something topic-shaped back, not a sentinel.
+  if (/\bntfy\b/i.test(question) && /\btopic\b/i.test(question)) return 'nanobots-dryrun9x2k';
   if (/\b(token|key|pem|secret|pat|credential)\b/i.test(question)) return 'DRYRUN-NOT-A-REAL-CREDENTIAL';
   // Anything that reads as a confirmation gets an affirmative. Answering "" (accept default)
   // to "do you have X ready?" makes the agent skip the step, which produced false failures.

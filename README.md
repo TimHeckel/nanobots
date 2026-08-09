@@ -55,6 +55,13 @@ nanobots does **not** start reviewing and blocking the pull requests your team o
 Your repo almost certainly has its own review process and taking it over isn't nanobots'
 business. Set `NANOBOTS_OCR_ALL_PRS=true` if you do want it on everything.
 
+**You get told when it stops.** The loop halts on exactly two things: a `summon-human`
+escalation, and a plan nobody has approved. Both are invisible until someone looks, so an
+installed workflow pushes a phone notification the moment either happens — event-driven, no
+browser, no polling, no account. Optional and inert until you set `NTFY_TOPIC`;
+[ntfy](https://ntfy.sh) is free and `init` walks you through it. The browser extension also
+badges its icon with the same count.
+
 **Humans are a gate, not a bottleneck.** Nothing gets built until a collaborator replies
 `/nanobots start <hash>` to a versioned plan. Hard-gate areas are triaged but never
 auto-dispatched. When the bots are out of their depth they `summon-human` and stop.

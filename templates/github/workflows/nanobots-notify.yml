@@ -1,0 +1,102 @@
+# nanobots:engine-owned v0.1 — re-rendered by `nanobots update`
+#
+# Pushes a phone notification the moment the loop STOPS and needs a person. Optional: does
+# nothing at all unless the NTFY_TOPIC variable is set.
+#
+# WHY THIS IS A WORKFLOW AND NOT A PROMPT INSTRUCTION: the loop is an agent, and asking an
+# agent to remember to notify is the same instruction-following gamble that had it skipping
+# the manual board step and storing unverified Daytona keys. These triggers fire off GitHub's
+# own events, so the notification cannot be forgotten, and it cannot fire for anything other
+# than the two states that genuinely block work:
+#
+#   1. the human-gate label lands on an issue  → the loop escalated and stopped
+#   2. a plan comment is posted                → nothing is built until someone approves it
+#
+# The alternative is polling from the browser extension, which needs the browser open and can
+# be up to a poll interval late. This fires on the event itself, with no browser at all.
+#
+# Set up by `nanobots init`, or by hand:
+#   gh variable set NTFY_TOPIC --body 'nanobots-<something-unguessable>'
+#   gh secret set NTFY_ACCESS_TOKEN     # only for a protected topic
+#   gh variable set NTFY_SERVER --body 'https://ntfy.sh'   # only for self-hosted
+
+name: Nanobots Notify
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: nanobots-notify-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  push:
+    # Cheap gate first so the runner isn't started for every comment on the repo. The plan
+    # marker check has to happen in the step (expressions can't do regex), but this keeps the
+    # job to label events and comments that at least mention the marker.
+    if: >-
+      vars.NTFY_TOPIC != ''
+      && (
+        (github.event_name == 'issues' && github.event.label.name == '{{HUMAN_LABEL}}')
+        || (github.event_name == 'issue_comment' && contains(github.event.comment.body, 'nanobots:plan'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Push
+        env:
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ vars.NTFY_SERVER }}
+          NTFY_ACCESS_TOKEN: ${{ secrets.NTFY_ACCESS_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          SERVER="${NTFY_SERVER:-https://ntfy.sh}"
+          SERVER="${SERVER%/}"
+
+          if [ "$EVENT" = "issues" ]; then
+            TITLE="nanobots: needs you — #${ISSUE_NUM}"
+            TAGS="rotating_light"
+            PRIORITY="high"
+            BODY="${ISSUE_TITLE}"
+          else
+            # Only a REAL plan marker counts. The loop's prose routinely mentions the protocol
+            # while explaining approval, and notifying on that would cry wolf constantly.
+            # Same literal shape daytona-worker.mjs matches on.
+            HASH=$(printf '%s' "$COMMENT_BODY" \
+              | grep -oE '<!--[[:space:]]*nanobots:plan[[:space:]]+issue=[0-9]+[[:space:]]+hash=[0-9a-f]{12}[[:space:]]*-->' \
+              | grep -oE 'hash=[0-9a-f]{12}' | cut -d= -f2 | tail -1 || true)
+            if [ -z "$HASH" ]; then
+              echo "comment mentions the protocol but carries no plan marker — not a plan, no push."
+              exit 0
+            fi
+            TITLE="nanobots: approve to build — #${ISSUE_NUM}"
+            TAGS="hourglass"
+            PRIORITY="default"
+            # printf, not a literal multi-line string: an unindented continuation line would
+            # dedent straight out of this YAML block scalar and break the workflow file.
+            BODY=$(printf '%s\n\nApprove with:  /nanobots start %s' "$ISSUE_TITLE" "$HASH")
+          fi
+
+          # Click goes to the GitHub issue, never to the extension: this is opened on a phone.
+          # --fail-with-body so a rejected push fails the step loudly instead of silently
+          # leaving you thinking you are covered.
+          curl --fail-with-body -sS -X POST "${SERVER}/${NTFY_TOPIC}" \
+            -H "Title: ${TITLE}" \
+            -H "Priority: ${PRIORITY}" \
+            -H "Tags: ${TAGS}" \
+            -H "Click: ${ISSUE_URL}" \
+            ${NTFY_ACCESS_TOKEN:+-H "Authorization: Bearer ${NTFY_ACCESS_TOKEN}"} \
+            -d "${BODY}"
+          echo "pushed to ${SERVER}/${NTFY_TOPIC}"

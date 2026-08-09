@@ -103,6 +103,42 @@ ok(mf.host_permissions.includes('https://ntfy.sh/*'), 'ntfy.sh declared as a fix
 ok(!mf.host_permissions.some((h) => h === '<all_urls>' || h === '*://*/*'),
   'still a fixed host list, never a wildcard');
 
+// ── repo-side push: the loop notifies the moment it blocks ──────────────────
+// The extension polls every 10 minutes from a browser that has to be open. The workflow fires
+// on GitHub's own events, needs no browser, and cannot be forgotten by an agent.
+{
+  const wf = readFileSync(join(ROOT, 'templates', 'github', 'workflows', 'nanobots-notify.yml'), 'utf8');
+  ok(/vars\.NTFY_TOPIC != ''/.test(wf),
+    'the whole workflow is inert until NTFY_TOPIC is set — installing it costs an unconfigured repo nothing');
+  ok(/types: \[labeled\]/.test(wf) && /types: \[created\]/.test(wf),
+    'triggers on the label landing and on a comment, not on a timer');
+  ok(/github\.event\.label\.name == '\{\{HUMAN_LABEL\}\}'/.test(wf),
+    'uses the repo/s OWN human-gate label, which is configurable at install time');
+  // The loop's prose explains the approval command constantly; notifying on that would cry
+  // wolf until the alerts get muted, which is worse than no alerts.
+  ok(/grep -oE '<!--\[\[:space:\]\]\*nanobots:plan/.test(wf),
+    'a plan push requires a REAL marker, not prose that mentions the protocol');
+  ok(/Click: \$\{ISSUE_URL\}/.test(wf), 'the push links to the GitHub issue (opened on a phone)');
+  ok(/--fail-with-body/.test(wf), 'a rejected push fails loudly instead of silently pretending to cover you');
+  ok(/\$\{NTFY_ACCESS_TOKEN:\+/.test(wf), 'the auth header is omitted entirely for a public topic');
+  ok(!/secrets\.NTFY_ACCESS_TOKEN[^}]*\}\}"?\s*$/m.test(wf.split('run:')[1] || ''),
+    'the token is passed via env, never interpolated into the run script');
+}
+
+// ── onboarding walks the user through it ─────────────────────────────────────
+{
+  const cli = readFileSync(join(ROOT, 'src', 'cli.mjs'), 'utf8');
+  ok(/F2\. OPTIONAL PHONE PUSH/.test(cli), 'init has a dedicated ntfy step');
+  ok(/set_variable NTFY_TOPIC/.test(cli), 'the step sets NTFY_TOPIC, which is the on switch');
+  ok(/ONLY thing keeping strangers out/.test(cli),
+    'the step is honest that a public topic name is the only access control');
+  ok(/OFFER TO GENERATE ONE/.test(cli), 'it offers to generate an unguessable topic rather than let someone type "nanobots"');
+  ok(/subscribe to it in the app BEFORE continuing/.test(cli),
+    'it has them subscribe before the test, or the test push lands nowhere');
+  ok(cli.indexOf('F2. OPTIONAL PHONE PUSH') < cli.indexOf('G. CRONS'),
+    'it runs before the crons step, while setup context is still fresh');
+}
+
 if (fails.length) {
   console.error(`\n${fails.length} FAILED:`);
   for (const f of fails) console.error(`  ✗ ${f}`);

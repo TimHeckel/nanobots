@@ -184,11 +184,15 @@
   </section>
 
     <h3 style="margin-top:22px">Phone push via ntfy <span class="dim">(optional)</span></h3>
-    <p class="sub">Chrome already notifies you on this machine when the loop stops and needs a
-      person. Add an <a href="https://ntfy.sh" target="_blank">ntfy</a> topic to get the same
-      alert on your phone. Install the ntfy app, subscribe to the topic, done — no account.
-      <b>Pick something unguessable:</b> on the public server the topic name is the only thing
-      keeping strangers out, and anyone who knows it can read your alerts.</p>
+    <p class="sub"><b>Most people should leave this blank.</b> <code>nanobots init</code> offers
+      to set the same push up <i>in your repo</i>, and that version is better: it fires the
+      instant the loop blocks, whether or not this browser is open, and needs no extension at
+      all. Set a topic here only if you did <i>not</i> configure it during install — otherwise
+      you get every alert twice.</p>
+    <p class="sub">This browser already notifies you on this machine either way. If you do use
+      a topic here: install the <a href="https://ntfy.sh" target="_blank">ntfy</a> app,
+      subscribe, done — no account. <b>Pick something unguessable:</b> on the public server the
+      topic name is the only thing keeping strangers out.</p>
     <label for="ntfytopic">topic</label>
     <input id="ntfytopic" placeholder="nanobots-a7f3c1d9e4">
     <label for="ntfyserver">server <span class="dim">(blank = ntfy.sh)</span></label>
