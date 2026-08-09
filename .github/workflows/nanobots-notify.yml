@@ -92,6 +92,15 @@ jobs:
               | tail -1) || MARKER=""
             HASH=${MARKER##*hash=}
             HASH=${HASH%%[![:alnum:]]*}
+            # The marker is plain text and can be copied between issues. If its issue=N does
+            # not match the issue it was posted on, the alert would name this issue while
+            # quoting an approval hash belonging to another one — a command that cannot work.
+            MARKER_ISSUE=${MARKER#*issue=}
+            MARKER_ISSUE=${MARKER_ISSUE%%[![:digit:]]*}
+            if [ -n "$MARKER" ] && [ "$MARKER_ISSUE" != "$ISSUE_NUM" ]; then
+              echo "marker is for issue #${MARKER_ISSUE} but was posted on #${ISSUE_NUM} — not this issue's plan, no push."
+              exit 0
+            fi
             if [ -z "$HASH" ]; then
               echo "comment mentions the protocol but carries no plan marker — not a plan, no push."
               exit 0

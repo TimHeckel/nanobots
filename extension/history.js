@@ -72,7 +72,8 @@ let focusDone = false;
       '<div class="beat">Extension was reloaded — refresh this page.</div>';
     return;
   }
-  renderLive(loopState);
+  try { renderLive(loopState); }
+  catch (e) { console.warn('[nanobots] first paint failed:', e?.message); }
   // Repaint when the next poll lands, so a page left open stays truthful.
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || !changes.loopState) return;

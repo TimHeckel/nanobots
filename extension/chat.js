@@ -111,7 +111,10 @@ async function addAttachment(dataUrl) {
   const parsed = wanted && wanted.match(/^(.+?)#(\d+)$/);
   // Only honour it if that repo is actually configured. Otherwise the prefill would ask about
   // issue #N while the dropdown still points at an unrelated repo — a confidently wrong answer.
-  const ctx = parsed && cfg.repos.includes(parsed[1]) ? parsed : null;
+  // GitHub treats owner/repo case-insensitively, so match that way or a correct link from a
+  // notification gets refused over capitalisation.
+  const match = parsed && cfg.repos.find((r) => r.toLowerCase() === parsed[1].toLowerCase());
+  const ctx = match ? [parsed[0], match, parsed[2]] : null;
   if (ctx) $('repo').value = ctx[1];
 
   $('repo').addEventListener('change', resetForRepo);

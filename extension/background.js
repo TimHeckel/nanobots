@@ -50,8 +50,11 @@ async function runPoll() {
   // Only repos that actually run a loop. Scanning the other ~90 a token can reach would burn
   // rate limit to learn nothing — repoHasLoop is cached, so this is close to free.
   const withLoop = [];
+  let inconclusive = 0;
   for (const nwo of cfg.repos) {
-    if ((await repoHasLoop(tokenFor(cfg, nwo), nwo).catch(() => null)) === true) withLoop.push(nwo);
+    const has = await repoHasLoop(tokenFor(cfg, nwo), nwo).catch(() => null);
+    if (has === true) withLoop.push(nwo);
+    else if (has === null) inconclusive++;   // couldn't tell — NOT the same as "no loop"
   }
 
   const results = [];
@@ -60,10 +63,18 @@ async function runPoll() {
   }
 
   const needsYou = results.flatMap((r) => r.needsYou);
+
+  // If nothing could be determined this round, leave the previous badge alone. Clearing it
+  // would turn a rate limit into a confident "nothing needs you" — the failure direction that
+  // actually hurts, because the user stops looking.
+  if (withLoop.length === 0 && inconclusive > 0) {
+    await chrome.storage.local.set({ loopState: { at: Date.now(), repos: [], needsYou: [], inconclusive } });
+    return;
+  }
   setBadge(needsYou.length);
 
   await chrome.storage.local.set({
-    loopState: { at: Date.now(), repos: results, needsYou },
+    loopState: { at: Date.now(), repos: results, needsYou, inconclusive },
   });
 
   // Notify only on things not already announced, so a 10-minute poll doesn't re-alert every

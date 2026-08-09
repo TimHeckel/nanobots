@@ -210,6 +210,27 @@ ok(!mf.host_permissions.some((h) => h === '<all_urls>' || h === '*://*/*'),
     'the unconfigured-repo warning survives resetForRepo clearing the log');
 }
 
+// ── third OCR round ──────────────────────────────────────────────────────────
+{
+  const wf = readFileSync(join(ROOT, 'templates', 'github', 'workflows', 'nanobots-notify.yml'), 'utf8');
+  // A marker copied from another issue would produce an alert naming THIS issue while quoting
+  // an approval hash belonging to a different one — a command that cannot work.
+  ok(/MARKER_ISSUE/.test(wf) && /"\$MARKER_ISSUE" != "\$ISSUE_NUM"/.test(wf),
+    'a plan marker whose issue=N does not match the issue it was posted on is rejected');
+
+  const bgSrc = readFileSync(join(EXT, 'background.js'), 'utf8');
+  // repoHasLoop returns null for "couldn't tell" (401/403/rate limit/offline). Treating that
+  // as "no loop" cleared the badge and reported all-clear during an outage — silence in the
+  // one situation where silence is harmful.
+  ok(/inconclusive\+\+/.test(bgSrc), 'an undeterminable repo is counted, not silently dropped');
+  ok(/withLoop\.length === 0 && inconclusive > 0/.test(bgSrc),
+    'a wholly inconclusive round leaves the previous badge alone instead of claiming all-clear');
+
+  const chatSrc = readFileSync(join(EXT, 'chat.js'), 'utf8');
+  ok(/toLowerCase\(\) === parsed\[1\]\.toLowerCase\(\)/.test(chatSrc),
+    'owner/repo is matched case-insensitively, as GitHub treats it');
+}
+
 if (fails.length) {
   console.error(`\n${fails.length} FAILED:`);
   for (const f of fails) console.error(`  ✗ ${f}`);
