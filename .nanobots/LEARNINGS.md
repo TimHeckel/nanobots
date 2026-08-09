@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-08-09 — PR #17's OCR review landed clean; two more direct-push rounds addressed the earlier findings (cycle 62)
+- **Outcome:** n/a (observational close-out of cycle 61's "watch this" note; PR #17 is still
+  open, still not a board item, still explicitly not meant to be merged)
+- **What worked / what didn't:** Between cycle 61's report and this cycle, the maintainer
+  pushed two more commits to the same `nanobots/dashboard-and-push` branch — `7915b9c`
+  ("fix: second OCR round on PR #17", 0.34.0) and `d878cdd` ("fix: third OCR round — plan
+  markers, and silence during an outage", 0.34.1) — both landing on `main` directly, each
+  re-triggering `nanobots-ocr.yml` on the PR's new head per the `nanobots/`-prefix trigger.
+  The sticky OCR comment now reads clean on head `d878cdd` (which matches `main`'s tip
+  exactly): 0 critical, 0 high, 11 medium, 7 low — non-blocking per `ocr.blockingSeverities`.
+  Both fix commits touched `.github/workflows/nanobots-notify.yml` and its
+  `templates/github/workflows/` counterpart together, keeping the two copies identical (the
+  drift this repo's own `ci.yml` and RECIPES.md recipe #8 both guard against). Per cycle 61's
+  own conclusion, took no merge or remediation action — PR #17 isn't a board item, and its
+  body says outright it exists only so this exact OCR gate reviews code already on `main`.
+  `main`'s own push-triggered CI is green on `d878cdd`; board remains 8/8 Done with every
+  corresponding issue confirmed closed, no drift.
+- **Lesson:** confirms cycle 61's read holds under a second and third round, not just the
+  first — a `nanobots/`-prefixed review-only PR can accumulate multiple direct-push rounds as
+  the maintainer works through OCR findings, and each round is still purely informational to
+  the outer loop (read the conclusion, never merge or dispatch remediation) as long as it
+  never appears on the board. No new rule needed; this is confirming evidence for the
+  existing one.
+- **Applies to:** review
+
 ## 2026-08-09 — PR #17: a maintainer direct-push gets OCR review for free via a `nanobots/`-prefixed branch name, no board item involved (cycle 61)
 - **Outcome:** n/a (observational, not a dispatched item; PR #17 is not on the board and is
   explicitly not meant to be merged)
