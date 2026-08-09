@@ -16,6 +16,8 @@
     --dim: #8b949e;
     --accent: #4ade80;
     --accent2: #22d3ee;
+    --violet: #a78bfa;
+    --amber: #fbbf24;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { color-scheme: dark; }
@@ -85,15 +87,36 @@
 
   h2 { font-size: 14px; color: var(--accent); margin: 48px 0 14px; text-transform: lowercase; }
   h2::before { content: "## "; color: var(--dim); }
-  p { margin: 0 0 14px; max-width: 68ch; }
+  p { margin: 0 0 14px; max-width: 78ch; }
   p code, dd code, dt code { background: var(--panel); border: 1px solid var(--border);
     border-radius: 4px; padding: 1px 6px; font-size: 13px; }
   dl { margin: 0 0 16px; }
   dt { color: #fff; margin-top: 12px; font-size: 13.5px; }
-  dd { color: var(--dim); margin: 2px 0 0; font-size: 13.5px; max-width: 66ch; }
-  .ops { list-style: none; }
-  .ops li { margin-bottom: 12px; color: var(--dim); font-size: 13.5px; max-width: 68ch; }
+  dd { color: var(--dim); margin: 2px 0 0; font-size: 13.5px; max-width: none; }
+  /* Each segment gets its own hue and a panel, so the page reads as distinct blocks rather
+     than one scroll of prose. --seg is set per band and drives the rule, heading and numerals. */
+  .band { --seg: var(--accent2); background: #0e1319; border: 1px solid var(--border);
+    border-left: 3px solid var(--seg); border-radius: 0 10px 10px 0; padding: 26px 30px 22px;
+    margin-top: 40px; }
+  .band.creds { --seg: var(--accent2); }
+  .band.ops-band { --seg: var(--violet); }
+  .band h2 { color: var(--seg); margin: 0 0 12px; }
+  .band > p:first-of-type { margin-bottom: 20px; }
+
+  /* Two credential lists side by side — they are the same subject and each is short. */
+  .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+  .cols h3 { font-size: 13px; color: #fff; font-weight: 600; margin: 0 0 4px; }
+  .cols .sub { color: var(--dim); font-size: 13px; margin-bottom: 10px; }
+
+  /* Numbered, but deliberately quieter than the two install steps. */
+  .ops { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 32px; counter-reset: op; }
+  .ops li { counter-increment: op; position: relative; padding-left: 30px; margin: 0;
+    color: var(--dim); font-size: 13.5px; max-width: none; }
+  .ops li::before { content: counter(op, decimal-leading-zero); position: absolute; left: 0; top: 1px;
+    font-size: 12px; font-weight: 700; color: var(--seg); opacity: 0.75; }
   .ops b { color: var(--text); }
+  @media (max-width: 900px) { .cols, .ops { grid-template-columns: 1fr; } }
 
   footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--dim); font-size: 13px; display: flex; gap: 20px; flex-wrap: wrap; }
 </style>
@@ -152,14 +175,21 @@ export OCR_LLM_MODEL=deepseek-v4-flash
 
   </div>
 
-  <h2>the three variables</h2>
-  <p>
-    These name the endpoint <a href="https://github.com/alibaba/open-code-review">Open Code
-    Review</a> (<b>OCR</b>) uses to review the loop's PRs — and nanobots <b>reuses them for its own
-    agentic work</b> rather than asking for a second key. The same endpoint runs the
-    <code>init</code> conversation, the review, and the optional autofix responder.
-  </p>
-  <dl>
+  <section class="band creds">
+    <h2>credentials</h2>
+    <p>
+      One OpenAI-compatible endpoint covers the first three. The rest <code>init</code> gathers in
+      conversation, so you don't need them in hand before you start.
+    </p>
+    <div class="cols">
+      <div>
+        <h3>the three you export first</h3>
+        <p class="sub">These name the endpoint
+          <a href="https://github.com/alibaba/open-code-review">Open Code Review</a> (<b>OCR</b>)
+          uses to review the loop's PRs — and nanobots reuses them for its own agentic work
+          rather than asking for a second key. The same endpoint runs the <code>init</code>
+          conversation, the review, and the optional autofix responder.</p>
+        <dl>
     <dt><code>OCR_LLM_URL</code></dt>
     <dd>Any OpenAI-compatible <code>/chat/completions</code> endpoint — DeepSeek, OpenAI,
       Together, Fireworks, or a local server.</dd>
@@ -170,13 +200,11 @@ export OCR_LLM_MODEL=deepseek-v4-flash
     <dd>Any model with tool calling. Cheap is fine; this is reviewing and asking questions,
       not writing your code.</dd>
   </dl>
-
-  <h2>and the ones init collects</h2>
-  <p>
-    Those three are only what <code>init</code> needs to <i>start</i>. It gathers the rest in
-    conversation, so you don't need them in hand first.
-  </p>
-  <dl>
+      </div>
+      <div>
+        <h3>the ones init collects</h3>
+        <p class="sub">Asked for, explained, and verified during setup.</p>
+        <dl>
     <dt><code>CLAUDE_CODE_OAUTH_TOKEN</code> or <code>ANTHROPIC_API_KEY</code></dt>
     <dd>A <b>separate</b> credential, and the one that actually writes code — it powers the outer
       loop and the workers. Subscription or metered; any Anthropic-compatible base URL also
@@ -188,10 +216,14 @@ export OCR_LLM_MODEL=deepseek-v4-flash
     <dd>A classic PAT with <code>repo</code> + <code>project</code> + <code>read:org</code>. The
       default <code>GITHUB_TOKEN</code> cannot touch org Projects v2 at all.</dd>
   </dl>
+      </div>
+    </div>
+  </section>
 
-  <h2>the opinions</h2>
-  <p>Most of this is a small number of choices held firmly. Disagree with them and you'll fight the tool.</p>
-  <ul class="ops">
+  <section class="band ops-band">
+    <h2>the opinions</h2>
+    <p>Most of this is a small number of choices held firmly. Disagree with them and you'll fight the tool.</p>
+    <ol class="ops">
     <li><b>GitHub is the only state store.</b> Issues are intake, a Projects board is the kanban,
       PRs are the audit trail. No database, no dashboard, no account. If it isn't on GitHub it
       didn't happen — so you can always see what the loop did, and always override it by hand.</li>
@@ -218,7 +250,8 @@ export OCR_LLM_MODEL=deepseek-v4-flash
     <li><b>Billing is an env var.</b> <code>CLAUDE_CODE_OAUTH_TOKEN</code> runs on a subscription,
       <code>ANTHROPIC_API_KEY</code> is metered, <code>NANOBOTS_WORKER_CMD</code> swaps the engine
       entirely. Cheap models for labour, a frontier model for judgment.</li>
-  </ul>
+  </ol>
+  </section>
 
   <footer>
     <a href="https://github.com/TimHeckel/nanobots">github</a>
