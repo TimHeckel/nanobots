@@ -1,6 +1,6 @@
 {
   "name": "nanobots-sh",
-  "version": "0.33.0",
+  "version": "0.34.0",
   "description": "Self-improving agent loops for any GitHub repo — an outer loop that triages and learns, nanobot workers that build in a Daytona sandbox and ship PRs",
   "type": "module",
   "bin": {
@@ -18,7 +18,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node tests/render.test.mjs && node tests/ocr-autofix.test.mjs && node tests/github-app-auth.test.mjs && node tests/model-routing.test.mjs && node tests/prompt.test.mjs && node tests/app-manifest.test.mjs && node tests/plan-protocol.test.mjs && node tests/ocr-parse.test.mjs && node tests/app-manifest-live.test.mjs && node tests/shell-injection.test.mjs && node tests/engine-sanity.test.mjs && node tests/repo-inspection.test.mjs && node tests/install-sh.test.mjs && node tests/loop-detection.test.mjs"
+    "test": "node tests/render.test.mjs && node tests/ocr-autofix.test.mjs && node tests/github-app-auth.test.mjs && node tests/model-routing.test.mjs && node tests/prompt.test.mjs && node tests/app-manifest.test.mjs && node tests/plan-protocol.test.mjs && node tests/ocr-parse.test.mjs && node tests/app-manifest-live.test.mjs && node tests/shell-injection.test.mjs && node tests/engine-sanity.test.mjs && node tests/repo-inspection.test.mjs && node tests/install-sh.test.mjs && node tests/loop-detection.test.mjs && node tests/loop-view.test.mjs"
   },
   "keywords": [
     "agents",

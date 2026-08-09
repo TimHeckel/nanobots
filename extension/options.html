@@ -183,6 +183,22 @@
     <input id="vbase" placeholder="https://api.fireworks.ai/inference/v1">
   </section>
 
+    <h3 style="margin-top:22px">Phone push via ntfy <span class="dim">(optional)</span></h3>
+    <p class="sub">Chrome already notifies you on this machine when the loop stops and needs a
+      person. Add an <a href="https://ntfy.sh" target="_blank">ntfy</a> topic to get the same
+      alert on your phone. Install the ntfy app, subscribe to the topic, done — no account.
+      <b>Pick something unguessable:</b> on the public server the topic name is the only thing
+      keeping strangers out, and anyone who knows it can read your alerts.</p>
+    <label for="ntfytopic">topic</label>
+    <input id="ntfytopic" placeholder="nanobots-a7f3c1d9e4">
+    <label for="ntfyserver">server <span class="dim">(blank = ntfy.sh)</span></label>
+    <input id="ntfyserver" placeholder="https://ntfy.sh">
+    <label for="ntfytoken">access token <span class="dim">(only for a protected topic)</span></label>
+    <input id="ntfytoken" type="password" placeholder="tk_...">
+    <div class="row"><button type="button" id="ntfy-test" class="mini">send a test push</button>
+      <span id="ntfy-status" class="sub"></span></div>
+  </section>
+
   <!-- ── step 4: review ─────────────────────────────────────────────────── -->
   <section data-step="4">
     <h2>You're set</h2>

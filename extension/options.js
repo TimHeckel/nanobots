@@ -157,6 +157,11 @@ async function persist() {
       token: $('r2token').value.trim(),
       publicBase: $('r2public').value.trim(),
     },
+    ntfy: {
+      topic: $('ntfytopic').value.trim(),
+      server: $('ntfyserver').value.trim() || 'https://ntfy.sh',
+      token: $('ntfytoken').value.trim(),
+    },
     ai: {
       apiKey: $('aikey').value.trim(),
       baseUrl: $('aibase').value.trim() || 'https://api.anthropic.com/v1',
@@ -193,6 +198,9 @@ async function persist() {
   $('vkey').value = cfg.ai.vision?.apiKey ?? '';
   $('vbase').value = cfg.ai.vision?.baseUrl ?? '';
   $('vmodel').value = cfg.ai.vision?.model ?? '';
+  $('ntfytopic').value = cfg.ntfy?.topic ?? '';
+  $('ntfyserver').value = cfg.ntfy?.server ?? '';
+  $('ntfytoken').value = cfg.ntfy?.token ?? '';
   lastPatByOwner = cfg.patByOwner ?? {};
   $('gh-connect').hidden = !GITHUB_OAUTH_CLIENT_ID;
   // Reflect the saved base URL as a provider selection (without overwriting
@@ -328,6 +336,30 @@ $('gh-connect').addEventListener('click', async () => {
     status.innerHTML = '<span class="ok">✓ connected — now click "discover repos"</span>';
   } catch (e) {
     status.innerHTML = `<span class="err">${e.message}</span>`;
+  }
+});
+
+// ── ntfy test push ───────────────────────────────────────────────────────────
+
+$('ntfy-test').addEventListener('click', async () => {
+  const status = $('ntfy-status');
+  const topic = $('ntfytopic').value.trim();
+  if (!topic) { status.textContent = 'enter a topic first'; return; }
+  const server = ($('ntfyserver').value.trim() || 'https://ntfy.sh').replace(/\/+$/, '');
+  const token = $('ntfytoken').value.trim();
+  status.textContent = 'sending…';
+  try {
+    const headers = { Title: 'nanobots test', Tags: 'white_check_mark', Priority: 'default' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${server}/${encodeURIComponent(topic)}`, {
+      method: 'POST', headers, body: 'If you can read this, phone push is working.',
+    });
+    status.innerHTML = res.ok
+      ? '<span class="ok">✓ sent — check your phone</span>'
+      : `<span class="err">${res.status} from ${esc(server)}</span>`;
+    if (res.ok) await persist();
+  } catch (e) {
+    status.innerHTML = `<span class="err">${esc(e.message)}</span>`;
   }
 });
 

@@ -1,12 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "nanobots — report to the loop",
-  "version": "0.15.0",
-  "description": "Screenshot → annotate → filed as a GitHub issue for your nanobots loop. Plus full report history and a repo-aware agent chat.",
+  "name": "nanobots \u2014 report to the loop",
+  "version": "0.16.0",
+  "description": "Screenshot \u2192 annotate \u2192 filed as a GitHub issue for your nanobots loop. Plus full report history and a repo-aware agent chat.",
   "permissions": [
     "activeTab",
     "storage",
-    "scripting"
+    "scripting",
+    "alarms",
+    "notifications"
   ],
   "host_permissions": [
     "https://api.github.com/*",
@@ -18,7 +20,8 @@
     "https://api.fireworks.ai/*",
     "https://openrouter.ai/*",
     "https://api.x.ai/*",
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://ntfy.sh/*"
   ],
   "optional_host_permissions": [
     "http://localhost/*",

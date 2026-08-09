@@ -12,6 +12,9 @@ export async function getConfig() {
     // BYO model for the repo chat: any OpenAI-compatible endpoint. Default is
     // Anthropic's OpenAI-compat layer so an Anthropic key works out of the box.
     ai: { apiKey: '', baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-5' },
+    // Optional push, off unless a topic is set. ntfy topics are unguessable-by-convention
+    // rather than authenticated, so the topic string is itself the secret on the public server.
+    ntfy: { topic: '', server: 'https://ntfy.sh', token: '' },
   };
   const stored = await chrome.storage.local.get(Object.keys(defaults));
   return {
@@ -19,6 +22,7 @@ export async function getConfig() {
     ...stored,
     r2: { ...defaults.r2, ...(stored.r2 ?? {}) },
     ai: { ...defaults.ai, ...(stored.ai ?? {}) },
+    ntfy: { ...defaults.ntfy, ...(stored.ntfy ?? {}) },
   };
 }
 

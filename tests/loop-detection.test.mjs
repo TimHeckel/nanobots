@@ -101,7 +101,10 @@ ok(INSTALL_CMD === 'curl -fsSL nanobots.sh/install | sh', 'the shared install co
 const bg = readFileSync(join(EXT, 'background.js'), 'utf8');
 ok(/repoHasLoop\([^)]*\)\.catch\(\(\) => null\)/.test(bg),
   'background.js cannot let the check fail a report that already filed successfully');
-ok(bg.indexOf('createIssue(') < bg.indexOf('repoHasLoop('),
+// Scoped to fileReport, NOT the whole file: repoHasLoop is also used by the background poll
+// near the top, so a file-wide indexOf compares against the wrong call site entirely.
+const fileReport = bg.slice(bg.indexOf('async function fileReport('));
+ok(fileReport.indexOf('createIssue(') < fileReport.indexOf('repoHasLoop('),
   'the check runs AFTER the issue is created, never gating it');
 
 for (const [file, label] of [['overlay.js', 'in-page overlay'], ['annotate.js', 'fallback tab']]) {

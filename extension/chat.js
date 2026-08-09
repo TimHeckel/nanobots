@@ -104,8 +104,20 @@ async function addAttachment(dataUrl) {
   $('repo').innerHTML = cfg.repos.map((r) => `<option>${esc(r)}</option>`).join('');
   const { lastRepo } = await chrome.storage.local.get('lastRepo');
   if (lastRepo && cfg.repos.includes(lastRepo)) $('repo').value = lastRepo;
+
+  // ?issue=owner/repo#N — arriving from the dashboard or a notification. Select that repo and
+  // prime the box rather than dropping the user on a blank chat with the context in their head.
+  const wanted = new URLSearchParams(location.search).get('issue');
+  const ctx = wanted && wanted.match(/^(.+?)#(\d+)$/);
+  if (ctx && cfg.repos.includes(ctx[1])) $('repo').value = ctx[1];
+
   $('repo').addEventListener('change', resetForRepo);
   await resetForRepo();
+
+  if (ctx) {
+    $('input').value = `Catch me up on issue #${ctx[2]} — what is it, what has the loop done so far, and what is it waiting on?`;
+    $('input').focus();
+  }
 
   // If a capture is pending from the icon click, offer it as an attachment
   const { pending } = await chrome.storage.session.get('pending');
