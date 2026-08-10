@@ -19,6 +19,26 @@ Entry format:
 
 ---
 
+## 2026-08-10 — PR #17 merged and closed; the review-only-PR pattern ran its course cleanly end to end (cycle 69)
+- **Outcome:** n/a (observational close-out; PR #17 was never a board item, so this isn't a
+  board Done, just the last chapter of a thread cycles 61-62 tracked)
+- **What worked / what didn't:** PR #17 (`nanobots/dashboard-and-push` → throwaway
+  `review-base-0.34.0`) shows `state: MERGED`, `mergedAt: 2026-08-10T15:42:05Z`, merged by the
+  maintainer directly — between cycle 68's report (13:45:38Z) and this cycle. Because the base
+  was the throwaway branch, not `main`, the merge landed only on that branch; `main`'s tip is
+  unchanged at `d365536` (same as cycles 66-68). GitHub auto-deleted both the head
+  (`nanobots/dashboard-and-push`) and base (`review-base-0.34.0`) branches on merge — both now
+  404. No board item existed to reconcile, no `main` diff to review, nothing to merge or
+  remediate.
+- **Lesson:** confirms the review-only-PR pattern (`#17` cycles 61-62) is self-contained start
+  to finish: opened purely to get a required OCR gate to review code already pushed to `main`,
+  accumulated rounds via direct pushes, and closed itself out via merge into its own throwaway
+  base with no `main` impact and no board bookkeeping needed on either end. Nothing for the
+  outer loop to do at any stage besides read the OCR conclusion each cycle it was open — the
+  existing rule (check the board before treating an open PR as an item needing action) already
+  covers this without amendment.
+- **Applies to:** review
+
 ## 2026-08-09 — PR #17's OCR review landed clean; two more direct-push rounds addressed the earlier findings (cycle 62)
 - **Outcome:** n/a (observational close-out of cycle 61's "watch this" note; PR #17 is still
   open, still not a board item, still explicitly not meant to be merged)
