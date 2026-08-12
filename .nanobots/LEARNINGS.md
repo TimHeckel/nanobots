@@ -19,6 +19,32 @@ Entry format:
 
 ---
 
+## 2026-08-12 — scheduled worker dispatcher failed once on `gh project item-list`'s `--owner` resolution ("unknown owner type"); clean on manual retry (cycle 80)
+- **Outcome:** n/a (Sync-time infra check, not a dispatched item; board stayed 8/8 Done
+  throughout)
+- **What worked / what didn't:** Sync found `nanobots-worker.yml` run `31557612023`
+  (02:40:17Z) failed inside `daytona-worker.mjs`'s `countInProgress()` — `gh project
+  item-list 1 --owner TimHeckel -L 200 --format json --query 'status:"In Progress"'`
+  exited 1 with stderr `unknown owner type`, before the sandbox or any board claim was ever
+  touched. This is a new failure shape: RECIPES.md #12 and prior LEARNINGS entries (#5,
+  #6, #16) all cover live-third-party-endpoint flakes (DeepSeek, Daytona); this one is `gh`
+  failing to resolve the `--owner` flag against GitHub's own API, on a command that succeeds
+  identically when run locally with the same `gh` version (2.96.0) moments later. The 19
+  worker runs immediately before and after this one all completed clean with the identical
+  command line, and the board had zero Ready items with a live approval at the time
+  (8/8 Done) — so per RECIPES.md #12, retried with `gh run rerun`, which came back green
+  with no code change. Logged as a transient GitHub API blip, not a P0 or a code bug.
+- **Lesson:** RECIPES.md #12's "one cheap manual retry" rule generalizes past the
+  network-fetch-shaped failures it was written for — a `gh` subcommand failing to resolve
+  metadata (owner type, in this case) about a request that isn't itself business logic is
+  the same class of infra flake as a `fetch failed`, and deserves the same one-retry-before-
+  escalating treatment rather than being read as a new code bug because the error string
+  doesn't match prior entries verbatim. If this specific `--owner` resolution error recurs
+  on a future cycle, that crosses into "the same job flaking repeatedly" and should get its
+  own chore (e.g. add a retry wrapper around `gh project item-list` inside
+  `daytona-worker.mjs` itself) rather than another silent manual retry.
+- **Applies to:** triage | build
+
 ## 2026-08-10 — PR #17 merged and closed; the review-only-PR pattern ran its course cleanly end to end (cycle 69)
 - **Outcome:** n/a (observational close-out; PR #17 was never a board item, so this isn't a
   board Done, just the last chapter of a thread cycles 61-62 tracked)
