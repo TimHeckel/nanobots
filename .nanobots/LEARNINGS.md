@@ -19,6 +19,34 @@ Entry format:
 
 ---
 
+## 2026-08-14 — #18 filed: the `gh project --owner` "unknown owner type" flake recurred at a second call site, crossing cycle 80's own "file a chore" threshold (cycle 99)
+- **Outcome:** escalated (filed #18, `chore` + `summon-human`, Blocked, P2/S; assigned the
+  maintainer; not a P0 — self-healed both times with zero board risk)
+- **What worked / what didn't:** Sync found `nanobots-worker.yml` run `31782132531`
+  (08:00:06Z) crashed in `findProject()` (`gh project list --owner TimHeckel --format json
+  --limit 100` → `unknown owner type`), before any board claim was touched. Same stderr,
+  same command shape as cycle 80's entry below, but a *different* function
+  (`findProject()` here vs `countInProgress()` there) — recognized it as the same error
+  class rather than a new bug because cycle 80's entry explicitly named the recurrence
+  condition to watch for. The very next scheduled run (09:17:33Z, `31787458339`) came back
+  green with no code change, same self-healing pattern as before, and the board had zero
+  live approvals at the time — no duplicate-claim risk either time. Per RECIPES.md #12 and
+  cycle 80's own forward-pointing note ("if this recurs... should get its own chore...
+  rather than another silent manual retry"), did not just log another transient-flake
+  entry — filed #18 proposing a scoped retry wrapper (`shJsonRetry`, retrying only
+  `gh project ... --owner ...` calls) with 3 options and a recommendation. Hard-gated to
+  `summon-human` since the fix lands in `.nanobots/daytona-worker.mjs` /
+  `templates/nanobots/daytona-worker.mjs` (`templates/**`).
+- **Lesson:** a LEARNINGS entry that ends with an explicit "if X recurs, do Y" is a
+  standing trigger for future cycles, not just a note for the record — check new failures
+  against it by *error shape* (same stderr, same command family), not by exact call site,
+  since the same underlying flake can surface from more than one function that shares the
+  `gh project ... --owner ...` pattern. Filing the chore at P2 (not P0) was deliberate: the
+  rule that "crosses into file a chore" is about *making the flake resilient*, not about
+  claiming an active incident — two crashes out of 40+ runs that both self-healed within
+  the hour is a real but low-severity signal.
+- **Applies to:** triage | build
+
 ## 2026-08-12 — scheduled worker dispatcher failed once on `gh project item-list`'s `--owner` resolution ("unknown owner type"); clean on manual retry (cycle 80)
 - **Outcome:** n/a (Sync-time infra check, not a dispatched item; board stayed 8/8 Done
   throughout)
