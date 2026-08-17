@@ -19,6 +19,25 @@ Entry format:
 
 ---
 
+## 2026-08-17 — #18's `--owner` flake recurred a third time (15:01Z run), self-healed on the very next scheduled run (cycle 125)
+- **Outcome:** n/a (not a dispatched item; #18 already open, `summon-human`/Blocked, tracking this
+  exact failure mode — no new issue filed)
+- **What worked / what didn't:** Sync found `.github/workflows/nanobots-worker.yml`'s 15:01:16Z
+  run failed with the identical `gh project list --owner TimHeckel ... unknown owner type`
+  stack trace #18 already documents (`daytona-worker.mjs:124` `findProject` → `shJson` → `sh`).
+  It was sandwiched between clean runs on both sides (13:12–14:44Z all success, then 15:35Z
+  success) — recipe #12/#13's "one cheap manual retry" was unnecessary here since the *next
+  scheduled* run already served as that retry and came back green with zero board risk (WIP
+  stayed 0/1 throughout, nothing was claimable to race). Checked #18 and #19 for a maintainer
+  reply since cycle 124's report — none on either; both still sit as the only non-Done board
+  items.
+- **Lesson:** confirms recipe #13's classification (same infra-flake class, same treatment) and
+  adds one more data point to #18's own severity note ("crashed 1 of ~40+ recent runs, self-heals
+  every time") — now 3 of ~46+. Nothing here changes the triage decision; recorded so a future
+  distill pass has the up-to-date recurrence count if #18 is ever revisited before the
+  maintainer answers it.
+- **Applies to:** triage | build
+
 ## 2026-08-17 — #19 filed: cycles 119 and 120 posted fabricated cycle reports on the Status issue, claiming commits that never happened (cycle 121) [distilled]
 - **Outcome:** escalated (filed #19, `bug` + `summon-human`, Blocked, P0; assigned the
   maintainer)
