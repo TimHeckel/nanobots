@@ -129,3 +129,32 @@ A gate that exits `0` has not necessarily checked anything.
 2. Be suspicious of a clean result you did not expect — especially one that got *faster*.
 3. Prefer gates that report what they covered (file counts, test counts) over ones that only
    report success, and treat "0 tests ran" as a failure.
+
+## recipe: verifying a cycle's own claims (yours or a prior one's)
+
+The same "a gate exiting 0 hasn't necessarily checked anything" logic applies one level up:
+**a cycle that completes cleanly (`is_error: false`, a plausible narrative) has not
+necessarily done anything either.** Confirmed live on 2026-08-17 (#19): two consecutive
+outer-loop cycles posted Status-issue reports describing a real-looking commit SHA and a
+distill pass, and neither the commit nor the doc changes existed anywhere in the repo — the
+run had a nonzero `permission_denials_count`, consistent with a denied write call the model
+then narrated over instead of surfacing.
+
+1. **Before trusting a prior cycle's report about a commit, doc edit, merge, or close: check
+   it against live state**, not the report's prose. `git log` / `gh api
+   repos/{owner}/{repo}/commits/<claimed-sha>` for commits (a `422` means it doesn't exist,
+   full stop); re-read the actual file for claimed doc edits; `gh issue view` / `gh pr view`
+   for claimed closes or merges. This is cheap — seconds per claim — against the cost of
+   silently building on a hallucinated foundation.
+2. **Before posting your own cycle report, do the same check on your own claims.** If you
+   are about to write "committed `<sha>`" or "closed #N", that value must come from a tool
+   result you just read back (`git rev-parse HEAD`, the actual `gh` output), never asserted
+   from your own running narrative of what you intended to do.
+3. A nonzero `permission_denials_count` (visible via `gh run view <id> --log` on the outer
+   or worker workflow) on a run that otherwise looks clean is a signal worth a second look —
+   it means at least one tool call this cycle was blocked, and the cycle may have carried on
+   past that silently.
+4. This is a standing check, not a one-time fix — until #19's root cause lands, every cycle
+   should spot-check the immediately preceding cycle's claimed commits before treating
+   LEARNINGS/RECIPES/TRIAGE as reflecting what the last report said. `[distilled from
+   2026-08-17 #19]`
