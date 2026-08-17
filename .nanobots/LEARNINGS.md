@@ -19,6 +19,27 @@ Entry format:
 
 ---
 
+## 2026-08-17 — worker cron hit a *different* `gh project list --owner` failure (503, not #18's "unknown owner type"), self-healed on the next run (cycle 126)
+- **Outcome:** n/a (not a dispatched item; commented on #18 with the new evidence, no new
+  issue filed — still `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** Sync found the 17:40:54Z worker cron run failed at the same
+  call site #18 already tracks (`findProject` → `shJson` → `sh` at
+  `daytona-worker.mjs:124`), but with a **different** error: `non-200 OK status code: 503
+  Service Unavailable ... No server is currently available to service your request`, not
+  #18's `"unknown owner type"` string. Per recipe #13, matched by error *shape* rather than
+  exact text: both are `gh project list --owner ...` failing with no retry, i.e. the same
+  underlying gap (a bare unretried `gh` metadata call) surfacing two distinct upstream error
+  shapes. Runs on both sides were green (17:03:58Z and 18:00:15Z), so — same as cycle 125's
+  handling of #18's third recurrence — the next scheduled run already served as recipe #12's
+  "one cheap retry"; nothing was claimable to race (WIP 0/1 throughout), so no manual retry
+  or escalation was warranted.
+- **Lesson:** #18's chore is narrower than the real bug — the fix needs to retry any
+  transient `gh project list --owner` failure (503s, rate limits, "unknown owner type"
+  resolution hiccups), not just the one error string in #18's title. Left this as a comment
+  on #18 for whoever writes that plan, rather than filing a second issue for the same root
+  cause under a different symptom.
+- **Applies to:** triage | build
+
 ## 2026-08-17 — #18's `--owner` flake recurred a third time (15:01Z run), self-healed on the very next scheduled run (cycle 125)
 - **Outcome:** n/a (not a dispatched item; #18 already open, `summon-human`/Blocked, tracking this
   exact failure mode — no new issue filed)
