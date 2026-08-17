@@ -19,6 +19,25 @@ Entry format:
 
 ---
 
+## 2026-08-17 — cycle 126's report misstated #19's age (~38h claimed vs ~17.6h actual); routine cycle otherwise quiet (cycle 127)
+- **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
+- **What worked / what didn't:** per recipe #14 ("verifying a cycle's own claims"), checked
+  cycle 126's report against live state before trusting it. Its commit claim (`49c47f4`)
+  checked out — `git log` HEAD matches, `gh api commits/49c47f4` resolves. But its prose
+  said "#19 ... now ~38 hrs old"; `gh api repos/.../issues/19` shows `created_at
+  2026-08-17T04:07:12Z`, and the current time is `2026-08-17T21:42Z` — an elapsed time of
+  ~17.6 hours, not ~38. Harmless in outcome: the report's own 48h nudge threshold was not
+  remotely close under either number, so nothing was wrongly skipped or actioned. Rest of
+  the cycle was uneventful: 6 more worker-cron runs since cycle 126's report, all green; no
+  new inbox items; no open PRs; board unchanged (8/10 Done, #18 + #19 still Blocked with no
+  maintainer reply on either).
+- **Lesson:** recipe #14's "check a prior cycle's claims against live state" generalizes past
+  commits/doc-edits/closes to *any* stated numeric or temporal fact in a report — elapsed
+  time and counts are exactly as cheap to verify (one `gh api` call) and exactly as easy for
+  a model to get wrong reasoning over dates as a fabricated SHA. Worth folding into recipe
+  #14 explicitly at the next distill pass (undistilled count now 4/29, still below threshold).
+- **Applies to:** review | prompt
+
 ## 2026-08-17 — worker cron hit a *different* `gh project list --owner` failure (503, not #18's "unknown owner type"), self-healed on the next run (cycle 126)
 - **Outcome:** n/a (not a dispatched item; commented on #18 with the new evidence, no new
   issue filed — still `summon-human`/Blocked awaiting the maintainer)
