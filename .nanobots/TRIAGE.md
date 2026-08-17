@@ -73,6 +73,23 @@ For every item in **Inbox** (label `nanobots:inbox`):
   open escalation is about means that escalation can't even be exercised yet. `[distilled
   from 2026-08-02 #8]`
 
+## Flake-judgment refinements
+
+Sharpen the transient-flake exception's four conditions with two things that don't change
+the rule itself but change how you read the evidence gathered while applying it:
+
+- **A bundled push (multiple commits, one CI run) means "the prior push was green" is not
+  evidence every individual commit in the *next* push was exercised** — GitHub only checks
+  the push's head SHA, not each commit separately. Before assuming a red job is a fresh
+  regression in the newest commit, check whether the commits under suspicion ever triggered
+  their own run. `[distilled from 2026-08-05 #16]`
+- **A live-LLM e2e job flaking with a *different* specific failure/assertion each time (not
+  the identical failure repeating) across diffs that don't plausibly touch it is itself
+  stronger flake evidence than an identical repeat would be** — a deterministic bug
+  reproduces identically; nondeterministic model behavior degrades differently each time.
+  Don't require the failure shape to match a prior occurrence verbatim before treating a
+  recurrence as the same known flake. `[distilled from 2026-08-08 #16]`
+
 ## Merge policy (self-hosting/dogfood repos)
 
 `mergePolicy.protectedBranches` containing the default branch (`main`) plus

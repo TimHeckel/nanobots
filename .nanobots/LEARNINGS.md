@@ -19,7 +19,7 @@ Entry format:
 
 ---
 
-## 2026-08-17 — #19 filed: cycles 119 and 120 posted fabricated cycle reports on the Status issue, claiming commits that never happened (cycle 121)
+## 2026-08-17 — #19 filed: cycles 119 and 120 posted fabricated cycle reports on the Status issue, claiming commits that never happened (cycle 121) [distilled]
 - **Outcome:** escalated (filed #19, `bug` + `summon-human`, Blocked, P0; assigned the
   maintainer)
 - **What worked / what didn't:** Sync found `main` unchanged at `97f176b` (2026-08-14,
@@ -45,7 +45,7 @@ Entry format:
   fix to land, since every future cycle reads its own prior reports as context.
 - **Applies to:** triage | review | prompt
 
-## 2026-08-14 — #18 filed: the `gh project --owner` "unknown owner type" flake recurred at a second call site, crossing cycle 80's own "file a chore" threshold (cycle 99)
+## 2026-08-14 — #18 filed: the `gh project --owner` "unknown owner type" flake recurred at a second call site, crossing cycle 80's own "file a chore" threshold (cycle 99) [distilled]
 - **Outcome:** escalated (filed #18, `chore` + `summon-human`, Blocked, P2/S; assigned the
   maintainer; not a P0 — self-healed both times with zero board risk)
 - **What worked / what didn't:** Sync found `nanobots-worker.yml` run `31782132531`
@@ -73,7 +73,7 @@ Entry format:
   the hour is a real but low-severity signal.
 - **Applies to:** triage | build
 
-## 2026-08-12 — scheduled worker dispatcher failed once on `gh project item-list`'s `--owner` resolution ("unknown owner type"); clean on manual retry (cycle 80)
+## 2026-08-12 — scheduled worker dispatcher failed once on `gh project item-list`'s `--owner` resolution ("unknown owner type"); clean on manual retry (cycle 80) [distilled]
 - **Outcome:** n/a (Sync-time infra check, not a dispatched item; board stayed 8/8 Done
   throughout)
 - **What worked / what didn't:** Sync found `nanobots-worker.yml` run `31557612023`
@@ -99,7 +99,7 @@ Entry format:
   `daytona-worker.mjs` itself) rather than another silent manual retry.
 - **Applies to:** triage | build
 
-## 2026-08-10 — PR #17 merged and closed; the review-only-PR pattern ran its course cleanly end to end (cycle 69)
+## 2026-08-10 — PR #17 merged and closed; the review-only-PR pattern ran its course cleanly end to end (cycle 69) [distilled]
 - **Outcome:** n/a (observational close-out; PR #17 was never a board item, so this isn't a
   board Done, just the last chapter of a thread cycles 61-62 tracked)
 - **What worked / what didn't:** PR #17 (`nanobots/dashboard-and-push` → throwaway
@@ -119,7 +119,7 @@ Entry format:
   covers this without amendment.
 - **Applies to:** review
 
-## 2026-08-09 — PR #17's OCR review landed clean; two more direct-push rounds addressed the earlier findings (cycle 62)
+## 2026-08-09 — PR #17's OCR review landed clean; two more direct-push rounds addressed the earlier findings (cycle 62) [distilled]
 - **Outcome:** n/a (observational close-out of cycle 61's "watch this" note; PR #17 is still
   open, still not a board item, still explicitly not meant to be merged)
 - **What worked / what didn't:** Between cycle 61's report and this cycle, the maintainer
@@ -144,7 +144,7 @@ Entry format:
   existing one.
 - **Applies to:** review
 
-## 2026-08-09 — PR #17: a maintainer direct-push gets OCR review for free via a `nanobots/`-prefixed branch name, no board item involved (cycle 61)
+## 2026-08-09 — PR #17: a maintainer direct-push gets OCR review for free via a `nanobots/`-prefixed branch name, no board item involved (cycle 61) [distilled]
 - **Outcome:** n/a (observational, not a dispatched item; PR #17 is not on the board and is
   explicitly not meant to be merged)
 - **What worked / what didn't:** `main` advanced by two feature commits (`548a467`,
@@ -181,7 +181,7 @@ Entry format:
   in agent output.
 - **Applies to:** review | triage
 
-## 2026-08-09 — #16 closed: maintainer fixed the dash/`:` subshell bug directly in `dfb59f7` (0.33.0); board reconciled Ready→Done (cycle 56)
+## 2026-08-09 — #16 closed: maintainer fixed the dash/`:` subshell bug directly in `dfb59f7` (0.33.0); board reconciled Ready→Done (cycle 56) [distilled]
 - **Outcome:** merged (`dfb59f7`, committed directly by the maintainer, not via a worker PR)
 - **What worked / what didn't:** Sync found `main` at `dfb59f7`, `CI` green on both jobs
   (`test`: "46 install.sh tests passed"; `onboarding-agent`: "29 onboarding-agent e2e
@@ -208,7 +208,7 @@ Entry format:
   buffer this file's own header calls for distilling.
 - **Applies to:** review | triage
 
-## 2026-08-08 — #16 still open: `test` job persists across 3 more docs-only pushes; `onboarding-agent` flaked twice more, cleared on rerun both times (cycle 55)
+## 2026-08-08 — #16 still open: `test` job persists across 3 more docs-only pushes; `onboarding-agent` flaked twice more, cleared on rerun both times (cycle 55) [distilled]
 - **Outcome:** n/a (Sync-time confirmation during cycle 55, not a dispatched item; #16 still
   Ready, unapproved)
 - **What worked / what didn't:** `main` advanced three commits since the last report
@@ -241,7 +241,7 @@ Entry format:
   #1 tracking the staleness.
 - **Applies to:** triage | prompt
 
-## 2026-08-05 — #16 filed: main CI red on b49f8ac, `test` job fails deterministically; `onboarding-agent` job was a same-run transient flake (cycle 35)
+## 2026-08-05 — #16 filed: main CI red on b49f8ac, `test` job fails deterministically; `onboarding-agent` job was a same-run transient flake (cycle 35) [distilled]
 - **Outcome:** n/a (escalated — filed #16, P0/Size M, Ready with a versioned plan; not yet
   Done)
 - **What worked / what didn't:** Sync found `main` CI red on `b49f8ac` with **two** jobs

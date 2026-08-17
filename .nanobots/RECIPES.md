@@ -119,6 +119,30 @@ are expensive to find later.
     capacity) rather than escalating; if the *same* job keeps flaking across multiple cycles,
     that crosses into "file a chore to make it resilient" per TRIAGE.md, not another silent
     retry. `[distilled from 2026-08-06]`
+13. **A LEARNINGS entry that ends with an explicit "if X recurs, do Y" is a standing trigger
+    for future cycles, not just a note for the record.** Match a new failure against it by
+    *error shape* (same stderr, same command family) rather than exact call site — the same
+    underlying flake (e.g. `gh project ... --owner ...` resolving "unknown owner type") can
+    surface from more than one function. Recipe #12's "one cheap retry before escalating"
+    rule extends past live-third-party-fetch failures to `gh` subcommand metadata-resolution
+    failures too — same infra-flake class, same treatment. `[distilled from 2026-08-12,
+    2026-08-14 #18]`
+
+## recipe: reviewing an open PR not on the board
+
+1. **Check the board (`gh project item-list`) before treating any open PR as an In
+   Progress/In Review item needing the merge-or-remediate treatment.** If the PR isn't on
+   the board, it's informational only.
+2. **A maintainer can open a `nanobots/`-prefixed-branch PR against a throwaway base purely
+   to trigger the required OCR gate** on code already pushed directly to `main` — the PR
+   body will say outright it's not meant to be merged. Read the OCR conclusion for the
+   institutional record; never merge it or dispatch remediation against it, and don't treat
+   the pull_request-triggered CI on such a PR the same as `main`'s own push-triggered CI.
+3. This pattern can accumulate multiple direct-push rounds as the maintainer works through
+   findings — each round is still purely informational, not an item needing outer-loop
+   action, and it closes itself out (merge into its own throwaway base, or the branches get
+   auto-deleted) with nothing for the loop to reconcile. `[distilled from 2026-08-09 #17
+   (cycles 61, 62, 69)]`
 
 ## recipe: trusting a gate
 
