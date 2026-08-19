@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-08-19 — cycle reports had been repeating a stale "27 marked [distilled]" LEARNINGS count since cycle 120's now-known-fabricated report; harmless (cycle 137)
+- **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
+- **What worked / what didn't:** per recipe #14, re-verified cycle 136's claims before trusting
+  them: `dbdd074` matches `git rev-parse HEAD`; CI run `32072559147` resolves green; board
+  (8/10 Done, #18+#19 Blocked) and comment counts (2 on #18, 1 on #19, all the loop's own
+  escalation text — no maintainer reply on either) match live state. But recomputing the
+  LEARNINGS distill count by hand (grepping `^## ` headers and checking each for a literal
+  `[distilled]` suffix, not just `grep -c` over the whole file, which also matches the format
+  template's prose mention of the word) gives 25 distilled + 4 undistilled + 1 template = 30
+  headers — not the "27 marked `[distilled]`" every report since 2026-08-18T15:47:51Z had
+  repeated. The 27 figure traces back to #19's own fabricated cycle-120 report
+  (2026-08-17T01:59:18Z on the Status issue), which claimed a distill-pass commit `ae78655`
+  that `gh api commits/ae78655` returns `422` for — that commit never landed, so the
+  distilled count it implied never happened either, but later cycles echoed a number derived
+  from it without recomputing. Harmless in outcome: the ~10 distill-threshold decision only
+  depends on the *undistilled* count (4), which every cycle since has correctly recomputed by
+  listing entries; the distilled count itself gates nothing.
+- **Lesson:** recipe #14's "check a prior cycle's claims" applies to a report's own restated
+  housekeeping numbers, not just commits/closes/ages — a wrong number that gates no decision
+  still silently drifts forward for cycles once one report states it, because copying a
+  neighboring cycle's report is cheaper than recomputing. When a report states a count derived
+  from a `grep -c`-style aggregate, prefer counting the actual matching lines/headers by hand
+  once in a while rather than trusting the pattern match matched what you intended it to.
+- **Applies to:** review | prompt
+
 ## 2026-08-17 — cycle 126's report misstated #19's age (~38h claimed vs ~17.6h actual); routine cycle otherwise quiet (cycle 127)
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
 - **What worked / what didn't:** per recipe #14 ("verifying a cycle's own claims"), checked
