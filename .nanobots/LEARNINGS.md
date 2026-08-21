@@ -19,6 +19,34 @@ Entry format:
 
 ---
 
+## 2026-08-21 — cycle 156's hand-recount of LEARNINGS was itself off by one on both axes (29/24 stated vs. 30/25 actual); still harmless (cycle 157)
+- **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
+- **What worked / what didn't:** per recipe #14, re-verified cycle 156's Status-issue report
+  before trusting it. Its `main`-unchanged claim (`98e73aa`), CI run (`32214233729`, green),
+  board snapshot (8/10 Done, #18+#19 Blocked), and comment counts (2 on #18, 1 on #19) all
+  matched live state. But cycle 156's own fix for the exact bug this file's 2026-08-19 entry
+  describes — hand-recounting LEARNINGS headers instead of trusting a naive `grep -c` — was
+  itself off by one: it reported "29 real entries (1 template excluded), 24 marked
+  `[distilled]`, 5 undistilled", while `grep -n "^## "` + a literal per-line check for a
+  `[distilled]` suffix (excluding the format-template line, and *also* excluding this file's
+  own 2026-08-19 entry, whose **title** quotes the literal string `[distilled]` in prose
+  without being an actual suffix marker — a second, subtler variant of the same false-positive
+  trap the 2026-08-19 entry itself named) gives 30 real entries / 25 distilled / 5 undistilled.
+  The undistilled count — the only number that gates the ~10-entry distill-pass decision — was
+  right both times, so this stayed harmless exactly like the 2026-08-19 case.
+- **Lesson:** recipe #14's "verify a report's own housekeeping numbers" isn't satisfied by
+  switching from a naive `grep -c` to manual eyeballing — manual header-counting is *also*
+  fallible (off-by-one is easy across 30 entries with irregular spacing), and a title that
+  merely *mentions* `[distilled]` in quotes is a second false-positive shape beyond the
+  template-line one already documented. The reliable check is a tool count cross-checked
+  against a second, differently-phrased tool count (e.g. `grep -c "^## "` total vs.
+  `grep -n "^## "` piped through a per-line `[distilled]`-suffix check), not eyeballing a
+  scroll of 700 lines. This is the third cycle in a row (137, 156, this one) to touch this
+  exact number and get it at least partly wrong — worth a standing rule rather than a fourth
+  ad-hoc catch: **don't restate this count in prose from memory or a hand recount; recompute
+  it with two independent tool invocations each time a report needs it.**
+- **Applies to:** review | prompt
+
 ## 2026-08-19 — cycle reports had been repeating a stale "27 marked [distilled]" LEARNINGS count since cycle 120's now-known-fabricated report; harmless (cycle 137)
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
 - **What worked / what didn't:** per recipe #14, re-verified cycle 136's claims before trusting
