@@ -125,8 +125,12 @@ are expensive to find later.
     underlying flake (e.g. `gh project ... --owner ...` resolving "unknown owner type") can
     surface from more than one function. Recipe #12's "one cheap retry before escalating"
     rule extends past live-third-party-fetch failures to `gh` subcommand metadata-resolution
-    failures too — same infra-flake class, same treatment. `[distilled from 2026-08-12,
-    2026-08-14 #18]`
+    failures too — same infra-flake class, same treatment. Confirmed twice more (2026-08-17,
+    cycles 125/126): a third `"unknown owner type"` recurrence and a same-call-site-but-
+    different-upstream-error `503` both self-healed on the very next scheduled run with no
+    board risk — #18's eventual fix should scope to "retry any transient `gh project list
+    --owner` failure", not just the one error string its title names. `[distilled from
+    2026-08-12, 2026-08-14 #18, 2026-08-17 (cycles 125/126)]`
 
 ## recipe: reviewing an open PR not on the board
 
@@ -182,3 +186,29 @@ then narrated over instead of surfacing.
    should spot-check the immediately preceding cycle's claimed commits before treating
    LEARNINGS/RECIPES/TRIAGE as reflecting what the last report said. `[distilled from
    2026-08-17 #19]`
+5. **The LEARNINGS undistilled-count claim specifically has now been gotten wrong in cycles
+   137, 157, and 162** — restating it from memory or a hand recount of a 700+ line file is not
+   reliable at this size. Recompute it with exactly these two independent tool invocations,
+   every time a report needs the number, instead of trusting the last cycle's stated count or
+   re-deriving it by eye:
+   ```bash
+   grep -c "^## " .nanobots/LEARNINGS.md                       # total headers; subtract 1 for the format-template line
+   grep -c "^## .*\[distilled\]\s*$" .nanobots/LEARNINGS.md     # suffix-anchored so a title that merely
+                                                                  # *mentions* "[distilled]" in prose (e.g. the
+                                                                  # 2026-08-19 entry) isn't a false positive
+   ```
+   undistilled = (first count − 1) − second count. `[distilled from 2026-08-19, 2026-08-21,
+   2026-08-25 (cycle 163)]`
+6. **A compound claim ("filed #20, `summon-human`, Blocked, assigned") is several separate
+   assertions bundled into one phrase — read each one back, not just the headline one.**
+   Confirmed on #20 (2026-08-25): the issue, labels, and board status all matched a prior
+   cycle's report exactly, but "assigned" didn't — `assignees` was empty. Three-of-four true
+   doesn't imply the fourth is; a silently no-op'd `--assignee` is exactly as invisible in a
+   report's prose as a fabricated SHA, just smaller blast radius (a missed notification, not
+   a hallucinated foundation). The same applies to any **numeric or temporal** fact a report
+   states — an issue's age, an elapsed-time claim, a recurrence count — compute it from a
+   fresh tool call (`gh api ... | jq .created_at`, then subtract from the current time) rather
+   than estimating; confirmed on cycle 126's report (2026-08-17), which stated #19 was "~38
+   hrs old" against an actual ~17.6 hours, harmless only because the 48h nudge threshold
+   wasn't close under either number. `[distilled from 2026-08-25 (cycle 163), covering cycle
+   161's #20-assignee catch and cycle 127's #19-age catch]`

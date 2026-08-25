@@ -72,6 +72,17 @@ For every item in **Inbox** (label `nanobots:inbox`):
   step is worded around `main` — a cron that always crashes before reaching the code an
   open escalation is about means that escalation can't even be exercised yet. `[distilled
   from 2026-08-02 #8]`
+- **This applies to `nanobots-outer.yml` itself, and checking it is not optional.** An
+  instant pre-tool-use failure (the model's first turn errors before any tool call or board
+  read) leaves no comment, no board change, and no LEARNINGS entry — nothing for a later
+  cycle to notice by, because the run dies before reaching the code that would post any of
+  those. "No new report since last cycle" is therefore *not* evidence the loop has been idle
+  and calm; it is equally consistent with the outer loop itself being down. Confirmed on #20
+  (2026-08-25): 28 consecutive scheduled `nanobots-outer.yml` runs failed silently over ~3.3
+  days while `main` CI stayed green throughout, so a Sync step that only checks `main` CI
+  would have missed it entirely. Pull `gh run list --workflow=nanobots-outer.yml --limit 5`
+  every cycle as part of Sync, alongside `main` CI — not only when something already looks
+  wrong. `[distilled from 2026-08-25 #20]`
 
 ## Flake-judgment refinements
 
@@ -89,6 +100,18 @@ the rule itself but change how you read the evidence gathered while applying it:
   reproduces identically; nondeterministic model behavior degrades differently each time.
   Don't require the failure shape to match a prior occurrence verbatim before treating a
   recurrence as the same known flake. `[distilled from 2026-08-08 #16]`
+- **The exception's four conditions are independent checks, not a single "does this smell
+  like the known flaky job" gut call.** A live third-party endpoint can fail in more than one
+  shape: transport-level (`fetch failed`, timeout, connection reset, 5xx — qualifies for
+  condition 2 as written) vs. behavioral/assertion-level (the model ran fine but its output
+  didn't satisfy an assertion — does **not** qualify, even on the exact same job that has
+  flaked network-shaped before, and even when the other three conditions and the underlying
+  cause both point at nondeterminism). Confirmed on #21 (2026-08-25): `onboarding-agent`
+  failed a `set_variable`-count assertion with no network-error text anywhere in the log; 3 of
+  4 conditions favored a skip but condition 2's literal wording didn't, so the P0 was filed
+  rather than extending the known-flake treatment to a new failure shape unilaterally. If this
+  behavioral-flake shape recurs, that is evidence for formally broadening condition 2 — propose
+  the edit rather than reading it in silently. `[distilled from 2026-08-25 #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

@@ -19,7 +19,32 @@ Entry format:
 
 ---
 
-## 2026-08-25 — #21 filed: `main` CI red on `e8e9cc2` was an onboarding-agent e2e assertion failure, not a network-shaped one — filed per the flake exception's literal wording despite 3 of 4 conditions favoring a skip (cycle 162)
+## 2026-08-25 — cycle 162's distill-count claim ("8/33") was off by one on both axes (9/34 actual); still harmless, fourth recurrence of the same class of miscount (cycle 163) [distilled]
+- **Outcome:** n/a (not a dispatched item; a Sync-time verification catch per the "verifying a
+  cycle's own claims" recipe, no new issue filed)
+- **What worked / what didn't:** re-verified cycle 162's report before trusting it. `88481a8`
+  matches `git rev-parse HEAD`; `ci.yml` on that SHA (`test` + `onboarding-agent` jobs) both
+  came back green; #21 exists exactly as reported (`bug`+`summon-human`, Blocked, P0/S,
+  assigned `TimHeckel` — checked the assignee explicitly per cycle 161's catch, not just labels
+  and status); #18/#19/#20 each still have only the loop's own past escalation-recipe comments
+  (all authored as `TimHeckel` because the dispatch PAT belongs to that human account) — no
+  actual maintainer reply to act on. But the report's housekeeping line — "Undistilled count
+  8/33" — didn't match a fresh recount: `grep -c "^## "` gives 35 headers (34 real entries,
+  excluding the format-template line), and a suffix-anchored `grep -c "^## .*\[distilled\]\s*$"`
+  (so the 2026-08-19 entry's prose *mention* of the string doesn't count as a false positive)
+  gives 25 truly-marked entries — 9 undistilled, not 8/33. Still under the ~10 distill-pass
+  threshold either way, so this stayed harmless exactly like the 2026-08-19 and 2026-08-21
+  instances of the same bug.
+- **Lesson:** this is the fourth cycle (137, 157, 162, and this catch of 162) to touch this
+  exact number and get it at least partly wrong, despite cycle 157 already writing down the fix
+  ("recompute it with two independent tool invocations each time a report needs it") — prose
+  guidance alone hasn't stopped the recurrence, so this cycle also hardened RECIPES.md's
+  "verifying a cycle's own claims" recipe with the literal two-command formula instead of
+  restating the instruction in prose again. If this recurs a fifth time after that, the formula
+  itself (not just the instruction to use one) needs review.
+- **Applies to:** review | prompt
+
+## 2026-08-25 — #21 filed: `main` CI red on `e8e9cc2` was an onboarding-agent e2e assertion failure, not a network-shaped one — filed per the flake exception's literal wording despite 3 of 4 conditions favoring a skip (cycle 162) [distilled]
 - **Outcome:** escalated (filed #21, `bug` + `summon-human`, Blocked, P0/S; assigned the
   maintainer)
 - **What worked / what didn't:** Sync found `ci.yml` run `32869486069` red on the current
@@ -53,7 +78,7 @@ Entry format:
   edit, don't silently deviate" instruction.
 - **Applies to:** triage | prompt
 
-## 2026-08-25 — cycle 160's report claimed "#20 ... assigned" but the issue had zero assignees; fixed in place (cycle 161)
+## 2026-08-25 — cycle 160's report claimed "#20 ... assigned" but the issue had zero assignees; fixed in place (cycle 161) [distilled]
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch per recipe #14, no
   new issue filed)
 - **What worked / what didn't:** per recipe #14, re-verified cycle 160's claims before
@@ -77,7 +102,7 @@ Entry format:
   to have failed.
 - **Applies to:** review | prompt
 
-## 2026-08-25 — #20 filed: `nanobots-outer.yml` failed on every scheduled run for ~3.3 days (28 consecutive runs, 2026-08-22 01:50Z → 2026-08-25 09:51Z), self-resolved by this cycle (cycle 160)
+## 2026-08-25 — #20 filed: `nanobots-outer.yml` failed on every scheduled run for ~3.3 days (28 consecutive runs, 2026-08-22 01:50Z → 2026-08-25 09:51Z), self-resolved by this cycle (cycle 160) [distilled]
 - **Outcome:** escalated (filed #20, `summon-human`, Blocked, P0/S; assigned maintainer)
 - **What worked / what didn't:** Sync checked more than just `main` CI (which was green,
   unchanged at `2d9f656`) — per TRIAGE.md's own hard rule, a scheduled dispatcher failing on
@@ -112,7 +137,7 @@ Entry format:
   black box every time.
 - **Applies to:** triage | build | review
 
-## 2026-08-21 — cycle 156's hand-recount of LEARNINGS was itself off by one on both axes (29/24 stated vs. 30/25 actual); still harmless (cycle 157)
+## 2026-08-21 — cycle 156's hand-recount of LEARNINGS was itself off by one on both axes (29/24 stated vs. 30/25 actual); still harmless (cycle 157) [distilled]
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
 - **What worked / what didn't:** per recipe #14, re-verified cycle 156's Status-issue report
   before trusting it. Its `main`-unchanged claim (`98e73aa`), CI run (`32214233729`, green),
@@ -140,7 +165,7 @@ Entry format:
   it with two independent tool invocations each time a report needs it.**
 - **Applies to:** review | prompt
 
-## 2026-08-19 — cycle reports had been repeating a stale "27 marked [distilled]" LEARNINGS count since cycle 120's now-known-fabricated report; harmless (cycle 137)
+## 2026-08-19 — cycle reports had been repeating a stale "27 marked [distilled]" LEARNINGS count since cycle 120's now-known-fabricated report; harmless (cycle 137) [distilled]
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
 - **What worked / what didn't:** per recipe #14, re-verified cycle 136's claims before trusting
   them: `dbdd074` matches `git rev-parse HEAD`; CI run `32072559147` resolves green; board
@@ -165,7 +190,7 @@ Entry format:
   once in a while rather than trusting the pattern match matched what you intended it to.
 - **Applies to:** review | prompt
 
-## 2026-08-17 — cycle 126's report misstated #19's age (~38h claimed vs ~17.6h actual); routine cycle otherwise quiet (cycle 127)
+## 2026-08-17 — cycle 126's report misstated #19's age (~38h claimed vs ~17.6h actual); routine cycle otherwise quiet (cycle 127) [distilled]
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
 - **What worked / what didn't:** per recipe #14 ("verifying a cycle's own claims"), checked
   cycle 126's report against live state before trusting it. Its commit claim (`49c47f4`)
@@ -184,7 +209,7 @@ Entry format:
   #14 explicitly at the next distill pass (undistilled count now 4/29, still below threshold).
 - **Applies to:** review | prompt
 
-## 2026-08-17 — worker cron hit a *different* `gh project list --owner` failure (503, not #18's "unknown owner type"), self-healed on the next run (cycle 126)
+## 2026-08-17 — worker cron hit a *different* `gh project list --owner` failure (503, not #18's "unknown owner type"), self-healed on the next run (cycle 126) [distilled]
 - **Outcome:** n/a (not a dispatched item; commented on #18 with the new evidence, no new
   issue filed — still `summon-human`/Blocked awaiting the maintainer)
 - **What worked / what didn't:** Sync found the 17:40:54Z worker cron run failed at the same
@@ -205,7 +230,7 @@ Entry format:
   cause under a different symptom.
 - **Applies to:** triage | build
 
-## 2026-08-17 — #18's `--owner` flake recurred a third time (15:01Z run), self-healed on the very next scheduled run (cycle 125)
+## 2026-08-17 — #18's `--owner` flake recurred a third time (15:01Z run), self-healed on the very next scheduled run (cycle 125) [distilled]
 - **Outcome:** n/a (not a dispatched item; #18 already open, `summon-human`/Blocked, tracking this
   exact failure mode — no new issue filed)
 - **What worked / what didn't:** Sync found `.github/workflows/nanobots-worker.yml`'s 15:01:16Z
@@ -831,7 +856,7 @@ Entry format:
   of restating values.
 - **Applies to:** triage | prompt
 
-## 2026-08-01 — (seed) Loop bootstrapped
+## 2026-08-01 — (seed) Loop bootstrapped [distilled]
 - **Outcome:** n/a
 - **Lesson:** This repo's history and docs already encode hard-won knowledge — before
   building in an area, search closed PRs and existing docs instead of rediscovering.
