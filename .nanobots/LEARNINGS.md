@@ -19,6 +19,41 @@ Entry format:
 
 ---
 
+## 2026-08-25 — #20 filed: `nanobots-outer.yml` failed on every scheduled run for ~3.3 days (28 consecutive runs, 2026-08-22 01:50Z → 2026-08-25 09:51Z), self-resolved by this cycle (cycle 160)
+- **Outcome:** escalated (filed #20, `summon-human`, Blocked, P0/S; assigned maintainer)
+- **What worked / what didn't:** Sync checked more than just `main` CI (which was green,
+  unchanged at `2d9f656`) — per TRIAGE.md's own hard rule, a scheduled dispatcher failing on
+  every run is exactly as urgent as red `main` CI, so also pulled `gh run list
+  --workflow=nanobots-outer.yml` before assuming "no report since cycle 159" meant nothing
+  happened. It meant the opposite: 28 straight `schedule`-triggered runs failed, from
+  `2026-08-22T01:50:06Z` through `2026-08-25T09:51:14Z`, three days with zero outer-loop
+  activity, and this cycle's own run is the first to succeed since. Every failed run's log
+  had the identical shape: Claude Code Action's `system/init` fires normally (session starts,
+  model resolves), then a `result` message arrives in ~341ms with `is_error: true, num_turns:
+  1, total_cost_usd: 0, permission_denials_count: 0` — the first model turn erroring near-
+  instantly, before any tool use or blocked permission. `show_full_output` isn't set on this
+  workflow, so the actual error text is invisible in the log; only "Claude result reported
+  subtype success with is_error:true" surfaces. Confirmed this isn't a code regression:
+  zero commits landed in the repo between the last success (`2d9f656`) and now, so the
+  workflow file and prompt are byte-identical across the whole failure window — whatever
+  broke is provider/credential-side. `nanobots-worker.yml`'s scheduled runs stayed green
+  throughout, and the board had nothing claimable, so no work was silently lost — the entire
+  cost was ~3.3 days of dead triage/review/learn cadence, invisible on the Status issue
+  because the failure happened before the run ever got far enough to post anything.
+- **Lesson:** recipe #12's "same job keeps flaking repeatedly → file a chore" threshold has
+  an upper bound this sharp a case blows past — this isn't a couple of retries, it's the
+  *entire* outer loop going dark for 3+ days with nothing on GitHub reflecting it except raw
+  Actions run history, because an instant pre-tool-use failure leaves no comment, no board
+  change, no LEARNINGS entry to notice by. **Checking "did the last scheduled run of the
+  outer-loop workflow itself succeed" belongs in Sync's standard checklist, not just "is
+  `main` CI green" — a stopped clock reads as calm from inside the loop's own history.**
+  Also: an action step that hides its own model-turn error text (`show_full_output` unset)
+  makes an instant `is_error` with `num_turns: 1` nearly un-root-causeable from the workflow
+  log alone; that's worth fixing (enable it temporarily, or always, given no secrets flow
+  through the outer loop's stdout) the next time this recurs, not treated as an unavoidable
+  black box every time.
+- **Applies to:** triage | build | review
+
 ## 2026-08-21 — cycle 156's hand-recount of LEARNINGS was itself off by one on both axes (29/24 stated vs. 30/25 actual); still harmless (cycle 157)
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch, no new issue filed)
 - **What worked / what didn't:** per recipe #14, re-verified cycle 156's Status-issue report
