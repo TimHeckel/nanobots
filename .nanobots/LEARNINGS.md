@@ -19,6 +19,30 @@ Entry format:
 
 ---
 
+## 2026-08-25 — cycle 160's report claimed "#20 ... assigned" but the issue had zero assignees; fixed in place (cycle 161)
+- **Outcome:** n/a (not a dispatched item; a Sync-time verification catch per recipe #14, no
+  new issue filed)
+- **What worked / what didn't:** per recipe #14, re-verified cycle 160's claims before
+  trusting them: `d9f62e4` matches `git rev-parse HEAD`, `ci.yml` run `32852572633` on that
+  SHA resolved green, and #20 exists on the board as `Blocked`/`summon-human`/P0/S exactly as
+  reported. But the report's own words — "filed **#20** (P0/S, `summon-human`, assigned)" —
+  did not match live state: `gh api repos/.../issues/20` returned `"assignees": []`. Cross-
+  checked against #18, #19, and #6 (all correctly `["TimHeckel"]`) to confirm this wasn't a
+  general pattern or a misread of the API shape — it was specific to #20. Fixed with
+  `gh issue edit 20 --add-assignee TimHeckel`, confirmed via a fresh API read afterward
+  rather than trusting the edit command's own exit code.
+- **Lesson:** recipe #14's "before posting your own cycle report... that value must come from
+  a tool result you just read back" applies to every clause of a compound claim, not just the
+  headline one (commit SHA, merge, close) — "filed, Blocked, summon-human, **assigned**" is
+  four separate assertions bundled into one phrase, and three being true doesn't imply the
+  fourth is. A `gh issue create --assignee` call (or a separate `gh issue edit --add-assignee`)
+  that silently no-ops or gets dropped is exactly as invisible in the report's prose as a
+  fabricated commit SHA would be — the only difference is the blast radius is smaller (a
+  missed notification, not a hallucinated foundation). Cheap fix: when a report states an
+  action with multiple named side effects, read back *each* one, not just the one most likely
+  to have failed.
+- **Applies to:** review | prompt
+
 ## 2026-08-25 — #20 filed: `nanobots-outer.yml` failed on every scheduled run for ~3.3 days (28 consecutive runs, 2026-08-22 01:50Z → 2026-08-25 09:51Z), self-resolved by this cycle (cycle 160)
 - **Outcome:** escalated (filed #20, `summon-human`, Blocked, P0/S; assigned maintainer)
 - **What worked / what didn't:** Sync checked more than just `main` CI (which was green,
