@@ -19,6 +19,40 @@ Entry format:
 
 ---
 
+## 2026-08-25 — #21 filed: `main` CI red on `e8e9cc2` was an onboarding-agent e2e assertion failure, not a network-shaped one — filed per the flake exception's literal wording despite 3 of 4 conditions favoring a skip (cycle 162)
+- **Outcome:** escalated (filed #21, `bug` + `summon-human`, Blocked, P0/S; assigned the
+  maintainer)
+- **What worked / what didn't:** Sync found `ci.yml` run `32869486069` red on the current
+  head `e8e9cc2` — only `onboarding-agent` failed, `test` passed. The failure was
+  `tests/init-agent.e2e.mjs`'s `agent set the OCR endpoint variables` assertion (the live
+  DeepSeek-driven onboarding agent's 52-tool-call transcript didn't include both expected
+  `set_variable` calls), with no `fetch failed`/timeout/5xx text anywhere in the log — a
+  genuinely different failure shape from every prior onboarding-agent flake on record
+  (#5/#6/2026-08-01, #16/2026-08-05, #16/2026-08-08), which were all literal `fetch failed`.
+  Checked the transient-flake exception's four conditions individually rather than
+  pattern-matching on "it's the usual flaky job": (1) exactly one job red, live third-party
+  endpoint — yes; (2) network-shaped — **no**, this is an assertion failure on model output,
+  not a transport-level error; (3) diff doesn't touch the path — yes, `e8e9cc2` only touched
+  `.nanobots/LEARNINGS.md`; (4) `gh run rerun --failed` on the same commit — came back clean
+  (both jobs green, no code change). Per LOOP-PROMPT.md's literal wording ("if any condition
+  fails ... a non-network failure ... file the P0 immediately ... with no further
+  judgement"), filed #21 rather than silently extending the known-flake treatment to a new
+  failure shape — same posture as #6's 2026-08-01 precedent (a timeout-shaped-but-not-
+  literally-third-party failure filed without rationalizing an exemption). Included a
+  recommendation in #21 to formally extend the exception's condition 2 to cover this exact
+  shape (assertion failure on a known live-LLM e2e test + clean immediate rerun), rather
+  than applying that judgment unilaterally.
+- **Lesson:** the transient-flake exception's four conditions are independent checks, not a
+  single "does this smell like the known flaky job" gut call — a live third-party endpoint
+  can fail in more than one shape (transport-level vs. behavioral/assertion-level), and only
+  the literal wording's specific signatures (`fetch failed`, timeout, connection reset, 5xx)
+  qualify for condition 2 as currently written, even when the other three conditions and the
+  underlying cause (model nondeterminism) point the same direction. Do not stretch "it's the
+  usual live-LLM job" into "therefore any failure on this job is exempt" — file the P0 and
+  let a human decide whether to broaden the policy, per LOOP-PROMPT.md's own "propose an
+  edit, don't silently deviate" instruction.
+- **Applies to:** triage | prompt
+
 ## 2026-08-25 — cycle 160's report claimed "#20 ... assigned" but the issue had zero assignees; fixed in place (cycle 161)
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch per recipe #14, no
   new issue filed)
