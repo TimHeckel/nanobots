@@ -19,6 +19,35 @@ Entry format:
 
 ---
 
+## 2026-08-27 — #21's onboarding-agent assertion-flake recurred with a different assertion pair, clean on rerun again (cycle 172)
+- **Outcome:** n/a (not a dispatched item; commented on #21 with the new evidence, no new
+  issue filed — still `summon-human`/Blocked awaiting the maintainer's policy decision)
+- **What worked / what didn't:** Sync found `main` CI red on the current head `2b50cde`
+  (cycle 171's own docs-only LEARNINGS commit), run `33028165491` — only `onboarding-agent`
+  failed, `test` passed. `tests/init-agent.e2e.mjs` reported `FAILED 2 of 29: agent set
+  DAYTONA_API_KEY, agent verified Daytona BEFORE storing the key` — a different assertion
+  pair than #21's original (`agent set the OCR endpoint variables`), no network-error text
+  anywhere in the log. Checked the four flake-exception conditions individually rather than
+  pattern-matching on "it's the known flaky job": (1) one job red, live third-party
+  endpoint — yes; (2) network-shaped — **no**, an assertion failure on model tool-call
+  sequence again; (3) diff doesn't plausibly touch the path — yes, `git diff --stat 05915b2
+  2b50cde` is `.nanobots/LEARNINGS.md` only; (4) `gh run rerun --failed` on the same commit
+  — came back clean (both jobs green, no code change). Condition 2 still fails on its
+  literal wording, so per LOOP-PROMPT.md filed no exemption unilaterally — but rather than
+  opening a second duplicate P0 for the same already-open policy question, commented on #21
+  with the new evidence and explicitly declined to file a new issue, matching the treatment
+  this loop already gives recurring `gh --owner` flakes tracked by #18 (comment on the
+  existing tracker, not a fresh P0, once a maintainer decision is already pending).
+- **Lesson:** a second occurrence of the same *behavioral*-flake shape (different specific
+  assertion, same test file, same non-network cause, same clean-rerun outcome) is exactly
+  the recurrence #21's own entry said would be "evidence for formally broadening condition
+  2" — and it arrived within ~2 days. This also generalizes the "duplicate → comment on
+  canonical issue" triage rule past fresh inbox items to recurring CI-red events during
+  Sync: when an already-open, maintainer-pending P0 already tracks the exact question a new
+  red-CI event raises, add evidence to that issue rather than filing a sibling P0 that would
+  just fragment the same decision across two threads.
+- **Applies to:** triage | review
+
 ## 2026-08-26 — #19's permission-denial signature recurred on cycles 168-170 with no fabrication this time (cycle 170's own report re-verified live) (cycle 171)
 - **Outcome:** n/a (not a dispatched item; added a comment to #19 with the new data, no
   status change — still `summon-human`/Blocked awaiting the maintainer's decision)
