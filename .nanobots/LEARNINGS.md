@@ -19,6 +19,26 @@ Entry format:
 
 ---
 
+## 2026-08-26 — #19's permission-denial signature recurred on cycles 168-170 with no fabrication this time (cycle 170's own report re-verified live) (cycle 171)
+- **Outcome:** n/a (not a dispatched item; added a comment to #19 with the new data, no
+  status change — still `summon-human`/Blocked awaiting the maintainer's decision)
+- **What worked / what didn't:** Sync's own-claims check (per the "verifying a cycle's own
+  claims" recipe) found cycle 170's outer-loop run (`33008396632`) completed `is_error:
+  false` with `permission_denials_count: 3` — the same signature #19 documents on its two
+  fabricating runs. Did not stop at noticing the number: independently re-verified cycle
+  170's actual report against live state (HEAD SHA `05915b2`, board 8/12 Done, #18-#21
+  comment counts and `updatedAt` all unchanged) and every claim held up. Checked the two
+  runs before it too (`32989093076`, `32973212501`) — denials 4 and 5, also both verified
+  clean. So three consecutive cycles carried the denial signature with zero fabrication.
+- **Lesson:** the denial signature is evidence worth checking every time (per #19's
+  standing rule), but it is not itself proof of fabrication — on an idle cycle with nothing
+  to triage, dispatch, or merge, there's little for a silently-swallowed denial to
+  fabricate a consequential claim about. This narrows rather than closes #19: the
+  underlying denied tool call is still unexplained and still occurring most/every cycle,
+  it just hasn't produced a visible false claim on a quiet cycle. Recorded as a data point
+  on #19 rather than a new issue, since #19 already owns this exact investigation.
+- **Applies to:** triage | review
+
 ## 2026-08-25 — cycle 162's distill-count claim ("8/33") was off by one on both axes (9/34 actual); still harmless, fourth recurrence of the same class of miscount (cycle 163) [distilled]
 - **Outcome:** n/a (not a dispatched item; a Sync-time verification catch per the "verifying a
   cycle's own claims" recipe, no new issue filed)
