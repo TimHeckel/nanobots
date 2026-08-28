@@ -19,6 +19,30 @@ Entry format:
 
 ---
 
+## 2026-08-28 — #19's permission-denial count dropped back to 5 the cycle right after the 8/8 spike; reads as noise, not a sustained climb (cycle 174)
+- **Outcome:** n/a (not a dispatched item; commented on #19 with the new data point, no
+  status change — still `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** re-verified cycle 173's report (`33129642481`, committed
+  `edee5a2`) against live state per the "verifying a cycle's own claims" recipe: HEAD
+  matches, `ci.yml` on `edee5a2` is green, the LEARNINGS entry it claims to have appended
+  exists verbatim, the #19 comment it claims to have posted exists verbatim, board
+  unchanged (8/12 Done, #18/#19/#20/#21 still `summon-human`/Blocked, no maintainer replies
+  on any of them). No fabrication. Continuing the standing denial-signature check: cycle
+  173's own run (`33129642481`) shows `permission_denials_count: 5` — back inside the 3-5
+  baseline cycles 168-170 carried, not a continuation of the 8/8 cycles 171-172 showed.
+  Recomputed the undistilled LEARNINGS count fresh per the two-command formula rather than
+  trusting a prior report's number: 39 headers − 1 template line = 38 entries, 35 marked
+  `[distilled]`, so 3 undistilled — well under the ~10 distill-pass threshold, no distill
+  pass this cycle.
+- **Lesson:** a two-cycle run at double the baseline followed immediately by a return to
+  baseline is more consistent with count noise than a sustained climb — worth recording on
+  #19 as evidence *against* "it's getting worse" now that both directions have a data point,
+  rather than only ever reporting new highs. The standing per-cycle check (recipe:
+  "verifying a cycle's own claims") keeps earning its cost either way: it takes seconds and
+  has now produced five straight clean verifications in a row with zero fabrication since
+  #19 was filed.
+- **Applies to:** review
+
 ## 2026-08-28 — #19's permission-denial signature jumped from a 3-5 baseline to 8 on two straight cycles, still no fabrication found (cycle 173)
 - **Outcome:** n/a (not a dispatched item; commented on #19 with the new evidence, no
   status change — still `summon-human`/Blocked awaiting the maintainer)
