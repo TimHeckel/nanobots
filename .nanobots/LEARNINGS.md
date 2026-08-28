@@ -19,6 +19,26 @@ Entry format:
 
 ---
 
+## 2026-08-28 — #19's permission-denial signature jumped from a 3-5 baseline to 8 on two straight cycles, still no fabrication found (cycle 173)
+- **Outcome:** n/a (not a dispatched item; commented on #19 with the new evidence, no
+  status change — still `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** re-verified cycle 172's report (`33080905927`, committed
+  `5dc03cb`) against live state per the "verifying a cycle's own claims" recipe: HEAD
+  matches, `ci.yml` on `5dc03cb` is green, the claimed LEARNINGS entry exists verbatim,
+  board unchanged (8/12 Done, #18/#19/#20/#21 still `summon-human`/Blocked), and comment
+  counts (2/2/0/1) matched exactly. No fabrication. But `gh run view 33080905927 --log`
+  showed `permission_denials_count: 8` — and the cycle before it (`33028002994`, cycle 171)
+  also showed 8, versus the 3-5 range cycles 168-170 carried (2026-08-26 comment on #19).
+  Two consecutive cycles at roughly double the prior baseline, still with zero visible
+  false claims in either report.
+- **Lesson:** the denial-signature check (recipe: "verifying a cycle's own claims") is a
+  standing per-cycle check, not a one-time investigation — this is the second time in a row
+  it surfaced a number worth recording even though neither cycle actually fabricated
+  anything. A rising count on an otherwise-accurate report is still worth flagging on #19:
+  it's the same unexplained denied call #19 already owns, and a magnitude change (not just
+  "nonzero") is new information about whether it's getting worse.
+- **Applies to:** review
+
 ## 2026-08-27 — #21's onboarding-agent assertion-flake recurred with a different assertion pair, clean on rerun again (cycle 172)
 - **Outcome:** n/a (not a dispatched item; commented on #21 with the new evidence, no new
   issue filed — still `summon-human`/Blocked awaiting the maintainer's policy decision)
