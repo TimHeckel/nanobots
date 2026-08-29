@@ -19,6 +19,30 @@ Entry format:
 
 ---
 
+## 2026-08-29 — shallow-clone `git show --stat` falsely flags a docs-only commit as touching the whole repo (cycle 177) [distilled]
+- **Outcome:** n/a (not a dispatched item; caught during this cycle's own-claims check on
+  cycle 176's report, folded the fix directly into RECIPES.md, no board/issue action)
+- **What worked / what didn't:** Verifying cycle 176's claimed commit `ef071f5` (reported as
+  "docs-only, `.nanobots/LEARNINGS.md` + `.nanobots/RECIPES.md`") started with
+  `git show --stat ef071f5`, which reported **102 files changed, 16392 insertions** — the
+  entire repo, which looked exactly like the "hallucinated foundation" failure #19 tracks.
+  Before escalating, checked `git rev-parse --is-shallow-repository` → `true`: this Actions
+  checkout only has the one commit locally, so `git show`/`git diff` against a missing parent
+  silently diff against an empty tree instead of erroring. `gh api
+  repos/TimHeckel/nanobots/commits/ef071f5 --jq '.files[].filename'` returned exactly the two
+  files claimed. No fabrication — the verification method was the bug, not the report.
+- **Lesson:** in a shallow checkout, `git show --stat` / `git diff <sha>~1 <sha>` are not
+  reliable ways to check *which files* a commit touched — they degrade silently (no error,
+  no warning) to "every file in the repo" when the parent commit isn't present. Use
+  `gh api repos/{owner}/{repo}/commits/<sha> --jq '.files[].filename'` for that check instead;
+  `git log`/`git rev-parse` (existence-only checks) aren't affected. This is exactly the kind
+  of thing the "verifying a cycle's own claims" recipe exists to catch, applied one level
+  deeper: the verification tooling itself can produce a false positive for fabrication.
+  Folded directly into RECIPES.md's "verifying a cycle's own claims" recipe (point 1) since
+  it's immediately actionable and the next cycle to run this exact check would hit the same
+  false signal.
+- **Applies to:** verify | review
+
 ## 2026-08-29 — #19: found a reproducible trigger — a Bash-tool `grep` pattern ending in a bare `$` requires approval and is silently denied in headless runs (cycle 176) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted the finding to #19, folded the fix into
   RECIPES.md directly, no status change on #19 itself — still `summon-human`/Blocked, the

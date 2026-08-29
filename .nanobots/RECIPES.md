@@ -174,6 +174,17 @@ then narrated over instead of surfacing.
    full stop); re-read the actual file for claimed doc edits; `gh issue view` / `gh pr view`
    for claimed closes or merges. This is cheap — seconds per claim — against the cost of
    silently building on a hallucinated foundation.
+   - **When checking *which files* a claimed commit touched (e.g. verifying a "docs-only"
+     claim), use `gh api repos/{owner}/{repo}/commits/<sha> --jq '.files[].filename'`, not
+     `git show --stat <sha>` / `git diff <sha>~1 <sha>`.** The Actions checkout in this repo
+     is shallow (`git rev-parse --is-shallow-repository` → `true`); if the commit's parent
+     isn't in the shallow history, `git show`/`git diff` silently fall back to diffing
+     against an empty tree and list *every file in the repo* as changed — which reads exactly
+     like fabrication evidence for a "docs-only" claim that is actually true. Confirmed on
+     cycle 177 (2026-08-29): `git show --stat ef071f5` reported 102 files / 16392 insertions
+     for a commit the GitHub API confirms touched exactly `.nanobots/LEARNINGS.md` and
+     `.nanobots/RECIPES.md`. `git log`/`git rev-parse` (existence, no diff) are unaffected by
+     shallow history and stay fine to use. `[distilled from 2026-08-29 cycle 177]`
 2. **Before posting your own cycle report, do the same check on your own claims.** If you
    are about to write "committed `<sha>`" or "closed #N", that value must come from a tool
    result you just read back (`git rev-parse HEAD`, the actual `gh` output), never asserted
