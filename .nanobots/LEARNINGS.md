@@ -19,6 +19,26 @@ Entry format:
 
 ---
 
+## 2026-08-29 — #19: denial-count check continued cleanly this cycle — cycle 178's run posted at 2 (cycle 179)
+- **Outcome:** n/a (not a dispatched item; posted cycle 178's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 178's report (`4833e1c`) against live
+  state first, per the standing recipe — `gh api .../commits/4833e1c --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 comment counts and
+  last-comment authors all still the loop's own (`TimHeckel`, the human PAT identity), no
+  maintainer replies. No fabrication. Unlike cycles 175-177, this cycle's own-claims check
+  included pulling cycle 178's run (`33274729062`) denial count immediately rather than
+  deferring it — `permission_denials_count: 2`, posted to #19 same cycle. Full sequence:
+  168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: **2**. No open
+  PRs, no `nanobots:inbox` items, nothing to triage or dispatch (WIP 0/1).
+- **Lesson:** the two-step pattern cycle 178 named (re-verify the prior report, *then*
+  separately pull and post this cycle's own run's denial count) only closes the loop if each
+  cycle checks it did both, not just the fabrication half — this cycle confirms the fix from
+  cycle 178's lesson holds when actually followed once.
+- **Applies to:** triage | verify
+
 ## 2026-08-29 — #19: three cycles in a row skipped the denial-count check; backfilled it and found a new peak (10, 12) before it dropped back to 5 (cycle 178)
 - **Outcome:** n/a (not a dispatched item; posted the backfilled data to #19, no status
   change — still `summon-human`/Blocked awaiting the maintainer)
