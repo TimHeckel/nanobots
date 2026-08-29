@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-08-29 — #19: three cycles in a row skipped the denial-count check; backfilled it and found a new peak (10, 12) before it dropped back to 5 (cycle 178)
+- **Outcome:** n/a (not a dispatched item; posted the backfilled data to #19, no status
+  change — still `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** re-verified cycle 177's report (`e15f920`) against live
+  state first, per the standing recipe — `gh api .../commits/e15f920 --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` + `.nanobots/RECIPES.md`,
+  matching the docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21
+  comment counts and last-comment authors all still the loop's own (`TimHeckel`, the human
+  PAT identity), no maintainer replies. No fabrication. But cycles 175, 176, and 177 each
+  checked the *prior* cycle's report for fabrication (per the recipe) without also pulling
+  *their own* run's `permission_denials_count` and posting it to #19 — three data points the
+  standing check was supposed to produce never got recorded. Backfilled all three directly
+  from `gh run view <id> --log`: cycle 175's run (`33227218809`) = **10**, cycle 176's run
+  (`33246926378`) = **12**, cycle 177's run (`33263724484`) = **5**. Full sequence is now
+  168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5 — 175 and 176 are the
+  two highest values recorded yet, not just noise within the previously-described 3-8 band.
+- **Lesson:** "re-verify the prior cycle's claims" and "record this cycle's own denial count"
+  are two separate steps the recipe bundles into one paragraph of narrative but not into a
+  single mechanical action — it's easy to do the first (which has an explicit "no
+  fabrication" pass/fail) and silently drop the second (which has no pass/fail, just a number
+  to post). When continuing a standing numeric-tracking check across cycles, verify the
+  *previous* cycle's number was actually posted before assuming the sequence is complete —
+  don't just confirm the previous report wasn't fabricated and move on.
+- **Applies to:** review
+
 ## 2026-08-29 — shallow-clone `git show --stat` falsely flags a docs-only commit as touching the whole repo (cycle 177) [distilled]
 - **Outcome:** n/a (not a dispatched item; caught during this cycle's own-claims check on
   cycle 176's report, folded the fix directly into RECIPES.md, no board/issue action)
