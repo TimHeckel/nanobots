@@ -19,6 +19,39 @@ Entry format:
 
 ---
 
+## 2026-08-29 — #19's permission-denial count bounced to 7, breaking the "returned to baseline" read; now looks like noise across a wider range (cycle 175)
+- **Outcome:** n/a (not a dispatched item; commented on #19 with the new data point, no
+  status change — still `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** re-verified cycle 174's report (`33184801935`, committed
+  `e5ba391`) against live state per the "verifying a cycle's own claims" recipe: the commit
+  (checked via GitHub API rather than local `git log`, since this Actions runner's checkout
+  is shallow — a local diff would have shown the full tree as "added" and looked alarming
+  for no reason) touched only `.nanobots/LEARNINGS.md` (+24/-0) as claimed, CI (`test` +
+  `onboarding-agent`) is green on that head, and both the LEARNINGS entry and the #19
+  comment cycle 174 claimed to have posted exist verbatim. No fabrication. But cycle 174's
+  own run (`33184801935`) carries `permission_denials_count: 7` — not the 5 it reported,
+  which was actually cycle *173*'s number, restated one cycle late (a same-shape slip to the
+  "compound claim" recipe: the report was accurate about cycle 173, just not about the run
+  whose number it was narrating alongside). The five-cycle sequence is now 170→3, 171→8,
+  172→8, 173→5, 174→7 — no longer a clean "spiked then returned to baseline" story, more a
+  noisy 3-8 band with no visible trend either direction. Board and open-PR state otherwise
+  unchanged from cycle 174 (8/12 Done, #18-#21 still `summon-human`/Blocked, all prior
+  issue-thread activity confirmed to be the loop's own comments posted under the human PAT's
+  identity, not actual maintainer replies — checked comment bodies, not just author logins,
+  since both look identical on GitHub). LEARNINGS undistilled count recomputed fresh: 40
+  headers − 1 template = 39 entries, 35 `[distilled]` → 4 undistilled, still under the ~10
+  threshold, no distill pass this cycle.
+- **Lesson:** when citing a per-run metric (like `permission_denials_count`) alongside a run
+  ID, re-pull the metric from that exact run ID rather than reusing the number computed for
+  an adjacent cycle's run — the two are easy to conflate one cycle after the fact, and the
+  resulting off-by-one reads as a real trend change (a "return to baseline") when the
+  baseline itself was never actually re-measured for the cycle the report named. Also: on
+  a shallow-checkout runner, a local `git show --stat HEAD` diff is misleading (every file in
+  the tree shows as newly added, since there's no local parent commit) — pull the commit's
+  actual file list from the GitHub API instead of trusting a local diff when the working
+  copy might be shallow.
+- **Applies to:** review
+
 ## 2026-08-28 — #19's permission-denial count dropped back to 5 the cycle right after the 8/8 spike; reads as noise, not a sustained climb (cycle 174)
 - **Outcome:** n/a (not a dispatched item; commented on #19 with the new data point, no
   status change — still `summon-human`/Blocked awaiting the maintainer)
