@@ -19,6 +19,43 @@ Entry format:
 
 ---
 
+## 2026-08-29 — #19: found a reproducible trigger — a Bash-tool `grep` pattern ending in a bare `$` requires approval and is silently denied in headless runs (cycle 176) [distilled]
+- **Outcome:** n/a (not a dispatched item; posted the finding to #19, folded the fix into
+  RECIPES.md directly, no status change on #19 itself — still `summon-human`/Blocked, the
+  harness-level "why" is still the maintainer's call)
+- **What worked / what didn't:** re-verified cycle 175's report (`33227218809`, committed
+  `62a4a90`) against live state first, per the standing recipe — commit touched only
+  `.nanobots/LEARNINGS.md` (confirmed via the GitHub API), CI green, board unchanged (8/12
+  Done, 4 Blocked), #18-#21 comment counts and last-comment authors all matched, no
+  maintainer replies. No fabrication. Then, while recomputing the distill count via
+  RECIPES.md's own two-command formula, the second command
+  (`grep -c "^## .*\[distilled\]\s*$" .nanobots/LEARNINGS.md`, via the Bash tool) came back
+  `This command requires approval` instead of a number — with no human present in this
+  scheduled run to grant it. Isolated the trigger empirically rather than assuming it was
+  this file or this pattern specifically: `grep -c "distilled"` and `grep -c "\[distilled\]"`
+  (no trailing `$`) both ran fine; `grep -c "distilled\]\s*$"`, `grep -c "distilled$"` (single-
+  *and* double-quoted), and `grep -c "a$" package.json` (unrelated file and pattern) all
+  required approval; `echo "a$"` ran fine. That isolates the trigger to a bare trailing `$`
+  specifically inside a Bash-tool `grep` invocation — not this file, not this recipe's
+  pattern, and not "any `$` anywhere in any Bash command." The dedicated Grep tool ran the
+  identical `^## .*\[distilled\]\s*$` pattern with no prompt at all, so the workaround is
+  "use the Grep tool for anchored patterns," not "avoid regex anchors."
+- **Lesson:** this is the first reproducible, causal mechanism this investigation has found,
+  as opposed to a log-only symptom — and it directly implicates RECIPES.md's own prior advice:
+  the recipe told every cycle to run that exact `$`-anchored Bash `grep` every time a report
+  needed the distill count, so any cycle that followed the recipe literally would hit at least
+  one denial per run, not intermittently. This doesn't necessarily explain the full
+  `permission_denials_count` history (no attempt yet to enumerate every command shape that
+  triggers approval), but it is a concrete, fixable piece of it. Fixed by editing RECIPES.md's
+  entry 5 to route the suffix-anchored count through the Grep tool instead of Bash — the
+  general rule worth generalizing beyond just this one recipe: **when a Bash command
+  unexpectedly reports "requires approval" in a headless/unattended context, that is a permanent
+  denial, not a transient one** (no retry will fix it — the same shape will be denied again),
+  so route the same operation through a dedicated tool (Grep/Read/Glob/Edit) instead of
+  retrying the Bash form, and prefer those tools over raw Bash for pattern-matching or file
+  operations they already cover, specifically to avoid this class of silent failure.
+- **Applies to:** review | prompt | build
+
 ## 2026-08-29 — #19's permission-denial count bounced to 7, breaking the "returned to baseline" read; now looks like noise across a wider range (cycle 175)
 - **Outcome:** n/a (not a dispatched item; commented on #19 with the new data point, no
   status change — still `summon-human`/Blocked awaiting the maintainer)

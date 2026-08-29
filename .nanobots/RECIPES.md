@@ -193,12 +193,23 @@ then narrated over instead of surfacing.
    re-deriving it by eye:
    ```bash
    grep -c "^## " .nanobots/LEARNINGS.md                       # total headers; subtract 1 for the format-template line
-   grep -c "^## .*\[distilled\]\s*$" .nanobots/LEARNINGS.md     # suffix-anchored so a title that merely
-                                                                  # *mentions* "[distilled]" in prose (e.g. the
-                                                                  # 2026-08-19 entry) isn't a false positive
    ```
+   For the suffix-anchored count (a title that merely *mentions* `[distilled]` in prose — e.g.
+   the 2026-08-19 entry — must not be a false positive), **use the Grep tool, not a raw Bash
+   `grep` call**, with pattern `^## .*\[distilled\]\s*$`. Confirmed on 2026-08-29 (cycle 176):
+   a Bash-tool `grep` whose pattern ends in an unescaped `$` (this one does, for the
+   suffix anchor) is classified as requiring interactive approval by this harness's Bash
+   permission gate — reproduced 4 times, including on a trivial `grep -c "a$" package.json`
+   unrelated to this file or pattern content, so the trigger is the bare trailing `$` itself,
+   not anything LEARNINGS-specific. In an unattended run (the outer loop's own scheduled
+   cycles) there is no human to grant that approval, so the call is denied and the tool
+   result reads `This command requires approval` — a plausible contributor to the
+   `permission_denials_count` values #19 has been tracking, since this exact command was this
+   recipe's own prescribed second invocation, run every cycle that reports the distill count.
+   The Grep tool (a distinct, non-Bash tool) executes the identical pattern with no approval
+   prompt — that is the workaround, not a different regex.
    undistilled = (first count − 1) − second count. `[distilled from 2026-08-19, 2026-08-21,
-   2026-08-25 (cycle 163)]`
+   2026-08-25 (cycle 163), 2026-08-29 (cycle 176)]`
 6. **A compound claim ("filed #20, `summon-human`, Blocked, assigned") is several separate
    assertions bundled into one phrase — read each one back, not just the headline one.**
    Confirmed on #20 (2026-08-25): the issue, labels, and board status all matched a prior
