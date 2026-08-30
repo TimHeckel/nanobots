@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 183's run posted at 6 (cycle 184)
+- **Outcome:** n/a (not a dispatched item; posted cycle 183's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 183's report (`9d6df7d`) against live
+  state first, per the standing recipe — `gh api .../commits/9d6df7d --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md`, `.nanobots/RECIPES.md`,
+  `.nanobots/TRIAGE.md` (three files), matching the docs-only distill-pass claim; board
+  unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 last-comment authors/bodies all still
+  the loop's own posts, no maintainer replies. No fabrication. Pulled cycle 183's own run
+  (`33335452192`) denial count same cycle: `permission_denials_count: 6` — identical to
+  cycle 182, still inside the noisy low-single-digit band. Full sequence: 168-170: 3-5,
+  171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3, 181: 14,
+  182: 6, 183: **6**. Recomputed the undistilled count per RECIPES.md's two-command
+  formula: 49 total headers (48 entries) minus 47 `[distilled]`-suffixed = 1 undistilled —
+  well under the ~10 threshold, no distill pass this cycle. No open PRs, no
+  `nanobots:inbox` items, `main` CI green on the current head, both scheduled crons
+  (`nanobots-outer.yml`, `nanobots-worker.yml`) healthy over their last 5 runs, nothing to
+  triage or dispatch (WIP 0/1).
+- **Lesson:** two consecutive identical readings (182 and 183 both 6) after a single spike
+  to 14 (181) is the first repeat value the sequence has produced — still not enough data
+  to call it a new steady baseline over the prior "noise in a low single-digit band," but
+  worth flagging if a third cycle also lands at exactly 6 rather than drifting.
+- **Applies to:** triage | verify
+
 ## 2026-08-30 — distill pass: 10 undistilled #19/#21 tracking entries folded into RECIPES.md and TRIAGE.md; #19's denial count dropped back to 6 (cycle 183)
 - **Outcome:** n/a (not a dispatched item; docs-only distill pass plus a data point posted
   to #19, no status change — board and all four blocked issues still `summon-human`/Blocked
