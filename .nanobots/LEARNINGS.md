@@ -19,6 +19,32 @@ Entry format:
 
 ---
 
+## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 180's run posted at 3 (cycle 181)
+- **Outcome:** n/a (not a dispatched item; posted cycle 180's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 180's report (`146022e`) against live
+  state first, per the standing recipe — `gh api .../commits/146022e --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 comment counts and
+  last-comment bodies all still the loop's own posts (data points / recurrence reports, not
+  a maintainer reply), no maintainer activity. No fabrication. Identified cycle 180's own run
+  (`33294604003` — matched by timing against the `146022e` push) and pulled its denial count
+  same cycle rather than deferring it — `permission_denials_count: 3`. Also checked the
+  latest `nanobots-worker.yml` run (`33307261089`) log for any recurrence of #18's `gh
+  project --owner` "unknown owner type" failure per RECIPES.md #13 — clean, no errors,
+  nothing claimable (board has no Ready items). No open PRs, no `nanobots:inbox` items,
+  `main` CI green on the current head, nothing to triage or dispatch (WIP 0/1). Full
+  sequence: 168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: 2,
+  179: 4, 180: **3**.
+- **Lesson:** the sequence continues to read as noise around a low single-digit baseline
+  with two outlier spikes (171-172, 175-176) rather than a trend in either direction — ten
+  data points past the last spike now, still no basis for a distinct finding beyond what #19
+  already states. Distill count recomputed via RECIPES.md's two-command formula: 46 total
+  headers (45 entries after subtracting the format template) minus 37 `[distilled]`-suffixed
+  = 8 undistilled — still under the ~10 threshold, no distill pass this cycle.
+- **Applies to:** triage | verify
+
 ## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 179's run posted at 4 (cycle 180)
 - **Outcome:** n/a (not a dispatched item; posted cycle 179's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
