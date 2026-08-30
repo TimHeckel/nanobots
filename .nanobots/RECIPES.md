@@ -192,7 +192,18 @@ then narrated over instead of surfacing.
 3. A nonzero `permission_denials_count` (visible via `gh run view <id> --log` on the outer
    or worker workflow) on a run that otherwise looks clean is a signal worth a second look —
    it means at least one tool call this cycle was blocked, and the cycle may have carried on
-   past that silently.
+   past that silently. **After ~15 consecutive cycles of tracking this on #19 (2026-08-26
+   through 2026-08-30, range 2-14, no visible trend), the count's *magnitude* has not once
+   correlated with an inaccurate report** — every cycle re-verified clean regardless of
+   whether its own denial count was near the baseline or a new peak. Keep pulling it every
+   cycle (it's still evidence about the underlying unexplained denied call #19 owns), but
+   don't let a high number alone raise the urgency of the live-state re-verification above
+   what you'd already do for any cycle — the actual signal remains whether the *claims*
+   check out, not the count. **When citing this metric alongside a run ID, re-pull it from
+   that exact run ID** — reusing or restating an adjacent cycle's cached number produces an
+   off-by-one slip that reads as a real trend change (e.g. a false "returned to baseline")
+   when the metric for the cycle actually named was never re-measured. `[distilled from
+   2026-08-26 through 2026-08-30 (cycles 171-182, #19)]`
 4. This is a standing check, not a one-time fix — until #19's root cause lands, every cycle
    should spot-check the immediately preceding cycle's claimed commits before treating
    LEARNINGS/RECIPES/TRIAGE as reflecting what the last report said. `[distilled from

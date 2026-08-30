@@ -19,7 +19,43 @@ Entry format:
 
 ---
 
-## 2026-08-30 — #19: denial-count check found a new peak (14) on cycle 181's run, report still clean (cycle 182)
+## 2026-08-30 — distill pass: 10 undistilled #19/#21 tracking entries folded into RECIPES.md and TRIAGE.md; #19's denial count dropped back to 6 (cycle 183)
+- **Outcome:** n/a (not a dispatched item; docs-only distill pass plus a data point posted
+  to #19, no status change — board and all four blocked issues still `summon-human`/Blocked
+  awaiting the maintainer)
+- **What worked / what didn't:** re-verified cycle 182's report (`026c965`) against live
+  state first, per the standing recipe — `gh api .../commits/026c965 --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 last-comment
+  authors and bodies all still the loop's own posts, no maintainer replies. No fabrication.
+  Pulled cycle 182's own run (`33323143212`) denial count same cycle: `permission_denials_count: 6`
+  — back down from cycle 181's peak of 14, inside the noisy band this metric has shown all
+  along. Recomputed the undistilled count per RECIPES.md's two-command formula: 48 total
+  headers (47 entries) minus 37 `[distilled]`-suffixed = 10 undistilled, at the ~10
+  threshold, so ran a distill pass instead of deferring it. All 10 were the accumulated
+  #19 denial-count tracking series (cycles 171-182) plus the #21 flake-recurrence entry
+  (cycle 172); folded two durable findings out of them: (1) RECIPES.md's "verifying a
+  cycle's own claims" point 3 now states that after ~15 cycles the denial count's magnitude
+  has never once correlated with an inaccurate report, and that citing the metric alongside
+  a run ID requires re-pulling it from that exact run (not reusing an adjacent cycle's
+  cached number, per cycle 175's off-by-one slip); (2) TRIAGE.md's flake-judgment section
+  gained a new bullet generalizing the intake "duplicate → comment on canonical issue" rule
+  to recurring Sync-time CI-red events already tracked by an open, maintainer-pending P0 —
+  add evidence, don't file a sibling P0 (per cycle 172's #21 handling). Marked all 10 source
+  entries `[distilled]`. Full denial sequence: 168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7,
+  175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3, 181: 14, 182: **6**. No open PRs, no
+  `nanobots:inbox` items, `main` CI green on the current head, nothing to triage or dispatch
+  (WIP 0/1).
+- **Lesson:** the ~10-entry distill threshold is worth checking with the exact formula every
+  cycle, not estimated — this cycle crossed it silently (cycle 182 itself computed 9 the
+  cycle before, one entry under) and would have kept accumulating past the trigger if the
+  count weren't recomputed fresh each time rather than trusted from the prior cycle's stated
+  number. A long run of near-identical tracking entries (same issue, same recipe, same
+  "no fabrication" verdict) is exactly the shape a distill pass should compress — the durable
+  content across 10 entries reduced to two rule refinements, not ten.
+- **Applies to:** triage | review
+
+## 2026-08-30 — #19: denial-count check found a new peak (14) on cycle 181's run, report still clean (cycle 182) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 181's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -46,7 +82,7 @@ Entry format:
   ~10 threshold, no distill pass this cycle.
 - **Applies to:** triage | verify
 
-## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 180's run posted at 3 (cycle 181)
+## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 180's run posted at 3 (cycle 181) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 180's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -72,7 +108,7 @@ Entry format:
   = 8 undistilled — still under the ~10 threshold, no distill pass this cycle.
 - **Applies to:** triage | verify
 
-## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 179's run posted at 4 (cycle 180)
+## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 179's run posted at 4 (cycle 180) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 179's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -94,7 +130,7 @@ Entry format:
   not yet worth a distinct finding of its own beyond what #19 already states.
 - **Applies to:** triage | verify
 
-## 2026-08-29 — #19: denial-count check continued cleanly this cycle — cycle 178's run posted at 2 (cycle 179)
+## 2026-08-29 — #19: denial-count check continued cleanly this cycle — cycle 178's run posted at 2 (cycle 179) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 178's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -114,7 +150,7 @@ Entry format:
   cycle 178's lesson holds when actually followed once.
 - **Applies to:** triage | verify
 
-## 2026-08-29 — #19: three cycles in a row skipped the denial-count check; backfilled it and found a new peak (10, 12) before it dropped back to 5 (cycle 178)
+## 2026-08-29 — #19: three cycles in a row skipped the denial-count check; backfilled it and found a new peak (10, 12) before it dropped back to 5 (cycle 178) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted the backfilled data to #19, no status
   change — still `summon-human`/Blocked awaiting the maintainer)
 - **What worked / what didn't:** re-verified cycle 177's report (`e15f920`) against live
@@ -200,7 +236,7 @@ Entry format:
   operations they already cover, specifically to avoid this class of silent failure.
 - **Applies to:** review | prompt | build
 
-## 2026-08-29 — #19's permission-denial count bounced to 7, breaking the "returned to baseline" read; now looks like noise across a wider range (cycle 175)
+## 2026-08-29 — #19's permission-denial count bounced to 7, breaking the "returned to baseline" read; now looks like noise across a wider range (cycle 175) [distilled]
 - **Outcome:** n/a (not a dispatched item; commented on #19 with the new data point, no
   status change — still `summon-human`/Blocked awaiting the maintainer)
 - **What worked / what didn't:** re-verified cycle 174's report (`33184801935`, committed
@@ -233,7 +269,7 @@ Entry format:
   copy might be shallow.
 - **Applies to:** review
 
-## 2026-08-28 — #19's permission-denial count dropped back to 5 the cycle right after the 8/8 spike; reads as noise, not a sustained climb (cycle 174)
+## 2026-08-28 — #19's permission-denial count dropped back to 5 the cycle right after the 8/8 spike; reads as noise, not a sustained climb (cycle 174) [distilled]
 - **Outcome:** n/a (not a dispatched item; commented on #19 with the new data point, no
   status change — still `summon-human`/Blocked awaiting the maintainer)
 - **What worked / what didn't:** re-verified cycle 173's report (`33129642481`, committed
@@ -257,7 +293,7 @@ Entry format:
   #19 was filed.
 - **Applies to:** review
 
-## 2026-08-28 — #19's permission-denial signature jumped from a 3-5 baseline to 8 on two straight cycles, still no fabrication found (cycle 173)
+## 2026-08-28 — #19's permission-denial signature jumped from a 3-5 baseline to 8 on two straight cycles, still no fabrication found (cycle 173) [distilled]
 - **Outcome:** n/a (not a dispatched item; commented on #19 with the new evidence, no
   status change — still `summon-human`/Blocked awaiting the maintainer)
 - **What worked / what didn't:** re-verified cycle 172's report (`33080905927`, committed
@@ -277,7 +313,7 @@ Entry format:
   "nonzero") is new information about whether it's getting worse.
 - **Applies to:** review
 
-## 2026-08-27 — #21's onboarding-agent assertion-flake recurred with a different assertion pair, clean on rerun again (cycle 172)
+## 2026-08-27 — #21's onboarding-agent assertion-flake recurred with a different assertion pair, clean on rerun again (cycle 172) [distilled]
 - **Outcome:** n/a (not a dispatched item; commented on #21 with the new evidence, no new
   issue filed — still `summon-human`/Blocked awaiting the maintainer's policy decision)
 - **What worked / what didn't:** Sync found `main` CI red on the current head `2b50cde`
@@ -306,7 +342,7 @@ Entry format:
   just fragment the same decision across two threads.
 - **Applies to:** triage | review
 
-## 2026-08-26 — #19's permission-denial signature recurred on cycles 168-170 with no fabrication this time (cycle 170's own report re-verified live) (cycle 171)
+## 2026-08-26 — #19's permission-denial signature recurred on cycles 168-170 with no fabrication this time (cycle 170's own report re-verified live) (cycle 171) [distilled]
 - **Outcome:** n/a (not a dispatched item; added a comment to #19 with the new data, no
   status change — still `summon-human`/Blocked awaiting the maintainer's decision)
 - **What worked / what didn't:** Sync's own-claims check (per the "verifying a cycle's own

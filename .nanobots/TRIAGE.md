@@ -112,6 +112,16 @@ the rule itself but change how you read the evidence gathered while applying it:
   rather than extending the known-flake treatment to a new failure shape unilaterally. If this
   behavioral-flake shape recurs, that is evidence for formally broadening condition 2 — propose
   the edit rather than reading it in silently. `[distilled from 2026-08-25 #21]`
+- **A recurrence of a flake shape already tracked by an open, maintainer-pending P0 is a
+  dedupe case, not a fresh filing** — the intake checklist's "duplicate → comment on the
+  canonical issue" rule (see Intake → Triage checklist above) applies just as much to a
+  recurring Sync-time CI-red event as to a new inbox item. Confirmed on #21 (2026-08-27,
+  cycle 172): the same behavioral-flake shape recurred with a different specific assertion;
+  rather than opening a second P0 for the same already-open policy question (whether
+  condition 2 should broaden), the new evidence was added as a comment on #21 and no sibling
+  issue was filed. Filing a second P0 for a question the first P0 already asks just fragments
+  one decision across two threads a human has to reconcile. `[distilled from 2026-08-27
+  (cycle 172), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 
