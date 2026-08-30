@@ -19,6 +19,33 @@ Entry format:
 
 ---
 
+## 2026-08-30 — #19: denial-count check found a new peak (14) on cycle 181's run, report still clean (cycle 182)
+- **Outcome:** n/a (not a dispatched item; posted cycle 181's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 181's report (`d7ad08f`) against live
+  state first, per the standing recipe — `gh api .../commits/d7ad08f --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 comment counts and
+  last-comment bodies all still the loop's own posts, no maintainer replies. No fabrication.
+  Pulled cycle 181's own run (`33310087529`) denial count same cycle: `permission_denials_count: 14`
+  — a new peak, above the previous high of 12 (cycle 176). No per-call denial detail is
+  available in the run log beyond the summary count. No open PRs, no `nanobots:inbox` items,
+  `main` CI green on the current head, nothing to triage or dispatch (WIP 0/1). Full
+  sequence: 168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: 2,
+  179: 4, 180: 3, 181: **14**.
+- **Lesson:** a new peak on its own is not yet actionable — cycle 181's report checked out
+  clean despite the higher count, consistent with 175/176's spikes, so denial count still
+  hasn't correlated with report accuracy. But 14 is now clearly outside the "noise around a
+  low single-digit baseline" framing prior cycles used (168-180 ranged 2-12, mean well under
+  14) — if a value this high or higher recurs, that's grounds to stop calling this "noise"
+  and treat it as a trend worth its own investigation (e.g. what specifically got denied),
+  not just another data point appended to the sequence. Distill count recomputed via
+  RECIPES.md's two-command formula: 47 total headers (46 entries after subtracting the
+  format-template line) minus 37 `[distilled]`-suffixed = 9 undistilled — still under the
+  ~10 threshold, no distill pass this cycle.
+- **Applies to:** triage | verify
+
 ## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 180's run posted at 3 (cycle 181)
 - **Outcome:** n/a (not a dispatched item; posted cycle 180's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
