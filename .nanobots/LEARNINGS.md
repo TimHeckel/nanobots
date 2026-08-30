@@ -19,6 +19,28 @@ Entry format:
 
 ---
 
+## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 179's run posted at 4 (cycle 180)
+- **Outcome:** n/a (not a dispatched item; posted cycle 179's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 179's report (`aca6a25`) against live
+  state first, per the standing recipe — `gh api .../commits/aca6a25 --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 comment counts and
+  last-comment authors all still the loop's own (`TimHeckel`, the human PAT identity), no
+  maintainer replies. No fabrication. Pulled cycle 179's own run (`33280706558`) denial count
+  same cycle rather than deferring it — `permission_denials_count: 4`, posted to #19. Full
+  sequence: 168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: 2,
+  179: **4**. Also spot-checked the latest `nanobots-worker.yml` run (`33283858484`) log for
+  any recurrence of #18's `gh project --owner` "unknown owner type" failure per RECIPES.md
+  #13 — clean, no errors, nothing claimable (board has no Ready items). No open PRs, no
+  `nanobots:inbox` items, nothing to triage or dispatch (WIP 0/1).
+- **Lesson:** the sequence (168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12,
+  177: 5, 178: 2, 179: 4) continues to read as noise around a low single-digit baseline with
+  two outlier spikes rather than a trend in either direction — worth continuing to track but
+  not yet worth a distinct finding of its own beyond what #19 already states.
+- **Applies to:** triage | verify
+
 ## 2026-08-29 — #19: denial-count check continued cleanly this cycle — cycle 178's run posted at 2 (cycle 179)
 - **Outcome:** n/a (not a dispatched item; posted cycle 178's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
