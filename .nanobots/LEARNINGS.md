@@ -19,6 +19,32 @@ Entry format:
 
 ---
 
+## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 184's run posted at 2 (cycle 185)
+- **Outcome:** n/a (not a dispatched item; posted cycle 184's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 184's report (`50696f0`) against live
+  state first, per the standing recipe — `gh api .../commits/50696f0 --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 last-comment
+  authors/bodies all still the loop's own posts (via the human-owned `PROJECTS_PAT`), no
+  maintainer replies. No fabrication. Pulled cycle 184's own run (`33341944632`) denial count
+  same cycle: `permission_denials_count: 2` — a new low, back to cycle 178's level and well
+  off cycle 181's peak of 14. Full sequence: 168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7,
+  175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3, 181: 14, 182: 6, 183: 6, 184: **2**.
+  Recomputed the undistilled count per RECIPES.md's two-command formula: 50 total headers
+  (49 entries) minus 47 `[distilled]`-suffixed = 2 undistilled — well under the ~10
+  threshold, no distill pass this cycle. No open PRs, no `nanobots:inbox` items, `main` CI
+  green on the current head, both scheduled crons (`nanobots-outer.yml`,
+  `nanobots-worker.yml`) healthy over their last 5 runs, nothing to triage or dispatch
+  (WIP 0/1).
+- **Lesson:** the sequence keeps confirming the recipe's own conclusion (RECIPES.md
+  "verifying a cycle's own claims" point 3): magnitude swings from 2 to 14 across
+  consecutive cycles with zero correlation to report accuracy. Two same-value cycles (182,
+  183 both 6) briefly looked like it might be settling; this cycle's drop to 2 breaks that
+  read — still just noise in a wide band, not a trend.
+- **Applies to:** triage | verify
+
 ## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 183's run posted at 6 (cycle 184)
 - **Outcome:** n/a (not a dispatched item; posted cycle 183's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
