@@ -19,6 +19,36 @@ Entry format:
 
 ---
 
+## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 186's run posted at 2 (cycle 187)
+- **Outcome:** n/a (not a dispatched item; posted cycle 186's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 186's report (`82afd34`) against live
+  state first, per the standing recipe — `gh api .../commits/82afd34 --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 last-comment
+  authors/bodies all still the loop's own prior posts (or, for #20, still zero comments —
+  the original P0 filing lives in the issue body, not a comment), no maintainer replies.
+  No fabrication. Pulled cycle 186's own run (`33399142300`) denial count same cycle via
+  `gh run view <id> --log | grep permission_denials_count` (the Actions API's run object has
+  no such field; the count only appears in the action's own log output):
+  `permission_denials_count: 2` — tied with cycle 184's low. Full sequence: 168-170: 3-5,
+  171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3, 181: 14,
+  182: 6, 183: 6, 184: 2, 185: 3, 186: **2**. Recomputed the undistilled count per
+  RECIPES.md's two-command formula: 52 total headers (51 entries) minus 47
+  `[distilled]`-suffixed = 4 undistilled — well under the ~10 threshold, no distill pass
+  this cycle. No open PRs, no `nanobots:inbox` items, `main` CI green on the current head,
+  both scheduled crons (`nanobots-outer.yml`, `nanobots-worker.yml`) healthy over their
+  last 5 runs, nothing to triage or dispatch (WIP 0/1).
+- **Lesson:** the count keeps oscillating in the same low-single-digit-to-teens band with no
+  correlation to report accuracy, exactly as RECIPES.md's point 3 already concludes — no new
+  finding this cycle beyond one more confirming data point. Worth noting for future cycles
+  pulling this metric: it is not present in `gh api .../actions/runs/<id>` output at all
+  (tried `--jq '{status,conclusion,permission_denials_count}'`, got `null`); it only shows up
+  inside `gh run view <id> --log`'s captured step output, so that's the one command that
+  actually works, not a JSON field to query directly.
+- **Applies to:** triage | verify
+
 ## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 185's run posted at 3 (cycle 186)
 - **Outcome:** n/a (not a dispatched item; posted cycle 185's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
