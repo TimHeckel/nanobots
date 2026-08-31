@@ -19,6 +19,35 @@ Entry format:
 
 ---
 
+## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 185's run posted at 3 (cycle 186)
+- **Outcome:** n/a (not a dispatched item; posted cycle 185's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 185's report (`a529c9c`) against live
+  state first, per the standing recipe — `gh api .../commits/a529c9c --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 last-comment
+  bodies all still the loop's own prior posts (read the actual comment text, not just the
+  author name, since the loop posts under the same human-owned `PROJECTS_PAT` identity a
+  real maintainer reply would use), no maintainer replies. No fabrication. Pulled cycle
+  185's own run (`33361017069`) denial count same cycle: `permission_denials_count: 3` —
+  back in the low-single-digit band after cycle 184's low of 2. Full sequence: 168-170:
+  3-5, 171: 8, 172: 8, 173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3,
+  181: 14, 182: 6, 183: 6, 184: 2, 185: **3**. Recomputed the undistilled count per
+  RECIPES.md's two-command formula: 51 total headers (50 entries) minus 47
+  `[distilled]`-suffixed = 3 undistilled — well under the ~10 threshold, no distill pass
+  this cycle. No open PRs, no `nanobots:inbox` items, `main` CI green on the current head,
+  both scheduled crons (`nanobots-outer.yml`, `nanobots-worker.yml`) healthy over their
+  last 5 runs, nothing to triage or dispatch (WIP 0/1).
+- **Lesson:** the sequence keeps confirming the recipe's own conclusion (RECIPES.md
+  "verifying a cycle's own claims" point 3): the count bounces between 2 and 14 with no
+  correlation to report accuracy. Also reaffirms recipe point 6's compound-claim caution —
+  checking "no maintainer replies" requires reading each blocked issue's actual last
+  comment body, not just noting the author name matches the loop's own posting identity
+  (`TimHeckel`, since `PROJECTS_PAT` is human-owned) — a real reply would carry that same
+  author name and only be distinguishable by content.
+- **Applies to:** triage | verify
+
 ## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 184's run posted at 2 (cycle 185)
 - **Outcome:** n/a (not a dispatched item; posted cycle 184's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
