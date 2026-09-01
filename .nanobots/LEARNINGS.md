@@ -19,6 +19,40 @@ Entry format:
 
 ---
 
+## 2026-09-01 — #19: denial-count holds at 2 on cycle 190's run; undistilled count confirmed exact (no off-by-one this time) (cycle 191)
+- **Outcome:** n/a (not a dispatched item; posted cycle 190's denial count to #1's cycle
+  report, no status change — board and all four blocked issues still
+  `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** re-verified cycle 190's report (`c62b64c`) against live
+  state first, per the standing recipe — `gh api .../commits/c62b64c --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 last-comment
+  authors/bodies all still the loop's own prior posts (or, for #20, still zero comments —
+  the original P0 filing lives in the issue body), no maintainer replies. No fabrication.
+  Also confirmed cycle 190's *recomputed* undistilled count (55 headers/54 entries/47
+  distilled = 7 pre-append, 8 post-append) against a fresh recount this cycle, run before
+  this entry's own append: `grep -c "^## "` → 56, Grep-tool `^## .*\[distilled\]\s*$` → 47,
+  giving 55 entries − 47 = 8 — matches cycle 190's post-append figure exactly, so no repeat
+  of the cycles-137/157/162/189 off-by-one class this time. Pulled cycle 190's own run
+  (`33517696568`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: `permission_denials_count: 2` — tied with cycle 189, not a new
+  trend in either direction. Full sequence: 168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7,
+  175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3, 181: 14, 182: 6, 183: 6, 184: 2, 185: 3,
+  186: 2, 187: 1, 188: 1, 189: 2, 190: **2**. No open PRs, no `nanobots:inbox` items, `main`
+  CI green on the current head, both scheduled crons (`nanobots-outer.yml`,
+  `nanobots-worker.yml`) healthy over their last 5 runs, nothing to triage or dispatch
+  (WIP 0/1).
+- **Lesson:** two consecutive cycles at the same denial count (2) plus a clean recount this
+  time is more confirming evidence for RECIPES.md's existing conclusion (magnitude doesn't
+  correlate with report accuracy) than for anything new. With this entry's own append the
+  undistilled count reaches **9** — one short of the ~10 distill-pass threshold; next
+  cycle's recount should treat crossing 10 as the trigger to fold cycle 189's "count after
+  your own append, not before" fix into RECIPES.md recipe #5 alongside whatever else has
+  accumulated by then.
+- **Applies to:** triage | verify
+
+---
+
 ## 2026-09-01 — #19: denial-count rises to 2 on cycle 189's run; recount catches an off-by-one in cycle 189's own undistilled-count claim (cycle 190)
 - **Outcome:** n/a (not a dispatched item; posted cycle 189's denial count and the recount
   discrepancy to #19, no status change — board and all four blocked issues still
