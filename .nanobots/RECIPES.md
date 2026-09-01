@@ -192,22 +192,32 @@ then narrated over instead of surfacing.
 3. A nonzero `permission_denials_count` (visible via `gh run view <id> --log` on the outer
    or worker workflow) on a run that otherwise looks clean is a signal worth a second look —
    it means at least one tool call this cycle was blocked, and the cycle may have carried on
-   past that silently. **After ~15 consecutive cycles of tracking this on #19 (2026-08-26
-   through 2026-08-30, range 2-14, no visible trend), the count's *magnitude* has not once
+   past that silently. **After ~21 consecutive cycles of tracking this on #19 (2026-08-26
+   through 2026-09-01, cycles 171-191, range 1-14, no visible trend — including a new low of
+   1 sustained across two cycles at 187/188), the count's *magnitude* has not once
    correlated with an inaccurate report** — every cycle re-verified clean regardless of
-   whether its own denial count was near the baseline or a new peak. Keep pulling it every
-   cycle (it's still evidence about the underlying unexplained denied call #19 owns), but
-   don't let a high number alone raise the urgency of the live-state re-verification above
+   whether its own denial count was near the baseline, a new low, or a new peak. Keep pulling
+   it every cycle (it's still evidence about the underlying unexplained denied call #19 owns),
+   but don't let a high number alone raise the urgency of the live-state re-verification above
    what you'd already do for any cycle — the actual signal remains whether the *claims*
    check out, not the count. **When citing this metric alongside a run ID, re-pull it from
    that exact run ID** — reusing or restating an adjacent cycle's cached number produces an
    off-by-one slip that reads as a real trend change (e.g. a false "returned to baseline")
    when the metric for the cycle actually named was never re-measured. `[distilled from
-   2026-08-26 through 2026-08-30 (cycles 171-182, #19)]`
+   2026-08-26 through 2026-09-01 (cycles 171-191, #19)]`
 4. This is a standing check, not a one-time fix — until #19's root cause lands, every cycle
    should spot-check the immediately preceding cycle's claimed commits before treating
    LEARNINGS/RECIPES/TRIAGE as reflecting what the last report said. `[distilled from
    2026-08-17 #19]`
+7. **"No maintainer reply" must be verified by reading each blocked issue's actual last
+   comment body, not by checking who the author is.** The outer loop's own `PROJECTS_PAT` is a
+   human-owned classic PAT (see RUNTIMES.md's auth facts), so every comment the loop itself
+   posts — including its own denial-count or dedupe data points — shows the *same* GitHub
+   author (`TimHeckel`) that a real maintainer reply would carry. Author-name alone cannot
+   distinguish "the loop talked to itself again" from "the maintainer responded"; only the
+   comment's content can. Confirmed as the correct check across cycles 185-192 (2026-08-31
+   through 2026-09-01): each one read the actual comment text on #18/#19/#20/#21 before
+   concluding no maintainer reply had landed. `[distilled from 2026-08-31 (cycle 186)]`
 5. **The LEARNINGS undistilled-count claim specifically has now been gotten wrong in cycles
    137, 157, and 162** — restating it from memory or a hand recount of a 700+ line file is not
    reliable at this size. Recompute it with exactly these two independent tool invocations,
@@ -232,6 +242,20 @@ then narrated over instead of surfacing.
    prompt — that is the workaround, not a different regex.
    undistilled = (first count − 1) − second count. `[distilled from 2026-08-19, 2026-08-21,
    2026-08-25 (cycle 163), 2026-08-29 (cycle 176)]`
+7. **Recompute the undistilled count *after* appending this cycle's own LEARNINGS entry, not
+   before.** Counting first and reporting that number as the post-append figure undercounts by
+   exactly one — the entry about to be written. Confirmed on cycle 190 (2026-09-01): cycle
+   189's report stated "54 total headers (53 entries) ... 6 undistilled," but a fresh recount
+   against the same commit found 55/54/47 = 7 — cycle 189 had run the recount before its own
+   append and reported it as if it reflected the state after. State explicitly which state
+   (pre- or post-append) a reported count reflects, and default to reporting post-append since
+   that's the number relevant to "how close to the ~10 threshold." `[distilled from 2026-09-01
+   (cycle 190)]`
+8. **`permission_denials_count` is not a field on the run object** — `gh api
+   .../actions/runs/<id> --jq '{status,conclusion,permission_denials_count}'` returns `null`
+   for it. It only appears inside the action's own captured step output, so `gh run view <id>
+   --log | grep permission_denials_count` is the one command that actually works for pulling
+   this metric; don't reach for the JSON API shortcut. `[distilled from 2026-08-31 (cycle 187)]`
 6. **A compound claim ("filed #20, `summon-human`, Blocked, assigned") is several separate
    assertions bundled into one phrase — read each one back, not just the headline one.**
    Confirmed on #20 (2026-08-25): the issue, labels, and board status all matched a prior

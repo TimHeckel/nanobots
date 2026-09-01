@@ -122,6 +122,19 @@ the rule itself but change how you read the evidence gathered while applying it:
   issue was filed. Filing a second P0 for a question the first P0 already asks just fragments
   one decision across two threads a human has to reconcile. `[distilled from 2026-08-27
   (cycle 172), #21]`
+- **The dedupe rule for a recurring flake under an open, maintainer-pending P0 applies across
+  distinct failure *sub-shapes* of the same test/job, not only to a literal repeat of the same
+  assertion.** Confirmed on #21 (2026-09-01, cycle 192): the same live-DeepSeek
+  `onboarding-agent` e2e test had already failed twice under this issue with two different
+  missed-tool-call assertions; a third occurrence failed a different way entirely — the model
+  stalled on an interactive question and the harness reported "the agent never produced a
+  transcript" (a wording `LEARNINGS.md` shows recurring as far back as 2026-08-05, so a known
+  variant, not a new bug). All three share the same underlying cause (live-model
+  nondeterminism), the same non-network failure class, and clear on an immediate rerun with an
+  unrelated diff — that's enough to treat a new sub-shape as the same open policy question
+  rather than a fresh filing, as long as the non-network/clean-rerun/unrelated-diff evidence is
+  re-checked and posted, not assumed from the shape alone. `[distilled from 2026-09-01
+  (cycle 192), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

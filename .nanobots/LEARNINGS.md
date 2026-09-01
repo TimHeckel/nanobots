@@ -19,7 +19,63 @@ Entry format:
 
 ---
 
-## 2026-09-01 — #19: denial-count holds at 2 on cycle 190's run; undistilled count confirmed exact (no off-by-one this time) (cycle 191)
+## 2026-09-01 — #21: third distinct failure sub-shape recurs on cycle 191's own commit — interactive stall, not a missed assertion (cycle 192) [distilled]
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item; commented on #21
+  rather than filing a new P0 — board and all four blocked issues still
+  `summon-human`/Blocked awaiting the maintainer, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on `b353544` (cycle 191's own
+  docs-only LEARNINGS commit), run `33544317485`, `onboarding-agent` failing while `test`
+  passed. Unlike #21's prior two occurrences (missed a specific `set_variable`/`verify_daytona`
+  tool call), this run's log read `FAILED — the agent never produced a transcript`, with the
+  transcript stopping mid-flow at an open-ended `ask_user` hard-gate-scoping question and no
+  reply consumed. That exact wording was not new — this file's 2026-08-05 (#16 filing) and
+  2026-08-08 entries already recorded the identical failure text from this same job on
+  unrelated diffs, so it's a known recurring variant, not a fresh bug shape. Checked the four
+  flake-exception conditions: one job red calling the live DeepSeek endpoint (yes); network-
+  shaped (no — no `fetch failed`/timeout/reset/5xx, the model just stalled interactively);
+  diff plausibly touching the path (no — `b353544` vs its parent `c62b64c` touches only
+  `.nanobots/LEARNINGS.md`, confirmed via the GitHub API file list per RECIPES.md #1's
+  shallow-clone caveat); clean on `gh run rerun --failed` (yes — both jobs green, no code
+  change). Condition 2 fails literally, but per TRIAGE.md's 2026-08-27 dedupe refinement this
+  is a recurrence of the flake shape #21 already tracks under an open, maintainer-pending
+  policy question (whether to broaden condition 2 for live-LLM behavioral nondeterminism) —
+  commented the new evidence there instead of opening a fourth issue for the same question.
+- **Lesson:** the dedupe rule for a recurring flake under an open P0 extends across *distinct
+  failure sub-shapes* of the same test/job, not just repeats of the identical assertion — a
+  missed-tool-call assertion and an interactive stall-with-no-transcript are both symptoms of
+  the same live-model nondeterminism this policy question is about, and cross-checking new
+  failure text against LEARNINGS' own history (this exact string already existed from
+  2026-08-05) is what confirmed "known variant" rather than "novel bug" quickly.
+- **Applies to:** triage | prompt
+
+## 2026-09-01 — distill pass: 10 undistilled entries (the #19 denial-count series cycles 184-191, the prior cycle-183 distill entry, and this cycle's #21 sub-shape entry) folded into RECIPES.md and TRIAGE.md (cycle 192) [distilled]
+- **Outcome:** n/a (docs-only distill pass; no board status change — all four blocked issues
+  still `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** recomputed the undistilled count fresh, after this cycle's
+  own #21 entry was appended, per recipe #7 below: 58 total headers − 1 (template) − 47
+  `[distilled]` = 10, at the threshold, so ran the pass rather than deferring it. Folded four
+  durable findings out of the 10 source entries: (1) RECIPES.md "verifying a cycle's own
+  claims" point 3 extended with the denial-count sequence through cycle 191 (range still 1-14
+  across 21 cycles, still no correlation with report accuracy, including a new sustained low
+  of 1 at cycles 187-188); (2) a new point 7 there codifying that "no maintainer reply" must be
+  checked by reading each blocked issue's actual last comment body, not the author name, since
+  the loop's own `PROJECTS_PAT` is human-owned and posts under the same identity a real reply
+  would use; (3) RECIPES.md recipe #5 (the undistilled-count formula) gained points 7-8: recount
+  *after* this cycle's own append (cycle 189's report undercounted by exactly one from getting
+  this order backwards), and `permission_denials_count` only exists in `gh run view --log`
+  output, never in the `gh api .../actions/runs/<id>` JSON; (4) TRIAGE.md's flake-judgment
+  refinements gained a bullet generalizing the #21 dedupe rule to distinct failure *sub-shapes*
+  of the same test (this cycle's "never produced a transcript" stall vs. the issue's original
+  missed-assertion shapes), not just literal repeats. Marked all 10 source entries
+  `[distilled]`.
+- **Lesson:** same pattern as the cycle-183 distill pass this one absorbs: a long run of
+  near-identical tracking entries (same issue, same recipe, same verdict) compresses to a
+  handful of rule refinements, and checking the threshold with the exact formula — computed
+  after, not before, the current cycle's own append — is what catches the crossing reliably
+  rather than by estimate.
+- **Applies to:** triage | review
+
+## 2026-09-01 — #19: denial-count holds at 2 on cycle 190's run; undistilled count confirmed exact (no off-by-one this time) (cycle 191) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 190's denial count to #1's cycle
   report, no status change — board and all four blocked issues still
   `summon-human`/Blocked awaiting the maintainer)
@@ -53,7 +109,7 @@ Entry format:
 
 ---
 
-## 2026-09-01 — #19: denial-count rises to 2 on cycle 189's run; recount catches an off-by-one in cycle 189's own undistilled-count claim (cycle 190)
+## 2026-09-01 — #19: denial-count rises to 2 on cycle 189's run; recount catches an off-by-one in cycle 189's own undistilled-count claim (cycle 190) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 189's denial count and the recount
   discrepancy to #19, no status change — board and all four blocked issues still
   `summon-human`/Blocked awaiting the maintainer)
@@ -88,7 +144,7 @@ Entry format:
   explicitly which state (pre- or post-append) a reported count reflects.
 - **Applies to:** triage | prompt
 
-## 2026-09-01 — #19: denial-count check holds at 1 on cycle 188's run, report still clean (cycle 189)
+## 2026-09-01 — #19: denial-count check holds at 1 on cycle 188's run, report still clean (cycle 189) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 188's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -114,7 +170,7 @@ Entry format:
   check per RECIPES.md rather than treating a repeat low as a resolution signal.
 - **Applies to:** triage | review
 
-## 2026-09-01 — #19: denial-count check found a new low (1) on cycle 187's run, report still clean (cycle 188)
+## 2026-09-01 — #19: denial-count check found a new low (1) on cycle 187's run, report still clean (cycle 188) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 187's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -140,7 +196,7 @@ Entry format:
   finding.
 - **Applies to:** triage | verify
 
-## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 186's run posted at 2 (cycle 187)
+## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 186's run posted at 2 (cycle 187) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 186's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -170,7 +226,7 @@ Entry format:
   actually works, not a JSON field to query directly.
 - **Applies to:** triage | verify
 
-## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 185's run posted at 3 (cycle 186)
+## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 185's run posted at 3 (cycle 186) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 185's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -199,7 +255,7 @@ Entry format:
   author name and only be distinguishable by content.
 - **Applies to:** triage | verify
 
-## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 184's run posted at 2 (cycle 185)
+## 2026-08-31 — #19: denial-count check continued cleanly this cycle — cycle 184's run posted at 2 (cycle 185) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 184's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -225,7 +281,7 @@ Entry format:
   read — still just noise in a wide band, not a trend.
 - **Applies to:** triage | verify
 
-## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 183's run posted at 6 (cycle 184)
+## 2026-08-30 — #19: denial-count check continued cleanly this cycle — cycle 183's run posted at 6 (cycle 184) [distilled]
 - **Outcome:** n/a (not a dispatched item; posted cycle 183's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
   maintainer)
@@ -250,7 +306,7 @@ Entry format:
   worth flagging if a third cycle also lands at exactly 6 rather than drifting.
 - **Applies to:** triage | verify
 
-## 2026-08-30 — distill pass: 10 undistilled #19/#21 tracking entries folded into RECIPES.md and TRIAGE.md; #19's denial count dropped back to 6 (cycle 183)
+## 2026-08-30 — distill pass: 10 undistilled #19/#21 tracking entries folded into RECIPES.md and TRIAGE.md; #19's denial count dropped back to 6 (cycle 183) [distilled]
 - **Outcome:** n/a (not a dispatched item; docs-only distill pass plus a data point posted
   to #19, no status change — board and all four blocked issues still `summon-human`/Blocked
   awaiting the maintainer)
