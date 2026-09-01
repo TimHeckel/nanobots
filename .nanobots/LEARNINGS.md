@@ -19,6 +19,32 @@ Entry format:
 
 ---
 
+## 2026-09-01 — #19: denial-count check holds at 1 on cycle 188's run, report still clean (cycle 189)
+- **Outcome:** n/a (not a dispatched item; posted cycle 188's denial count to #19, no status
+  change — board and all four blocked issues still `summon-human`/Blocked awaiting the
+  maintainer)
+- **What worked / what didn't:** re-verified cycle 188's report (`d3fe22a`) against live
+  state first, per the standing recipe — `gh api .../commits/d3fe22a --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); #18/#19/#20/#21 last-comment
+  authors/bodies all still the loop's own prior posts (or, for #20, still zero comments —
+  the original P0 filing lives in the issue body, not a comment), no maintainer replies. No
+  fabrication. Pulled cycle 188's own run (`33455479584`) denial count same cycle via
+  `gh run view <id> --log | grep permission_denials_count`: `permission_denials_count: 1` —
+  tied with cycle 187's low, not a new one. Full sequence: 168-170: 3-5, 171: 8, 172: 8,
+  173: 5, 174: 7, 175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3, 181: 14, 182: 6, 183: 6,
+  184: 2, 185: 3, 186: 2, 187: 1, 188: **1**. Recomputed the undistilled count per
+  RECIPES.md's two-command formula: 54 total headers (53 entries) minus 47
+  `[distilled]`-suffixed = 6 undistilled — well under the ~10 threshold, no distill pass
+  this cycle. No open PRs, no `nanobots:inbox` items, `main` CI green on the current head,
+  both scheduled crons (`nanobots-outer.yml`, `nanobots-worker.yml`) healthy over their
+  last 5 runs.
+- **Lesson:** two cycles running at the same denial-count value (1) is the lowest sustained
+  reading in the tracked history and still correlates with nothing — both cycles' reports
+  re-verified clean. No new evidence either way on #19's root cause; continuing the standing
+  check per RECIPES.md rather than treating a repeat low as a resolution signal.
+- **Applies to:** triage | review
+
 ## 2026-09-01 — #19: denial-count check found a new low (1) on cycle 187's run, report still clean (cycle 188)
 - **Outcome:** n/a (not a dispatched item; posted cycle 187's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
