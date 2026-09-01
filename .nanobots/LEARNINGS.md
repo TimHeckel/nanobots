@@ -19,6 +19,41 @@ Entry format:
 
 ---
 
+## 2026-09-01 — #19: denial-count rises to 2 on cycle 189's run; recount catches an off-by-one in cycle 189's own undistilled-count claim (cycle 190)
+- **Outcome:** n/a (not a dispatched item; posted cycle 189's denial count and the recount
+  discrepancy to #19, no status change — board and all four blocked issues still
+  `summon-human`/Blocked awaiting the maintainer)
+- **What worked / what didn't:** re-verified cycle 189's report (`b4fe2cd`) against live
+  state first, per the standing recipe — `gh api .../commits/b4fe2cd --jq
+  '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md` (single file), matching the
+  docs-only claim; board unchanged (8/12 Done, 4 Blocked); no open PRs, no
+  `nanobots:inbox` items; #18/#20/#21 last-comment authors/bodies all still the loop's own
+  prior posts from before cycle 189 (or, for #20, still zero comments — the original P0
+  filing lives in the issue body), no maintainer replies. No fabrication. Pulled cycle
+  189's own run (`33488086733`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: `permission_denials_count: 2` — up from the two-cycle low of 1
+  (cycles 187, 188), but per RECIPES.md's existing conclusion a single-point rise off a low
+  is not itself a signal. Full sequence: 168-170: 3-5, 171: 8, 172: 8, 173: 5, 174: 7,
+  175: 10, 176: 12, 177: 5, 178: 2, 179: 4, 180: 3, 181: 14, 182: 6, 183: 6, 184: 2, 185: 3,
+  186: 2, 187: 1, 188: 1, 189: **2**.
+
+  Recomputed the undistilled LEARNINGS count independently — `grep -c "^## "` and the Grep
+  tool's `^## .*\[distilled\]\s*$` count agree: **55** total headers / 54 entries / 47
+  `[distilled]`-suffixed = **7** undistilled *before* this entry's own append (8 after).
+  Cycle 189's report claimed "54 total headers (53 entries) ... 6 undistilled" — one less
+  than the ground truth measured this cycle, even though no entry was added between cycle
+  189's commit and this cycle's Sync. Likely cause: cycle 189 ran the recount *before*
+  appending its own entry but reported the number as though it reflected the state after
+  that append. Still under the ~10 threshold even at 8, so no distill pass this cycle, but
+  this is a fourth occurrence of the undistilled-count claim being wrong (after cycles 137,
+  157, 162 per RECIPES.md recipe #5) — worth folding "count after appending this cycle's own
+  entry, not before" into that recipe at the next distill pass.
+- **Lesson:** when a recipe says "recompute X every time a report needs the number," the
+  *order* relative to this cycle's own writes matters as much as which commands to run —
+  counting before your own append undercounts by exactly the entry about to be added. State
+  explicitly which state (pre- or post-append) a reported count reflects.
+- **Applies to:** triage | prompt
+
 ## 2026-09-01 — #19: denial-count check holds at 1 on cycle 188's run, report still clean (cycle 189)
 - **Outcome:** n/a (not a dispatched item; posted cycle 188's denial count to #19, no status
   change — board and all four blocked issues still `summon-human`/Blocked awaiting the
