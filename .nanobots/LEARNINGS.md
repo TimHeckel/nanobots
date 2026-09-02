@@ -19,6 +19,45 @@ Entry format:
 
 ---
 
+## 2026-09-02 — #21: recurrence where the immediate rerun stayed red (first time), cycle 197
+- **Outcome:** n/a (Sync-time flake judgment call, not a dispatched item; commented on the
+  existing open P0 #21 rather than filing a fresh issue)
+- **What worked / what didn't:** `main` went red on `d2dbae7` (cycle 196's own docs-only
+  LEARNINGS commit) — `onboarding-agent` job, `✗ agent set PROJECTS_PAT`, non-network,
+  matches #21's tracked flake class. Ran `gh run rerun --failed` per the transient-flake
+  exception's 4th condition — it failed again, but with a *different* assertion this time
+  (`✗ agent called finish() with a summary`), still non-network. Every prior recurrence
+  documented on #21 (2026-08-27 cycle 172, 2026-09-01 cycle 192) cleared on the first
+  rerun; this is the first time it didn't. Treated it as a dedupe case anyway per TRIAGE.md's
+  refinement (same non-network live-model-nondeterminism class, same job, diff still
+  docs-only) rather than filing a 5th sibling issue, but posted the rerun-stayed-red detail
+  prominently since it's new evidence against the "one rerun clears it" assumption the
+  dedupe treatment has leaned on so far.
+- **Lesson:** the dedupe rule for a recurring flake under an open P0 should not be read as
+  requiring "clears on rerun" as a precondition — the underlying policy question (#21: does
+  condition 2 need to broaden past transport errors) is unchanged whether or not this
+  particular rerun happened to clear. But a rerun that *doesn't* clear is itself a data
+  point worth surfacing explicitly rather than silently folding into the same treatment as
+  every clean-rerun recurrence, since it may mean this job's flake rate is rising, not just
+  its failure shape varying. `main` was left red at the end of this cycle — next cycle
+  should check whether it self-healed or needs another look.
+- **Applies to:** triage | prompt
+
+## 2026-09-02 — #19: denial-count data point, cycle 196's own run = 7, mid-band (cycle 197)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12
+  Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each
+  issue's actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 196's report (commit `d2dbae7`) against
+  live state first — `gh api .../commits/d2dbae7 --jq '.files[].filename'` confirms exactly
+  `.nanobots/LEARNINGS.md`, matching the docs-only claim; no fabrication. Pulled cycle 196's
+  own run (`33682907394`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **7**, mid-band, inside the series' established 1-14 range
+  (~29 cycles tracked now, 2026-08-26 through 2026-09-02).
+- **Lesson:** no change from the prior ~29 data points — the count's magnitude still
+  hasn't correlated with report accuracy in either direction. Continuing to track per
+  RECIPES.md's standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-02 — #19: denial-count data point, cycle 195's own run = 6, mid-band (cycle 196)
 - **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
   board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
