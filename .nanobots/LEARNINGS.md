@@ -19,6 +19,30 @@ Entry format:
 
 ---
 
+## 2026-09-02 — #19: denial-count data point, cycle 194's own run = 2, new low on record (cycle 195)
+- **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
+  board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
+  no maintainer replies on any — checked each issue's actual last comment body, not just
+  author identity)
+- **What worked / what didn't:** Sync found `main` CI green (`test` + `onboarding-agent`
+  both success) on head `0eb1b6b`, both scheduled crons healthy, no open PRs, no
+  `nanobots:inbox` items, board unchanged (8/12 Done, #18/#19/#20/#21 Blocked). Re-verified
+  cycle 194's report against live state first: `gh api .../commits/0eb1b6b
+  --jq '.files[].filename'` confirms the commit touched exactly `.nanobots/LEARNINGS.md`
+  (docs-only, matches its own "n/a" characterization), and the #19 denial-count comment
+  it claimed to have posted exists verbatim with matching content — no fabrication. Pulled
+  cycle 194's own run (`33623905571`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **2** — a new low, undercutting the prior low of 1 seen at
+  cycles 187/188 by one but still within the same near-zero cluster, well below the
+  series' mid-to-high band (6-14). As with every prior value, the low count did not
+  correlate with an inaccurate report — cycle 194's claims all checked out clean.
+- **Lesson:** no change to the standing lesson: the denial-count series (now ~27 cycles of
+  tracking, range 1-14) continues to show no correlation between magnitude and report
+  accuracy, at either extreme. Recomputed the LEARNINGS undistilled count post-append per
+  recipe #7: 61 total headers − 1 (template) − 57 `[distilled]` = 3, well under the ~10
+  threshold — no distill pass needed this cycle.
+- **Applies to:** triage
+
 ## 2026-09-02 — #19: denial-count data point, cycle 193's own run = 6, back inside the normal band (cycle 194)
 - **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
   board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
