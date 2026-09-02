@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-09-02 — #19: denial-count data point, cycle 193's own run = 6, back inside the normal band (cycle 194)
+- **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
+  board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
+  no maintainer replies on any — checked each issue's actual last comment body, not just
+  author identity, since the loop's own PAT posts under the same GitHub account a real
+  reply would use)
+- **What worked / what didn't:** Sync found `main` CI green (`test` + `onboarding-agent`
+  both success) on head `e6813d6`, both scheduled crons (`nanobots-outer.yml`,
+  `nanobots-worker.yml`) healthy over their last several runs, no open PRs, no
+  `nanobots:inbox` items, board unchanged (8/12 Done, #18/#19/#20/#21 Blocked). Re-verified
+  cycle 193's report against live state first: `gh api .../commits/e6813d6
+  --jq '.files[].filename'` confirms the commit touched exactly `.nanobots/LEARNINGS.md`
+  (docs-only, matches its own "n/a" characterization — no distill pass claimed that cycle,
+  none needed). Pulled cycle 193's own run (`33591267530`) denial count via `gh run view
+  <id> --log | grep permission_denials_count`: **6** — mid-band, well below cycle 192's 12
+  and cycle 181's peak of 14, close to the series' low end (1-2 seen at cycles 187-191). As
+  with every prior value regardless of magnitude, the count did not correlate with an
+  inaccurate report — cycle 193's claims all checked out clean.
+- **Lesson:** no change to the standing lesson: the denial-count series (now ~26 cycles of
+  tracking) continues to bounce across its established 1-14 band with zero correlation
+  found between magnitude and report accuracy. Continue pulling it every cycle per the
+  standing recipe; only a high count *paired with* a verification failure would be a new
+  signal worth escalating.
+- **Applies to:** triage
+
 ## 2026-09-02 — #19: denial-count data point, cycle 192's own run = 12, second-highest on record (cycle 193)
 - **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
   board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
