@@ -19,7 +19,25 @@ Entry format:
 
 ---
 
-## 2026-09-01 — #21: third distinct failure sub-shape recurs on cycle 191's own commit — interactive stall, not a missed assertion (cycle 192) [distilled]
+## 2026-09-02 — #19: denial-count data point, cycle 192's own run = 12, second-highest on record (cycle 193)
+- **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
+  board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
+  no maintainer replies on any)
+- **What worked / what didn't:** Re-verified cycle 192's report (commit `d73023e`) against
+  live state first: `git rev-parse HEAD` on the checkout matches, `main` CI (`test` +
+  `onboarding-agent`) is green on that head, and the LEARNINGS distill-pass entries plus
+  the #21 comment it claims to have posted both exist verbatim. No fabrication. Pulled
+  cycle 192's own run (`33570396114`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **12** — second-highest value recorded on this series, just
+  under cycle 181's peak of 14, and well above cycles 188-191's low/flat run of 1-2. As
+  with every prior spike (171-172, 175-176, 181), the higher count did not correlate with
+  an inaccurate report — cycle 192's claims all checked out clean.
+- **Lesson:** the denial-count series keeps bouncing in a wide band (1 to 14) with no
+  correlation yet found between magnitude and report accuracy, across ~25 cycles of
+  tracking. Continue pulling it every cycle per the standing recipe, but stop treating any
+  single high value as itself actionable — only a high count *paired with* a verification
+  failure would be a new signal.
+- **Applies to:** triage
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item; commented on #21
   rather than filing a new P0 — board and all four blocked issues still
   `summon-human`/Blocked awaiting the maintainer, no maintainer replies on any)
