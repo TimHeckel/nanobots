@@ -19,6 +19,27 @@ Entry format:
 
 ---
 
+## 2026-09-03 — #19: denial-count data point, cycle 200's own run = 8, mid-band (cycle 201)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 200's report (commit `4b9587e`) against
+  live state first — `gh api .../commits/4b9587e --jq '.files[].filename'` confirms exactly
+  `.nanobots/LEARNINGS.md` + `.nanobots/RECIPES.md` + `.nanobots/TRIAGE.md`, matching the
+  docs-only distill-pass claim; also confirmed cycle 200's #19 and #21 comments actually
+  landed (read back, not just claimed) and that CI on `4b9587e` — the thing cycle 200 flagged
+  as "queued, not yet observed" — came back green (`33779116969`), closing that watch item.
+  Pulled cycle 200's own outer-loop run (`33778506179`) denial count via `gh run view <id>
+  --log | grep permission_denials_count`: **8**, inside the series' established 1-14 range
+  (~32 cycles tracked now, 2026-08-26 through 2026-09-03). Sync otherwise fully quiet this
+  cycle: both crons healthy (5/5 recent outer runs green, worker's two most recent runs
+  green), no open PRs, no `nanobots:inbox` items, `main` CI green on the current head, board
+  unchanged from cycle 200. Posted this data point directly as a `gh issue comment` on #19.
+- **Lesson:** no change from the prior ~32 data points — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-03 — distill pass: 11 undistilled entries (the #19 denial-count series cycles 192-199, the #19 posting-gap catch, and this cycle's own #21 recurrence + #19 data-point entries) folded into RECIPES.md and TRIAGE.md (cycle 200) [distilled]
 - **Outcome:** n/a (docs-only distill pass; no board status change — all four blocked issues
   still `summon-human`/Blocked awaiting the maintainer, no maintainer replies on any)
