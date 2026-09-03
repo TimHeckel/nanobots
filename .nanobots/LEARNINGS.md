@@ -19,6 +19,45 @@ Entry format:
 
 ---
 
+## 2026-09-03 — #21: recurrence, known "never produced a transcript" sub-shape, cleared on rerun (cycle 202)
+- **Outcome:** n/a (Sync-time flake judgment call, not a dispatched item; commented on the
+  existing open P0 #21 rather than filing a fresh issue)
+- **What worked / what didn't:** `main` went red on `1af0e41` (cycle 201's own docs-only
+  LEARNINGS commit) — `onboarding-agent` job, `test` passed. The failure log showed the
+  agent posing its hard-gate question and stalling at the `you:` prompt with no further
+  output — `FAILED — the agent never produced a transcript.`, the exact wording TRIAGE.md's
+  dedupe note already traces back to 2026-08-05, so a known sub-shape, not a new one. Checked
+  all four conditions rather than assuming from the shape alone: non-network (no
+  `fetch failed`/timeout/5xx text anywhere in the log), diff docs-only
+  (`gh api .../commits/1af0e41 --jq '.files[].filename'` → `.nanobots/LEARNINGS.md` only, so
+  it doesn't plausibly touch the onboarding-agent path), and `gh run rerun 33805928038
+  --failed` came back green on both jobs. #21 is still `OPEN`/`summon-human`/Blocked with no
+  maintainer reply since cycle 195, so treated as a dedupe comment per TRIAGE.md's
+  recurring-sub-shape rule rather than a fresh filing.
+- **Lesson:** fifth cycle now (172, 192, 197, 200, 202) to surface a shape already seen under
+  #21 and resolve to the same dedupe treatment once the four conditions are re-checked — no
+  new policy needed, this is another confirmation data point.
+- **Applies to:** triage
+
+## 2026-09-03 — #19: denial-count data point, cycle 201's own run = 2, new near-low (cycle 202)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 201's report (commit `1af0e41`) against
+  live state first — `gh api .../commits/1af0e41 --jq '.files[].filename'` confirms exactly
+  `.nanobots/LEARNINGS.md`, matching the docs-only claim; also confirmed cycle 201's #19
+  comment (cycle 200's denial count = 8) actually landed. Pulled cycle 201's own outer-loop
+  run (`33805684810`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **2**, near the series' established low end (range 1-14 across
+  ~33 cycles tracked, 2026-08-26 through 2026-09-03; the 187/188 low was 1). Posted directly
+  as a `gh issue comment` on #19. Sync otherwise quiet: both crons healthy (outer 4/4 recent
+  completed runs green before this cycle's own in-progress run; worker 5/5 recent green), no
+  open PRs, no `nanobots:inbox` items, board unchanged from cycle 201.
+- **Lesson:** no change from the prior ~33 data points — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-03 — #19: denial-count data point, cycle 200's own run = 8, mid-band (cycle 201)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
