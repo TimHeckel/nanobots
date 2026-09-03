@@ -19,7 +19,77 @@ Entry format:
 
 ---
 
-## 2026-09-03 — #19: cycles 196-198 silently stopped posting the denial-count data point to the issue, caught and backfilled (cycle 199)
+## 2026-09-03 — distill pass: 11 undistilled entries (the #19 denial-count series cycles 192-199, the #19 posting-gap catch, and this cycle's own #21 recurrence + #19 data-point entries) folded into RECIPES.md and TRIAGE.md (cycle 200) [distilled]
+- **Outcome:** n/a (docs-only distill pass; no board status change — all four blocked issues
+  still `summon-human`/Blocked awaiting the maintainer, no maintainer replies on any)
+- **What worked / what didn't:** recomputed the undistilled count fresh, after this cycle's
+  own two new entries were appended, per RECIPES.md's standing recount-after-append rule: 70
+  total headers − 1 (template) − 57 `[distilled]` (pre-pass) = 12 minus this distill entry
+  itself (which folds itself in at creation, same pattern as the cycle-183 and cycle-192
+  passes) = 11 source entries, over the ~10 threshold, so ran the pass rather than deferring
+  another cycle. Folded two durable findings out of the 11 source entries: (1) RECIPES.md's
+  "verifying a cycle's own claims" point 3 denial-count paragraph updated from "cycles
+  171-191" to "cycles 171-199" (~29 consecutive cycles now, still range 1-14, no new extremes
+  since the 187/188 low) — the mechanical range/count update the recipe already calls for
+  every time this series grows, nothing new in kind; (2) a new TRIAGE.md flake-judgment bullet
+  generalizing cycle 197/198's "rerun stayed red once, then the very next push cleared"
+  sequence into a standing rule: a single non-clearing rerun is worth surfacing but is not by
+  itself proof the flake rate is rising — wait for the next independent occurrence before
+  reading it as an escalation signal. The #19 posting-gap catch (cycle 199's own entry) was
+  already folded into RECIPES.md *by cycle 199 itself* (the exact-wording addition citing
+  "[distilled from 2026-09-03 (cycle 199)]" is already live) — this pass just marks that
+  source entry `[distilled]` to match, since the doc-side work was already done. Marked all
+  11 source entries `[distilled]`.
+- **Lesson:** same pattern as the two prior distill passes this one extends: most of a
+  10-entry backlog is routine series continuation (denial-count numbers, dedupe recurrences)
+  that collapses into a one-line range update, and the actual new rule content is usually one
+  or two bullets, not eleven. Distilling promptly at the threshold keeps that ratio visible —
+  waiting longer just means restating more unchanged numbers before reaching the one new
+  insight.
+- **Applies to:** triage | review
+
+## 2026-09-03 — #21: recurrence with a new sub-shape (Daytona-verification assertions), cleared on rerun, cycle 200 [distilled]
+- **Outcome:** n/a (Sync-time flake judgment call, not a dispatched item; commented on the
+  existing open P0 #21 rather than filing a fresh issue)
+- **What worked / what didn't:** `main` went red on `e1ad202` (cycle 199's own docs-only
+  LEARNINGS+RECIPES commit) — `onboarding-agent` job, 4 of 29 assertions failed (`✗ agent set
+  DAYTONA_API_KEY`, `✗ agent set the OCR endpoint variables`, `✗ agent ran verify_daytona`,
+  `✗ agent verified Daytona BEFORE storing the key`), a shape not seen before on this issue
+  (prior recurrences clustered around missed tool-calls earlier in the transcript or a stalled
+  interactive question, not the Daytona-verification step specifically). Non-network, diff
+  confirmed docs-only via `gh api .../commits/e1ad202 --jq '.files[].filename'` so it doesn't
+  plausibly touch the onboarding-agent flow. `gh run rerun 33748918920 --failed` came back
+  clean on both jobs — the majority pattern; cycle 197 remains the one on-record exception.
+  Treated as a dedupe under #21 (same job, same non-network live-model-nondeterminism class,
+  clears on rerun, diff doesn't touch the path) rather than a fresh filing, consistent with
+  TRIAGE.md's sub-shape dedupe rule.
+- **Lesson:** the dedupe rule's "distinct sub-shape, same underlying cause" reasoning keeps
+  holding as new sub-shapes appear — four cycles now (172, 192, 197, 200) have each surfaced a
+  shape not seen before under #21, and every one still resolved to "same open policy question,
+  not a new issue" once the four conditions were re-checked rather than assumed. No new rule
+  needed beyond what TRIAGE.md already states; this is a confirmation data point, not a policy
+  change.
+- **Applies to:** triage
+
+## 2026-09-03 — #19: denial-count data point, cycle 199's own run = 8, mid-band (cycle 200) [distilled]
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 199's report (commit `e1ad202`) against
+  live state first — `gh api .../commits/e1ad202 --jq '.files[].filename'` confirms exactly
+  `.nanobots/LEARNINGS.md` + `.nanobots/RECIPES.md`, matching the docs-only claim; also
+  confirmed cycle 199's #19 backfill comment (cycles 196-198's missing data points) actually
+  landed on the issue, not just claimed. Pulled cycle 199's own outer-loop run (`33748557538`)
+  denial count via `gh run view <id> --log | grep permission_denials_count`: **8**, inside the
+  series' established 1-14 range (~29 cycles tracked now, 2026-08-26 through 2026-09-03).
+  Posted directly as a `gh issue comment` on #19 this time (not just recorded here), per the
+  posting-gap fix cycle 199 made to RECIPES.md.
+- **Lesson:** no change from the prior data points — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
+## 2026-09-03 — #19: cycles 196-198 silently stopped posting the denial-count data point to the issue, caught and backfilled (cycle 199) [distilled]
 - **Outcome:** n/a (Sync-time/review-outcomes catch, not a dispatched item; board unchanged
   — 8/12 Done, #18-21 still Blocked/`summon-human`, no maintainer replies on any)
 - **What worked / what didn't:** before pulling this cycle's own data point, checked whether
@@ -50,7 +120,7 @@ Entry format:
   facts.
 - **Applies to:** triage | verify | prompt
 
-## 2026-09-03 — #21: main self-healed on the very next push, cycle 198
+## 2026-09-03 — #21: main self-healed on the very next push, cycle 198 [distilled]
 - **Outcome:** n/a (Sync-time follow-up on an existing open P0, not a dispatched item)
 - **What worked / what didn't:** cycle 197 left `main` red on `d2dbae7` after a same-commit
   rerun failed a second time (first non-clearing rerun in #21's history). By this cycle,
@@ -67,7 +137,7 @@ Entry format:
   pattern.
 - **Applies to:** triage | prompt
 
-## 2026-09-02 — #19: denial-count data point, cycle 197's own run = 10, mid-band (cycle 198)
+## 2026-09-02 — #19: denial-count data point, cycle 197's own run = 10, mid-band (cycle 198) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each
   issue's actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -82,7 +152,7 @@ Entry format:
   RECIPES.md's standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-02 — #21: recurrence where the immediate rerun stayed red (first time), cycle 197
+## 2026-09-02 — #21: recurrence where the immediate rerun stayed red (first time), cycle 197 [distilled]
 - **Outcome:** n/a (Sync-time flake judgment call, not a dispatched item; commented on the
   existing open P0 #21 rather than filing a fresh issue)
 - **What worked / what didn't:** `main` went red on `d2dbae7` (cycle 196's own docs-only
@@ -106,7 +176,7 @@ Entry format:
   should check whether it self-healed or needs another look.
 - **Applies to:** triage | prompt
 
-## 2026-09-02 — #19: denial-count data point, cycle 196's own run = 7, mid-band (cycle 197)
+## 2026-09-02 — #19: denial-count data point, cycle 196's own run = 7, mid-band (cycle 197) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each
   issue's actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -121,7 +191,7 @@ Entry format:
   RECIPES.md's standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-02 — #19: denial-count data point, cycle 195's own run = 6, mid-band (cycle 196)
+## 2026-09-02 — #19: denial-count data point, cycle 195's own run = 6, mid-band (cycle 196) [distilled]
 - **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
   board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
   no maintainer replies on any — checked each issue's actual last comment body, not just
@@ -143,7 +213,7 @@ Entry format:
   needed this cycle.
 - **Applies to:** triage
 
-## 2026-09-02 — #19: denial-count data point, cycle 194's own run = 2, new low on record (cycle 195)
+## 2026-09-02 — #19: denial-count data point, cycle 194's own run = 2, new low on record (cycle 195) [distilled]
 - **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
   board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
   no maintainer replies on any — checked each issue's actual last comment body, not just
@@ -167,7 +237,7 @@ Entry format:
   threshold — no distill pass needed this cycle.
 - **Applies to:** triage
 
-## 2026-09-02 — #19: denial-count data point, cycle 193's own run = 6, back inside the normal band (cycle 194)
+## 2026-09-02 — #19: denial-count data point, cycle 193's own run = 6, back inside the normal band (cycle 194) [distilled]
 - **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
   board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
   no maintainer replies on any — checked each issue's actual last comment body, not just
@@ -192,7 +262,7 @@ Entry format:
   signal worth escalating.
 - **Applies to:** triage
 
-## 2026-09-02 — #19: denial-count data point, cycle 192's own run = 12, second-highest on record (cycle 193)
+## 2026-09-02 — #19: denial-count data point, cycle 192's own run = 12, second-highest on record (cycle 193) [distilled]
 - **Outcome:** n/a (Sync-time verification + standing metric pull, not a dispatched item;
   board and all four blocked issues still `summon-human`/Blocked awaiting the maintainer,
   no maintainer replies on any)

@@ -135,6 +135,17 @@ the rule itself but change how you read the evidence gathered while applying it:
   rather than a fresh filing, as long as the non-network/clean-rerun/unrelated-diff evidence is
   re-checked and posted, not assumed from the shape alone. `[distilled from 2026-09-01
   (cycle 192), #21]`
+- **A single same-commit rerun that stays red is worth surfacing but is not by itself
+  evidence the flake rate is rising — check whether the very next independent push or rerun
+  clears before treating it as escalation-worthy.** Confirmed on #21: cycle 197 (2026-09-02)
+  saw the first non-clearing rerun in the issue's history and flagged it explicitly as new
+  evidence against the "one rerun clears it" assumption; the very next push (cycle 198, a
+  different commit, same docs-only shape) passed both jobs cleanly with no code change to the
+  flaky path in between. One non-clearing rerun and one clean next-push is not enough data to
+  resolve whether the flake rate is actually rising, but it is enough to *not* treat a single
+  non-clearing rerun as confirmation of one — post it as a data point on the dedupe comment,
+  same as before, and let the pattern accumulate before revising the dedupe treatment itself.
+  `[distilled from 2026-09-02/03 (cycles 197-198), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

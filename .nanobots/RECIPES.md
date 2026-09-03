@@ -192,19 +192,19 @@ then narrated over instead of surfacing.
 3. A nonzero `permission_denials_count` (visible via `gh run view <id> --log` on the outer
    or worker workflow) on a run that otherwise looks clean is a signal worth a second look —
    it means at least one tool call this cycle was blocked, and the cycle may have carried on
-   past that silently. **After ~21 consecutive cycles of tracking this on #19 (2026-08-26
-   through 2026-09-01, cycles 171-191, range 1-14, no visible trend — including a new low of
-   1 sustained across two cycles at 187/188), the count's *magnitude* has not once
-   correlated with an inaccurate report** — every cycle re-verified clean regardless of
-   whether its own denial count was near the baseline, a new low, or a new peak. Keep pulling
-   it every cycle (it's still evidence about the underlying unexplained denied call #19 owns),
-   but don't let a high number alone raise the urgency of the live-state re-verification above
-   what you'd already do for any cycle — the actual signal remains whether the *claims*
-   check out, not the count. **When citing this metric alongside a run ID, re-pull it from
-   that exact run ID** — reusing or restating an adjacent cycle's cached number produces an
-   off-by-one slip that reads as a real trend change (e.g. a false "returned to baseline")
-   when the metric for the cycle actually named was never re-measured. `[distilled from
-   2026-08-26 through 2026-09-01 (cycles 171-191, #19)]`
+   past that silently. **After ~29 consecutive cycles of tracking this on #19 (2026-08-26
+   through 2026-09-03, cycles 171-199, range 1-14, no visible trend — including a new low of
+   1 sustained across two cycles at 187/188, and no new extremes since), the count's
+   *magnitude* has not once correlated with an inaccurate report** — every cycle re-verified
+   clean regardless of whether its own denial count was near the baseline, a new low, or a new
+   peak. Keep pulling it every cycle (it's still evidence about the underlying unexplained
+   denied call #19 owns), but don't let a high number alone raise the urgency of the
+   live-state re-verification above what you'd already do for any cycle — the actual signal
+   remains whether the *claims* check out, not the count. **When citing this metric alongside
+   a run ID, re-pull it from that exact run ID** — reusing or restating an adjacent cycle's
+   cached number produces an off-by-one slip that reads as a real trend change (e.g. a false
+   "returned to baseline") when the metric for the cycle actually named was never re-measured.
+   `[distilled from 2026-08-26 through 2026-09-03 (cycles 171-199, #19)]`
    **The data point must be posted as an actual `gh issue comment` on #19, not just recorded
    in LEARNINGS.md/the Status-issue report.** LOOP-PROMPT.md's "every action visible on
    GitHub, no private state" rule applies to this metric too — LEARNINGS is this loop's
