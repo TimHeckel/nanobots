@@ -205,6 +205,16 @@ then narrated over instead of surfacing.
    off-by-one slip that reads as a real trend change (e.g. a false "returned to baseline")
    when the metric for the cycle actually named was never re-measured. `[distilled from
    2026-08-26 through 2026-09-01 (cycles 171-191, #19)]`
+   **The data point must be posted as an actual `gh issue comment` on #19, not just recorded
+   in LEARNINGS.md/the Status-issue report.** LOOP-PROMPT.md's "every action visible on
+   GitHub, no private state" rule applies to this metric too — LEARNINGS is this loop's
+   memory, but #19 is the audit trail a maintainer or a future cycle would actually check.
+   Confirmed as a real gap on cycle 199 (2026-09-03): cycles 196-198 each computed and wrote
+   up a value in LEARNINGS but never attempted the `gh issue comment` call (checked via `gh
+   run view <id> --log | grep -i "gh issue comment"` — no output, not a denial), a 3-cycle
+   silent drift after 30 consecutive cycles of posting. Before checking this step off, confirm
+   the comment actually landed on #19 (read it back), the same way recipe #1 above requires
+   for commits. `[distilled from 2026-09-03 (cycle 199)]`
 4. This is a standing check, not a one-time fix — until #19's root cause lands, every cycle
    should spot-check the immediately preceding cycle's claimed commits before treating
    LEARNINGS/RECIPES/TRIAGE as reflecting what the last report said. `[distilled from

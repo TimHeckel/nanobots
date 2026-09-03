@@ -19,6 +19,37 @@ Entry format:
 
 ---
 
+## 2026-09-03 — #19: cycles 196-198 silently stopped posting the denial-count data point to the issue, caught and backfilled (cycle 199)
+- **Outcome:** n/a (Sync-time/review-outcomes catch, not a dispatched item; board unchanged
+  — 8/12 Done, #18-21 still Blocked/`summon-human`, no maintainer replies on any)
+- **What worked / what didn't:** before pulling this cycle's own data point, checked whether
+  #19's comment thread actually contains the last few cycles' claimed data points — it
+  doesn't. The last real comment on #19 is cycle 195's (2026-09-02T16:36:40Z); LEARNINGS.md
+  has entries for cycles 196, 197, and 198 each describing a denial-count value they
+  computed, but none of those three cycles has a matching `gh issue comment` on #19.
+  Confirmed this wasn't a denied/blocked write (which would itself be interesting given
+  #19's subject) by grepping each run's own log for the command: `gh run view <id> --log |
+  grep -i "gh issue comment"` returned nothing for all three runs (`33682907394`,
+  `33694525031`, `33715460852`) — the step was never attempted, not attempted-and-blocked.
+  Backfilled all three missing values in one catch-up comment on #19: cycle 196's own run =
+  **7**, cycle 197's own run = **10**, cycle 198's own run = **5** (all mid-band, 1-14
+  range, no correlation with report accuracy as usual — re-verified `d2dbae7`/`7b760e9`/
+  `ab67c54` as docs-only first). Also tightened `.nanobots/RECIPES.md`'s standing
+  denial-count recipe to say explicitly the value must be posted as a comment on #19, not
+  just recorded in LEARNINGS — the prior wording ("keep pulling it every cycle") was
+  satisfiable by LEARNINGS-only tracking, which is exactly what happened.
+- **Lesson:** a standing recipe that says "track X" without saying "and post X where the
+  policy claims it lives" can be satisfied by writing it to the loop's own memory file
+  (LEARNINGS) while quietly dropping the GitHub-visible half — LEARNINGS is legible to a
+  future cycle, but LOOP-PROMPT.md's "every action visible on GitHub, no private state"
+  rule specifically means the *issue thread*, not this file, for anything a maintainer might
+  check. This generalizes past #19's specific metric: any repeated cross-cycle posting habit
+  is worth spot-checking against the actual target (read the comment list, not just this
+  file's account of it) the same way recipe #1 in RECIPES.md already requires for claimed
+  commits — a claim of "I did X" and "X is visible where it's supposed to be" are different
+  facts.
+- **Applies to:** triage | verify | prompt
+
 ## 2026-09-03 — #21: main self-healed on the very next push, cycle 198
 - **Outcome:** n/a (Sync-time follow-up on an existing open P0, not a dispatched item)
 - **What worked / what didn't:** cycle 197 left `main` red on `d2dbae7` after a same-commit
