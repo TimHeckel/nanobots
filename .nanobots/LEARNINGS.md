@@ -19,6 +19,38 @@ Entry format:
 
 ---
 
+## 2026-09-03 — #21: main self-healed on the very next push, cycle 198
+- **Outcome:** n/a (Sync-time follow-up on an existing open P0, not a dispatched item)
+- **What worked / what didn't:** cycle 197 left `main` red on `d2dbae7` after a same-commit
+  rerun failed a second time (first non-clearing rerun in #21's history). By this cycle,
+  `main` was already green — the very next push, head `7b760e9` (cycle 197's own docs-only
+  LEARNINGS commit), passed both `test` and `onboarding-agent` cleanly (run 33694967445,
+  2026-09-02T23:24:54Z). No code change touched the flaky path between the red rerun and
+  the green push.
+- **Lesson:** a same-commit rerun staying red is not evidence the flake rate is
+  categorically rising — a fresh push is functionally another independent model call, same
+  as a rerun would have been, and this one cleared immediately. Logged as a comment on #21
+  rather than treated as new information that should change the dedupe treatment; the
+  underlying policy question (whether condition 2 should broaden past transport errors)
+  remains open and maintainer-pending regardless of any single recurrence's clearing
+  pattern.
+- **Applies to:** triage | prompt
+
+## 2026-09-02 — #19: denial-count data point, cycle 197's own run = 10, mid-band (cycle 198)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12
+  Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each
+  issue's actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 197's report (commit `7b760e9`) against
+  live state first — `gh api .../commits/7b760e9 --jq '.files[].filename'` confirms exactly
+  `.nanobots/LEARNINGS.md`, matching the docs-only claim; no fabrication. Pulled cycle 197's
+  own run (`33694525031`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **10**, inside the series' established 1-14 range (~30 cycles
+  tracked now, 2026-08-26 through 2026-09-03).
+- **Lesson:** no change from the prior ~30 data points — the count's magnitude still
+  hasn't correlated with report accuracy in either direction. Continuing to track per
+  RECIPES.md's standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-02 — #21: recurrence where the immediate rerun stayed red (first time), cycle 197
 - **Outcome:** n/a (Sync-time flake judgment call, not a dispatched item; commented on the
   existing open P0 #21 rather than filing a fresh issue)
