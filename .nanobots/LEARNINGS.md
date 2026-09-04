@@ -19,6 +19,26 @@ Entry format:
 
 ---
 
+## 2026-09-04 — #19: denial-count data point, cycle 205's own run = 1, low end (cycle 206)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 205's report (commit `396b734`) against
+  live state first — `gh api .../commits/396b734 --jq '.files[].filename'` confirms exactly
+  `.nanobots/LEARNINGS.md`, matching the docs-only claim; also confirmed cycle 205's own #19
+  comment (cycle 204's denial count = 1) and its #20 recurrence comment both actually landed.
+  Pulled cycle 205's own outer-loop run (`33917773779`) denial count via `gh run view <id>
+  --log | grep permission_denials_count`: **1**, at the series' established low end (~37
+  cycles tracked, 2026-08-26 through 2026-09-04). Sync otherwise fully quiet this cycle: both
+  crons healthy (no new red `nanobots-outer.yml` runs since cycle 205's own; worker's recent
+  runs all green), no open PRs, no `nanobots:inbox` items, `main` CI green on the current head
+  (`396b734`), board unchanged from cycle 205. Posted this data point directly as a `gh issue
+  comment` on #19, confirmed landed by reading it back.
+- **Lesson:** no change from the prior ~36 data points — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-04 — #20: recurrence, first since filing (~10 days quiet), self-resolved on the very next scheduled run (cycle 205)
 - **Outcome:** n/a (standing metric/Sync check, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each
