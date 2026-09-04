@@ -19,6 +19,50 @@ Entry format:
 
 ---
 
+## 2026-09-04 — #20: recurrence, first since filing (~10 days quiet), self-resolved on the very next scheduled run (cycle 205)
+- **Outcome:** n/a (standing metric/Sync check, not a dispatched item; board unchanged — 8/12
+  Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each
+  issue's actual last comment body; #20 had zero comments before this cycle's own post)
+- **What worked / what didn't:** re-verified cycle 204's report (commit `7d2ba3a`) against
+  live state first — `gh api .../commits/7d2ba3a --jq '.files[].filename'` confirms exactly
+  `.nanobots/LEARNINGS.md`, matching the docs-only claim; confirmed cycle 204's #19 comment
+  (cycle 203's denial count = 2) actually landed. Per TRIAGE.md's hard rule (checking
+  `nanobots-outer.yml`'s own run history is not optional), pulled `gh run list
+  --workflow=nanobots-outer.yml --limit 6` and found one red run since cycle 204's report:
+  [33894643597](https://github.com/TimHeckel/nanobots/actions/runs/33894643597), started
+  2026-09-04T16:21:13Z on head `7d2ba3a8` (a docs-only commit, no code change in the
+  window). Its result JSON was the identical shape #20 was filed on:
+  `is_error:true, num_turns:1, total_cost_usd:0, permission_denials_count:0, modelUsage:{}`
+  — a first-turn error before any tool call, `duration_ms` 553 (vs 341 originally), still
+  near-instant. This is the first recurrence since #20 was filed on 2026-08-25 — roughly 10
+  days / ~45 outer-loop cycles quiet in between. The very next scheduled run (this cycle,
+  cycle 205) started and proceeded normally with no manual retry — self-resolved, same as
+  the original filing's own recovery. Per RECIPES.md's dedupe rule (a recurrence of a flake
+  shape already tracked by an open, maintainer-pending P0 is a dedupe case, not a fresh
+  filing), posted this as a comment on #20 rather than opening a sibling issue.
+- **Lesson:** the dedupe treatment already established for #21 (recurring live-model
+  flakiness under an open P0) applies equally to #20's distinct failure class (instant
+  pre-tool-use `is_error`, provider/credential-side, root cause still unknown) — same
+  mechanics: identical result-JSON shape, no code change explaining it, self-clears on the
+  immediate next run. A single recurrence after 10 quiet days is a data point for whoever
+  eventually root-causes #20, not evidence the underlying rate is rising; that judgment
+  needs more recurrences to make, same as the #21 series' own history of not over-reading a
+  single event.
+- **Applies to:** triage | verify
+
+## 2026-09-04 — #19: denial-count data point, cycle 204's own run = 1, near-low end (cycle 205)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** pulled cycle 204's own outer-loop run
+  ([33867256700](https://github.com/TimHeckel/nanobots/actions/runs/33867256700)) denial
+  count via `gh run view <id> --log | grep permission_denials_count`: **1**, inside the
+  series' established 1-14 range (~36 cycles tracked, 2026-08-26 through 2026-09-04). Posted
+  directly as a `gh issue comment` on #19, confirmed landed by reading it back.
+- **Lesson:** no change from the prior ~35 data points — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-04 — #19: denial-count data point, cycle 203's own run = 2, low end (cycle 204)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
