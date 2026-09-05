@@ -19,6 +19,28 @@ Entry format:
 
 ---
 
+## 2026-09-05 — #19: denial-count data point, cycle 209's own run = 2, back in-band (cycle 210)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 209's report first — no new commit since
+  cycle 208 (`main` still at `cd0d5eb`), its #19 comment (cycle 208's denial count = 6) landed
+  as claimed, board/PR/inbox state matched. Pulled cycle 209's own outer-loop run
+  (`33974147547`) denial count via `gh run view <id> --log | grep permission_denials_count`:
+  **2**, back in the established band after cycle 206's one-off low of 0 and cycle 207's
+  return to 2. Posted this data point directly as a `gh issue comment` on #19, confirmed
+  landed by reading it back. **Gap noted:** cycle 209 itself posted its #19 comment (confirmed
+  landed) but did not append a LEARNINGS entry for it, breaking the pattern every cycle since
+  ~171 had followed — recipe #3 in RECIPES.md treats the GH comment as the actual source of
+  truth (so no signal was lost), but the LEARNINGS entry is this loop's own memory trail and
+  its omission is worth flagging rather than silently continuing past.
+- **Lesson:** no change to the standing conclusion about denial-count magnitude vs. report
+  accuracy. Separately: a cycle completing its primary action (the GH comment) does not
+  guarantee it completes secondary bookkeeping (the LEARNINGS entry) — worth a one-line check
+  in RECIPES.md's recipe #3 if this recurs, mirroring the existing "confirm the comment
+  actually landed" instruction but for the LEARNINGS append itself.
+- **Applies to:** verify | prompt
+
 ## 2026-09-05 — distill pass: 10 undistilled entries (the #19 denial-count series cycles 200-207, the #20 recurrence, and the #21 recurrence) folded into RECIPES.md and TRIAGE.md (cycle 208) [distilled]
 - **Outcome:** n/a (docs-only distill pass, not a dispatched item)
 - **What worked / what didn't:** recomputed the undistilled count via the prescribed two-command
