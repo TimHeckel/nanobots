@@ -19,6 +19,42 @@ Entry format:
 
 ---
 
+## 2026-09-05 — #21: recurrence, identical assertion text to the original filing, cleared on rerun (cycle 211)
+- **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
+  Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`e8f41e9`,
+  cycle 210's own docs-only LEARNINGS commit), run 33980821053 — only `onboarding-agent`
+  failed, with assertion `agent set the OCR endpoint variables`, the exact same assertion
+  text as #21's original filing (not just the same test file). Checked all four
+  flake-exception conditions: single red job calling a live third-party endpoint (yes);
+  network-shaped failure (no — assertion mismatch, not `fetch failed`/timeout/5xx); diff
+  plausibly touching the path (no — `gh api .../commits/e8f41e9 --jq '.files[].filename'`
+  confirms exactly `.nanobots/LEARNINGS.md`); clean on `gh run rerun --failed` (yes — both
+  jobs green after rerun). Per the issue-agnostic dedupe rule, posted as a comment on #21
+  rather than a fresh filing.
+- **Lesson:** no new policy content — a sixth confirmation of the same dedupe treatment,
+  this time with the added data point that the recurrence can repeat the *exact* original
+  assertion text, not just a new sub-shape, and still qualifies as the same open question.
+- **Applies to:** triage | verify
+
+## 2026-09-05 — #19: denial-count data point, cycle 210's own run = 0, ties cycle 206's low (cycle 211)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 210's report first — `main` still at
+  `e8f41e9`, confirmed via the GitHub API to touch exactly `.nanobots/LEARNINGS.md` as
+  claimed, its #19 comment (cycle 209's denial count = 2) landed as claimed, board/PR/inbox
+  state matched. Pulled cycle 210's own outer-loop run (`33980703088`) denial count via
+  `gh run view <id> --log | grep permission_denials_count`: **0**, tying cycle 206's prior
+  new-low (cycle 207 had returned to 2 afterward). Posted this data point directly as a
+  `gh issue comment` on #19, confirmed landed by reading it back. Also appended this cycle's
+  own LEARNINGS entry (closing the gap cycle 210 flagged: cycle 209 had posted its #19
+  comment but skipped the LEARNINGS append).
+- **Lesson:** two zeros now on record (cycles 206, 210) out of ~40 measurements — still not
+  enough to call the floor moved; needs a third occurrence before revising the "0-14, mostly
+  1-8" band statement in RECIPES.md.
+- **Applies to:** verify | prompt
+
 ## 2026-09-05 — #19: denial-count data point, cycle 209's own run = 2, back in-band (cycle 210)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
