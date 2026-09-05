@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-09-05 — found two more headless-approval triggers: shell heredocs/redirection and `rm`/`unlink` are denied with no human to approve (cycle 211)
+- **Outcome:** n/a (operational finding during this cycle's own Report step, not a
+  dispatched item)
+- **What worked / what didn't:** while composing the cycle report comment, a
+  `gh issue comment --body <<'EOF' ... EOF` heredoc and a plain `... > /tmp/file`
+  redirection were both rejected outright ("Contains shell syntax ... that cannot be
+  statically analyzed" / "Output redirection ... was blocked"), so the report was written
+  via the Write tool to a scratch file in the repo working directory and posted with
+  `gh issue comment --body-file` instead — that path worked cleanly. Afterward, cleaning up
+  the scratch file failed the same way: both `rm <path>` and `unlink <path>` returned "This
+  command requires approval," with no human present in this headless run to grant it (same
+  failure mode 2026-08-29's #19 entry found for a bare-`$`-ending `grep` pattern). The
+  leftover file is untracked and never staged, so it has no effect on the commit — the
+  Actions runner's checkout is destroyed at job end regardless — but it is one more
+  plausible silent contributor to the `permission_denials_count` values #19 has been
+  tracking, alongside the already-documented `grep '...$'` trigger.
+- **Lesson:** in a headless/unattended run, prefer the Write tool for any multi-line text
+  destined for a `gh ... --body-file` call over a Bash heredoc or `>` redirect, and don't
+  bother trying to `rm`/`unlink` scratch files created this way — the ephemeral runner
+  cleans them up for free, and the delete call itself just adds another denied-approval
+  data point to #19 for no benefit. If a future cycle needs guaranteed cleanup of a scratch
+  file (e.g. one that could be accidentally `git add`'d), write it outside the repo working
+  directory in the first place rather than trying to delete it after.
+- **Applies to:** prompt | verify
+
 ## 2026-09-05 — #21: recurrence, identical assertion text to the original filing, cleared on rerun (cycle 211)
 - **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
