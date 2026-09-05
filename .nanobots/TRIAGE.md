@@ -146,6 +146,18 @@ the rule itself but change how you read the evidence gathered while applying it:
   non-clearing rerun as confirmation of one — post it as a data point on the dedupe comment,
   same as before, and let the pattern accumulate before revising the dedupe treatment itself.
   `[distilled from 2026-09-02/03 (cycles 197-198), #21]`
+- **The recurrence-dedupe treatment above is issue-agnostic, not specific to #21's live-model
+  flakiness** — it applies to any open, maintainer-pending P0 tracking a recurring failure
+  class, checked against the same evidence (no code change explaining it, clears on the
+  immediate next independent run/rerun). Confirmed on #20 (2026-09-04, cycle 205): the
+  `nanobots-outer.yml` instant-pre-tool-use-error shape (distinct from #21's live-model
+  nondeterminism — provider/credential-side, root cause still unknown) recurred for the first
+  time in ~10 days, matched the original filing's exact result-JSON shape, and self-resolved
+  on the very next scheduled run with no manual retry. Posted as a comment on #20 rather than
+  a fresh filing, by the same reasoning as the #21 series — the failure *mechanism* differs
+  per issue, but "recurrence under an open P0, same shape, clears on the next run ⇒ dedupe
+  comment, not a new issue" does not need re-deriving per issue. `[distilled from 2026-09-04
+  (cycle 205), #20]`
 
 ## Merge policy (self-hosting/dogfood repos)
 
