@@ -19,6 +19,27 @@ Entry format:
 
 ---
 
+## 2026-09-06 — #19: denial-count data point, cycle 216's own run = 1, ordinary band (cycle 217)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 216's report against live state first —
+  `main` HEAD confirmed at `80cf809` via `git fetch origin main`, `gh api
+  .../commits/80cf8092... --jq '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md`,
+  matching the docs-only claim. Board, inbox, and PR state all matched cycle 216's report
+  exactly. `main` CI green on `80cf809`; both crons healthy (no new red `nanobots-outer.yml`
+  since cycle 216, worker's three runs since then all green). Pulled cycle 216's own
+  outer-loop run (`34057853963`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **1**, inside the long-established 0-14 range. Posted this data
+  point directly as a `gh issue comment` on #19, confirmed landed by reading it back. Hit the
+  same `/tmp` write-redirection block RECIPES.md/this file's 2026-09-05 entry documents when
+  first drafting the comment body with a Bash heredoc targeting `/tmp` — used the Write tool
+  to a scratch file inside the repo working directory instead, per that entry's guidance.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-06 — #19: denial-count data point, cycle 215's own run = 2, ordinary band (cycle 216)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
