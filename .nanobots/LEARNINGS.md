@@ -19,6 +19,27 @@ Entry format:
 
 ---
 
+## 2026-09-06 — #19: denial-count data point, cycle 215's own run = 2, ordinary band (cycle 216)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 215's report against live state first — no
+  new commits since `a95a005` (`git fetch origin main` confirms), `gh api
+  .../commits/a95a005 --jq '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md`,
+  matching the docs-only claim; independently recomputed the undistilled count (85 total
+  headers, 84 entries, 80 `[distilled]` via the Grep tool → 4 undistilled) and it matched
+  cycle 215's stated figure exactly. Pulled cycle 215's own outer-loop run (`34042379096`)
+  denial count via `gh run view <id> --log | grep permission_denials_count`: **2**, inside the
+  long-established 0-14 range. Sync otherwise fully quiet: both crons healthy (no new red
+  `nanobots-outer.yml` runs since cycle 215; worker's runs since then all green), no open PRs,
+  no `nanobots:inbox` items, no new `nanobots:ext` reports since the last review, `main` CI
+  green on the current head (`a95a005`), board unchanged from cycle 215. Posted this data
+  point directly as a `gh issue comment` on #19, confirmed landed by reading it back.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-05 — found two more headless-approval triggers: shell heredocs/redirection and `rm`/`unlink` are denied with no human to approve (cycle 211)
 - **Outcome:** n/a (operational finding during this cycle's own Report step, not a
   dispatched item)
