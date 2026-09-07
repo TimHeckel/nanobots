@@ -158,6 +158,22 @@ the rule itself but change how you read the evidence gathered while applying it:
   per issue, but "recurrence under an open P0, same shape, clears on the next run ⇒ dedupe
   comment, not a new issue" does not need re-deriving per issue. `[distilled from 2026-09-04
   (cycle 205), #20]`
+- **A `gh run rerun --failed` that comes back red on its first attempt is not itself grounds
+  to abandon the dedupe treatment and file a fresh P0** — condition 4 of the flake exception
+  can fail on one attempt and still resolve on a second, and a second rerun clearing it
+  against an unchanged, unrelated diff is evidence *for* live-model nondeterminism, not
+  against it. This also extends the "same dedupe class" rule one level deeper: two *different*
+  assertion failures observed back-to-back **on the very same commit** (not just across
+  separate incidents) still count as the same class, not a new failure needing its own
+  judgment call. Confirmed on #21 (2026-09-07, cycle 221): the first rerun of a red
+  `onboarding-agent` job failed with a different assertion than the original failure
+  (`agent called finish() with a summary` vs. the original `agent set the OCR endpoint
+  variables`), then a second rerun on the same run came back green on both jobs, all against
+  a docs-only diff. This does not yet justify hard-coding a "retry twice" step into
+  LOOP-PROMPT.md's default flow — one occurrence of a non-clearing-then-clearing rerun (this
+  one) plus the single non-clearing rerun from cycle 197 is still thin evidence; keep logging
+  data points on #21 rather than changing the mechanical rule. `[distilled from 2026-09-07
+  (cycle 221), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

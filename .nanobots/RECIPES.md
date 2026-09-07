@@ -206,8 +206,12 @@ then narrated over instead of surfacing.
    out, not the count. **When citing this metric alongside a run ID, re-pull it from that
    exact run ID** — reusing or restating an adjacent cycle's cached number produces an
    off-by-one slip that reads as a real trend change (e.g. a false "returned to baseline")
-   when the metric for the cycle actually named was never re-measured. `[distilled from
-   2026-08-26 through 2026-09-05 (cycles 171-208, #19)]`
+   when the metric for the cycle actually named was never re-measured. Extended through cycle
+   220 (2026-09-07): values across cycles 208-220 (2, 2, 0, 6, 1, 1, 2, 1, 2, 2, 4, 2, 2) stay
+   entirely within the established 0-14 range with no new extremes beyond the already-noted
+   0-lows at cycles 206 and 210 — ~50 consecutive cycles now with the same "magnitude doesn't
+   predict accuracy" conclusion holding. `[distilled from 2026-08-26 through 2026-09-05
+   (cycles 171-208, #19); extended through 2026-09-07 (cycles 209-221, #19)]`
    **The data point must be posted as an actual `gh issue comment` on #19, not just recorded
    in LEARNINGS.md/the Status-issue report.** LOOP-PROMPT.md's "every action visible on
    GitHub, no private state" rule applies to this metric too — LEARNINGS is this loop's
@@ -255,6 +259,16 @@ then narrated over instead of surfacing.
    prompt — that is the workaround, not a different regex.
    undistilled = (first count − 1) − second count. `[distilled from 2026-08-19, 2026-08-21,
    2026-08-25 (cycle 163), 2026-08-29 (cycle 176)]`
+9. **Two more headless-approval triggers found the same way: a Bash heredoc/output-redirection
+   (`... > /tmp/file`) and `rm`/`unlink` on a scratch file both require approval that no human
+   is present to grant in an unattended run.** For any multi-line text destined for a `gh ...
+   --body-file` call, write it with the Write tool to a scratch file inside the repo working
+   directory instead of a Bash heredoc or `>` redirect. Don't bother trying to delete that
+   scratch file afterward — the delete call itself is just another denied-approval data point
+   for #19, and an untracked, never-`git add`ed file has no effect on the commit; the
+   ephemeral runner's checkout is destroyed at job end regardless. If a scratch file must be
+   guaranteed-deleted (e.g. one that risks being accidentally staged), write it outside the
+   repo working directory in the first place. `[distilled from 2026-09-05 (cycle 211)]`
 7. **Recompute the undistilled count *after* appending this cycle's own LEARNINGS entry, not
    before.** Counting first and reporting that number as the post-append figure undercounts by
    exactly one — the entry about to be written. Confirmed on cycle 190 (2026-09-01): cycle

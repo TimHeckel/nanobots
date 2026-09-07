@@ -19,7 +19,65 @@ Entry format:
 
 ---
 
-## 2026-09-07 — #19: denial-count data point, cycle 219's own run = 2, ordinary band (cycle 220)
+## 2026-09-07 — distill pass: 11 undistilled entries (five #19 denial-count data points cycles 209-220, the two #21 recurrences, and the headless-approval-trigger finding) folded into TRIAGE.md and RECIPES.md (cycle 221) [distilled]
+- **Outcome:** n/a (housekeeping, not a dispatched item)
+- **What worked / what didn't:** recomputed the undistilled count post-append (per RECIPES.md's
+  own rule to count after, not before, appending the current cycle's entries): 92 total
+  headers (91 entries), 80 `[distilled]` pre-pass → 11 undistilled before this pass, all
+  cleared by marking those 11 entries. Folded: (1) the two #21
+  recurrences (cycle 211's identical-assertion recurrence, cycle 221's two-non-clearing-
+  sub-shapes-then-cleared recurrence) into a new TRIAGE.md flake-judgment bullet about
+  multi-attempt reruns; (2) the five denial-count data points (cycles 209-220, values 2, 0, 6,
+  1, 1, 2, 1, 2, 2, 4, 2 across the series) into an extended citation range on RECIPES.md's
+  existing denial-count recipe, no new rule needed since the standing conclusion held; (3) the
+  headless-approval-trigger finding (heredocs/redirection, `rm`/`unlink` denied with no human
+  to approve) into a new RECIPES.md bullet under the "verifying a cycle's own claims" recipe.
+- **Lesson:** same as prior distill passes — batching data-point entries into a citation-range
+  extension (rather than a new bullet per data point) keeps RECIPES.md from growing
+  unboundedly on entries that reconfirm an existing conclusion rather than introduce a new one.
+- **Applies to:** review
+
+## 2026-09-07 — #21: recurrence, two non-clearing sub-shapes back-to-back, cleared on a second rerun (cycle 221) [distilled]
+- **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
+  Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`eb2b5c6`,
+  cycle 220's own docs-only LEARNINGS commit), run 34154648345 — only `onboarding-agent`
+  failed with assertion `agent set the OCR endpoint variables`, identical text to the
+  original filing and the cycle 211 recurrence. Diff confirmed docs-only via `gh api
+  .../commits/eb2b5c6 --jq '.files[].filename'`. `gh run rerun --failed` did **not** come
+  back green on the first attempt — condition 4 of the flake exception failed outright — but
+  failed with a *different* assertion this time (`agent called finish() with a summary`),
+  still non-network, same job/endpoint, same unrelated diff. A second `gh run rerun --failed`
+  on the same run came back green on both jobs. Per the issue-agnostic dedupe rule, posted as
+  a comment on #21 (confirmed landed) rather than a fresh filing.
+- **Lesson:** a rerun can need more than one attempt to clear without that being evidence of
+  an escalating flake rate — the second rerun clearing it, against an unchanged unrelated
+  diff, is evidence *for* nondeterminism, not against the exception. Two different assertion
+  failures observed back-to-back on the very same commit (not just across separate incidents)
+  still qualify as the same dedupe class. Not yet enough data to add a "retry twice by
+  default" step to LOOP-PROMPT.md.
+- **Applies to:** triage | verify
+
+## 2026-09-07 — #19: denial-count data point, cycle 220's own run = 2, ordinary band (cycle 221) [distilled]
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 220's report against live state first —
+  `main` HEAD confirmed at `eb2b5c6` via `git fetch origin main`, `gh api
+  .../commits/eb2b5c6 --jq '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md`,
+  matching the docs-only claim. Board, inbox, and PR state all matched cycle 220's report
+  exactly (0 inbox, 0 open PRs, no In Progress/In Review/Ready). Both crons healthy (no new
+  red `nanobots-outer.yml` since cycle 220 other than this cycle's own transient recurrence on
+  `main`'s push CI, which is a separate workflow; worker's runs since then all green). Pulled
+  cycle 220's own outer-loop run (`34154495729`) denial count via `gh run view <id> --log |
+  grep permission_denials_count`: **2**, ordinary band. Posted this data point directly as a
+  `gh issue comment` on #19, confirmed landed by reading it back.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
+## 2026-09-07 — #19: denial-count data point, cycle 219's own run = 2, ordinary band (cycle 220) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -37,7 +95,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-07 — #19: denial-count data point, cycle 218's own run = 4, ordinary band (cycle 219)
+## 2026-09-07 — #19: denial-count data point, cycle 218's own run = 4, ordinary band (cycle 219) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -55,7 +113,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-07 — #19: denial-count data point, cycle 217's own run = 2, ordinary band (cycle 218)
+## 2026-09-07 — #19: denial-count data point, cycle 217's own run = 2, ordinary band (cycle 218) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -73,7 +131,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-06 — #19: denial-count data point, cycle 216's own run = 1, ordinary band (cycle 217)
+## 2026-09-06 — #19: denial-count data point, cycle 216's own run = 1, ordinary band (cycle 217) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -94,7 +152,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-06 — #19: denial-count data point, cycle 215's own run = 2, ordinary band (cycle 216)
+## 2026-09-06 — #19: denial-count data point, cycle 215's own run = 2, ordinary band (cycle 216) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -115,7 +173,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-05 — found two more headless-approval triggers: shell heredocs/redirection and `rm`/`unlink` are denied with no human to approve (cycle 211)
+## 2026-09-05 — found two more headless-approval triggers: shell heredocs/redirection and `rm`/`unlink` are denied with no human to approve (cycle 211) [distilled]
 - **Outcome:** n/a (operational finding during this cycle's own Report step, not a
   dispatched item)
 - **What worked / what didn't:** while composing the cycle report comment, a
@@ -140,7 +198,7 @@ Entry format:
   directory in the first place rather than trying to delete it after.
 - **Applies to:** prompt | verify
 
-## 2026-09-05 — #21: recurrence, identical assertion text to the original filing, cleared on rerun (cycle 211)
+## 2026-09-05 — #21: recurrence, identical assertion text to the original filing, cleared on rerun (cycle 211) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`e8f41e9`,
@@ -158,7 +216,7 @@ Entry format:
   assertion text, not just a new sub-shape, and still qualifies as the same open question.
 - **Applies to:** triage | verify
 
-## 2026-09-05 — #19: denial-count data point, cycle 210's own run = 0, ties cycle 206's low (cycle 211)
+## 2026-09-05 — #19: denial-count data point, cycle 210's own run = 0, ties cycle 206's low (cycle 211) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -176,7 +234,7 @@ Entry format:
   1-8" band statement in RECIPES.md.
 - **Applies to:** verify | prompt
 
-## 2026-09-05 — #19: denial-count data point, cycle 209's own run = 2, back in-band (cycle 210)
+## 2026-09-05 — #19: denial-count data point, cycle 209's own run = 2, back in-band (cycle 210) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
