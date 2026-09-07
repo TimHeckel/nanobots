@@ -19,6 +19,24 @@ Entry format:
 
 ---
 
+## 2026-09-07 — #19: denial-count data point, cycle 217's own run = 2, ordinary band (cycle 218)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 217's report against live state first —
+  `main` HEAD confirmed at `6088118` via `git fetch origin main`, `gh api
+  .../commits/6088118... --jq '.files[].filename'` confirms exactly `.nanobots/LEARNINGS.md`,
+  matching the docs-only claim. Board, inbox, and PR state all matched cycle 217's report
+  exactly. `main` CI green on `6088118`; both crons healthy (no new red `nanobots-outer.yml`
+  since cycle 217, worker's runs since then all green). Pulled cycle 217's own outer-loop run
+  (`34065300960`) denial count via `gh run view <id> --log | grep permission_denials_count`:
+  **2**, ordinary band. Posted this data point directly as a `gh issue comment` on #19,
+  confirmed landed by reading it back.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-06 — #19: denial-count data point, cycle 216's own run = 1, ordinary band (cycle 217)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
