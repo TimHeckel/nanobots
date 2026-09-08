@@ -19,6 +19,26 @@ Entry format:
 
 ---
 
+## 2026-09-08 — #19: denial-count data point, cycle 224's own run = 6, ordinary band (cycle 225)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 224's report against live state first —
+  commit `d8496cd` confirmed via `gh api .../commits/d8496cd...--jq '.files[].filename'` to
+  touch exactly `.nanobots/LEARNINGS.md`, matching the docs-only data-point claim. Its own
+  #19 and #21 comments both confirmed landed (1 comment each after 2026-09-08T16:00:00Z).
+  Board, inbox, and PR state all matched cycle 224's report exactly (0 inbox, 0 open PRs, no
+  Ready/In Progress/In Review items). `main` CI green on `d8496cd`; both crons healthy (outer:
+  last 5 scheduled runs all success, this run itself in progress; worker: last 5 all success,
+  most recent run `34252090423` logged "no claimable Ready item this run"). No new #20/#21
+  recurrence since cycle 224 — no red outer-loop or main-CI runs found in the window. Pulled
+  cycle 224's own outer-loop run (`34252246743`) denial count via `gh run view <id> --log |
+  grep permission_denials_count`: **6**, ordinary band (established range 0-14).
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-08 — #21: recurrence, new assertion sub-shape, cleared on first rerun (cycle 224)
 - **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
