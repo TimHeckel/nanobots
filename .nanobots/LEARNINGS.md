@@ -19,6 +19,48 @@ Entry format:
 
 ---
 
+## 2026-09-08 — #21: recurrence, new assertion sub-shape, cleared on first rerun (cycle 224)
+- **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
+  Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`245bb90`,
+  cycle 223's own docs-only LEARNINGS commit), run 34220173560 — only `onboarding-agent`
+  failed with a **new specific sub-shape**: `agent set DAYTONA_API_KEY` / `agent ran
+  verify_daytona` / `agent verified Daytona BEFORE storing the key`, distinct from every
+  prior recorded assertion text on this issue (OCR-endpoint-variables, finish()-summary,
+  etc.). Confirmed docs-only via `gh api .../commits/245bb90...--jq '.files[].filename'` →
+  exactly `.nanobots/LEARNINGS.md`. No network-error text in the log (condition 2 doesn't
+  literally qualify), same non-network/behavioral class this issue tracks. `gh run rerun
+  --failed` came back green on both jobs on the **first** attempt this time (unlike cycle
+  221's two-non-clearing-then-cleared pattern). Per the issue-agnostic dedupe rule, posted as
+  a comment on #21 (confirmed landed) rather than a fresh filing.
+- **Lesson:** the recurrence-dedupe treatment extends to an assertion sub-shape never seen
+  before on this issue, not just ones that echo a prior exact wording — the four underlying
+  conditions (same job/endpoint, non-network failure text, unrelated diff, clears on rerun)
+  are what qualifies a new failure text as "the same tracked class," not a match against a
+  specific string catalogued so far. No new sub-shape catalogue needed in TRIAGE.md; the
+  existing "distinct sub-shapes still dedupe" rule (from cycle 192, #21) already covers this
+  without amendment.
+- **Applies to:** triage | verify
+
+## 2026-09-08 — #19: denial-count data point, cycle 223's own run = 2, ordinary band (cycle 224)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 223's report against live state first —
+  commit `245bb90` confirmed via `gh api .../commits/245bb90...--jq '.files[].filename'` to
+  touch exactly `.nanobots/LEARNINGS.md`, matching the docs-only data-point claim. Board,
+  inbox, and PR state all matched cycle 223's report exactly (0 inbox, 0 open PRs, no
+  Ready/In Progress/In Review items). Both crons healthy (outer: last 5 scheduled runs all
+  success; worker: last 5 all success, most recent run `34252090423` logged no claimable Ready
+  item). Pulled cycle 223's own outer-loop run (`34220023521`) denial count via `gh run view
+  <id> --log | grep permission_denials_count`: **2**, ordinary band (established range 0-14).
+  Posted this data point directly as a `gh issue comment` on #19, confirmed landed by reading
+  it back.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-08 — #19: denial-count data point, cycle 222's own run = 1, ordinary band (cycle 223)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
