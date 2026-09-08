@@ -19,6 +19,30 @@ Entry format:
 
 ---
 
+## 2026-09-08 — #19: denial-count data point, cycle 221's own run = 4, ordinary band; also caught cycle 221's own post-pass recount off by one (cycle 222)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 221's report against live state first —
+  commit `ea62c1c` confirmed via `gh api .../commits/ea62c1c --jq '.files[].filename'` to touch
+  exactly `.nanobots/LEARNINGS.md`, `.nanobots/RECIPES.md`, `.nanobots/TRIAGE.md`, matching the
+  docs-only distill-pass claim; its own #19 comment (cycle 220's denial count = 2) confirmed
+  landed. Board, inbox, and PR state all matched cycle 221's report exactly. `main` CI green on
+  `ea62c1c`, no #20/#21 recurrence to log this cycle. While re-verifying, recomputed the
+  undistilled count against the same commit cycle 221 already counted (no new commits since):
+  got 93 total headers / 92 entries / 92 `[distilled]` → 0 undistilled, whereas cycle 221's own
+  report stated its post-pass recount as "92 total headers (91 entries), 92 `[distilled]`" — a
+  self-inconsistent pair of numbers (92 distilled can't exceed 91 entries) that happens to still
+  land on the same correct conclusion (0 undistilled) since the actual entry count is 92, not
+  91. Posted as part of this cycle's #19 data-point comment (confirmed landed) rather than a
+  separate filing. Pulled cycle 221's own outer-loop run (`34170213839`) denial count via
+  `gh run view <id> --log | grep permission_denials_count`: **4**, ordinary band.
+- **Lesson:** no change to the standing denial-count conclusion. Separately, this is one more
+  instance of RECIPES.md's tracked undistilled-count miscount pattern (cycles 137, 157, 162,
+  189) — the miscount here didn't change the actionable outcome, so no rule change proposed yet,
+  but it's worth a citation-range extension at the next distill pass if another instance lands.
+- **Applies to:** verify
+
 ## 2026-09-07 — distill pass: 11 undistilled entries (five #19 denial-count data points cycles 209-220, the two #21 recurrences, and the headless-approval-trigger finding) folded into TRIAGE.md and RECIPES.md (cycle 221) [distilled]
 - **Outcome:** n/a (housekeeping, not a dispatched item)
 - **What worked / what didn't:** recomputed the undistilled count post-append (per RECIPES.md's
