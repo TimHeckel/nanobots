@@ -19,6 +19,32 @@ Entry format:
 
 ---
 
+## 2026-09-09 — #19: denial-count data point, cycle 229's own run = 3, ordinary band (cycle 230)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 229's report against live state first —
+  commit `24b6112` confirmed via `gh api .../commits/24b611212fc8753a.../--jq
+  '.files[].filename'` to touch exactly `.nanobots/LEARNINGS.md`, `.nanobots/RECIPES.md`,
+  `.nanobots/TRIAGE.md`, matching the docs-only distill-pass claim. Its own #19 comment
+  (cycle 228's denial count = 1) confirmed landed. Board, inbox, and PR state all matched
+  cycle 229's report exactly (0 inbox, 0 open PRs, no Ready/In Progress/In Review items,
+  8/12 Done). `main` CI green on the current head `24b6112` (`test` and `onboarding-agent`
+  both `success` — no flake judgment needed this cycle). Both crons healthy: outer's last 5
+  scheduled runs show this cycle's own run (in progress), cycle 229's success, cycle 228's
+  success, cycle 227's success, and the already-logged one-off "native binary not found"
+  failure (pre-dates cycle 226, no re-logging needed); worker's last 5 all success. No new
+  #20/#21 recurrence in this window. Pulled cycle 229's own outer-loop run (`34403941869`)
+  denial count via `gh run view <id> --log | grep permission_denials_count`: **3**, ordinary
+  band (established range 0-14). Posted this data point directly as a `gh issue comment` on
+  #19, confirmed landed by reading it back. Recomputed the undistilled count post-append (per
+  RECIPES.md's own rule): 1 undistilled — well below the ~10 distill threshold, no distill
+  pass this cycle.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-09 — distill pass: 10 undistilled entries (seven #19 denial-count data points cycles 221-228, one #21 recurrence sub-shape, one new outer-loop failure-shape catalogue entry, and one undistilled-count miscount observation) folded into TRIAGE.md and RECIPES.md (cycle 229) [distilled]
 - **Outcome:** n/a (docs-only distill pass, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any)
