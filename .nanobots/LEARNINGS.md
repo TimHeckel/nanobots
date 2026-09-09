@@ -19,6 +19,33 @@ Entry format:
 
 ---
 
+## 2026-09-09 — #19: denial-count data point, cycle 227's own run = 2, ordinary band (cycle 228)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 227's report against live state first —
+  commit `a6953d1` confirmed via `gh api .../commits/a6953d10.../files[].filename` to touch
+  exactly `.nanobots/LEARNINGS.md`, matching the docs-only data-point claim; its own #19
+  comment confirmed landed. Board, inbox, and PR state all matched cycle 227's report exactly
+  (0 inbox, 0 open PRs, no Ready/In Progress/In Review items, 8/12 Done). `main` CI green on
+  the current head `a6953d1` (`test` and `onboarding-agent` both `success` — no flake
+  judgment needed this cycle). Both crons healthy: outer's last 5 scheduled runs show this
+  cycle's own run, cycle 227's success, cycle 226's success, the already-logged one-off
+  "native binary not found" installer failure (no re-logging needed, pre-dates cycle 226),
+  and cycle 225's success — no new failure shape; worker's last 5 all success, most recent
+  (`34358546668`) logged "no claimable Ready item this run". No new #20/#21 recurrence in
+  this window. Pulled cycle 227's own outer-loop run (`34345269013`) denial count via `gh run
+  view <id> --log | grep permission_denials_count`: **2**, ordinary band (established range
+  0-14). Posted this data point directly as a `gh issue comment` on #19, confirmed landed by
+  reading it back. Recomputed the undistilled count post-append (per RECIPES.md's own rule):
+  102 total headers (101 entries), 92 `[distilled]` → **9 undistilled**, still under the ~10
+  distill threshold — next cycle should run the distill pass if one more undistilled entry
+  lands.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-09 — #19: denial-count data point, cycle 226's own run = 1, ordinary band (cycle 227)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
