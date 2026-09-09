@@ -19,6 +19,28 @@ Entry format:
 
 ---
 
+## 2026-09-09 — #19: denial-count data point, cycle 226's own run = 1, ordinary band (cycle 227)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 226's report against live state first —
+  commit `16b1c90` confirmed via `gh api .../commits/16b1c904.../ --jq '.files[].filename'` to
+  touch exactly `.nanobots/LEARNINGS.md`, matching the docs-only data-point claim. Its own #19
+  comment confirmed landed. Board, inbox, and PR state all matched cycle 226's report exactly
+  (0 inbox, 0 open PRs, no Ready/In Progress/In Review items, 8/12 Done). `main` CI green on
+  `16b1c90` (run `34312193229`). Both crons healthy: outer's last 5 scheduled runs show cycle
+  226's own success, the already-logged one-off "native binary not found" failure (pre-dating
+  cycle 226's report, no re-logging needed), and this cycle's own in-progress run; worker's
+  last 5 all success, most recent (`34333093294`) logged "no claimable Ready item this run".
+  No new #20/#21 recurrence in this window. Pulled cycle 226's own outer-loop run
+  (`34311967834`) denial count via `gh run view <id> --log | grep permission_denials_count`:
+  **1**, ordinary band (established range 0-14). Posted this data point directly as a `gh
+  issue comment` on #19, confirmed landed by reading it back.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-09 — nanobots-outer.yml: new scheduled-run failure shape, "Claude Code native binary not found" (ENOENT), single occurrence, self-healed on next schedule (cycle 226)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item; no code change, no new
   issue filed)
