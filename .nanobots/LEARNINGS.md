@@ -19,6 +19,54 @@ Entry format:
 
 ---
 
+## 2026-09-09 — nanobots-outer.yml: new scheduled-run failure shape, "Claude Code native binary not found" (ENOENT), single occurrence, self-healed on next schedule (cycle 226)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item; no code change, no new
+  issue filed)
+- **What worked / what didn't:** Sync found the 2026-09-08T23:23:06Z scheduled
+  `nanobots-outer.yml` run (`34290399294`, head `5c86e67` — cycle 225's own docs-only commit,
+  no code change in the window) failed with a distinct, loud error, unlike #20's silent
+  first-turn shape: the `claude-code-action`'s own installer step logged "✔ Claude Code
+  successfully installed!" immediately followed by "claude command at
+  `/home/runner/.local/bin/claude` missing or broken", then the SDK step threw
+  `ReferenceError: Claude Code native binary not found ... (ENOENT)` before running any
+  prompt — the failure is entirely inside the action's own install step, upstream of
+  anything this repo controls. Checked the last 15 `nanobots-outer.yml` runs: only this one
+  failed; the 14 before it and the very next scheduled run (this cycle, cycle 226) both
+  completed/are completing normally with no manual retry needed. Grepped LEARNINGS.md for
+  "native binary" / "ENOENT" / "claude-code-action" — no prior match, so this is **not** a
+  recurrence of #20: #20's tracked signature is `is_error:true, num_turns:1,
+  total_cost_usd:0, permission_denials_count:0`, a silent pre-tool-call failure with no
+  stack trace and a valid `result` object; this run never reached the SDK's result object at
+  all and threw a loud, fully-stack-traced installer error instead. Conflating the two would
+  violate RECIPES.md's "match by error shape, not just call site" rule (recipe #13).
+- **Lesson:** single occurrence + clean self-heal on the very next scheduled run, with the
+  diff in the window (docs-only) not plausibly touching this, is a transient infra blip per
+  RECIPES.md recipe #12's logic extended to a new failure shape — not a fresh P0. TRIAGE.md's
+  "scheduled dispatcher as urgent as CI-red" rule is keyed on "every run failing", which this
+  doesn't meet. Logging this specific shape now (mirroring how #18's `"unknown owner type"`
+  and `503` sub-shapes were catalogued before they recurred) so a future occurrence can be
+  matched immediately instead of re-diagnosed from scratch.
+- **Applies to:** triage | build
+
+## 2026-09-09 — #19: denial-count data point, cycle 225's own run = 1, ordinary band (cycle 226)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 225's report against live state first —
+  commit `5c86e67` confirmed via `gh api .../commits/5c86e67...--jq '.files[].filename'` to
+  touch exactly `.nanobots/LEARNINGS.md`, matching the docs-only data-point claim. Its own
+  #19 comment confirmed landed (1 new comment, cycle 225's). Board, inbox, and PR state all
+  matched cycle 225's report exactly (0 inbox, 0 open PRs, no Ready/In Progress/In Review
+  items, 8/12 Done). `main` CI green on `5c86e67` (run `34279160438`). Also found — and
+  logged separately above — a new, unrelated `nanobots-outer.yml` failure shape on one
+  scheduled run in the window; single occurrence, self-healed, does not affect this data
+  point. Pulled cycle 225's own outer-loop run (`34278932281`) denial count via `gh run view
+  <id> --log | grep permission_denials_count`: **1**, ordinary band (established range 0-14).
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-08 — #19: denial-count data point, cycle 224's own run = 6, ordinary band (cycle 225)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
