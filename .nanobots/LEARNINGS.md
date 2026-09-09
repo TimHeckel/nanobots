@@ -19,7 +19,53 @@ Entry format:
 
 ---
 
-## 2026-09-09 — #19: denial-count data point, cycle 227's own run = 2, ordinary band (cycle 228)
+## 2026-09-09 — distill pass: 10 undistilled entries (seven #19 denial-count data points cycles 221-228, one #21 recurrence sub-shape, one new outer-loop failure-shape catalogue entry, and one undistilled-count miscount observation) folded into TRIAGE.md and RECIPES.md (cycle 229) [distilled]
+- **Outcome:** n/a (docs-only distill pass, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** promoted the "native binary not found" ENOENT scheduled-run
+  failure shape (cycle 226) into TRIAGE.md's "Flake-judgment refinements" as a catalogued
+  signature distinct from #20's tracked shape, so a future recurrence is recognized
+  immediately instead of re-diagnosed from scratch. Extended RECIPES.md's standing
+  denial-count citation range through cycle 228 (values 4, 1, 2, 6, 1, 1, 2, 1 across cycles
+  221-228, all within the established 0-14 range, no new extremes — ~58 consecutive cycles
+  now tracked with the same "magnitude doesn't predict accuracy" conclusion holding). The
+  #21 new-sub-shape recurrence (cycle 224) and the cycle-221 undistilled-count miscount
+  (caught cycle 222) needed no rule change: the former is already covered by the existing
+  "distinct sub-shapes still dedupe" rule (from cycle 192), and the latter's own entry
+  explicitly deferred a citation-range extension until a second instance lands — none has
+  since. Marked all 10 source entries `[distilled]`.
+- **Lesson:** not every undistilled entry needs a new promoted rule — recognizing "the
+  existing generalization already covers this" is itself the distillation work, and is
+  cheaper (and more honest) than inventing a redundant bullet just to have something to
+  promote.
+- **Applies to:** triage | verify
+
+## 2026-09-09 — #19: denial-count data point, cycle 228's own run = 1, ordinary band (cycle 229) [distilled]
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 228's report against live state first —
+  commit `59cf708` confirmed via `gh api .../commits/59cf70866fe2c16.../--jq
+  '.files[].filename'` to touch exactly `.nanobots/LEARNINGS.md`, matching the docs-only
+  data-point claim. Its own #19 comment (cycle 227's denial count = 2) confirmed landed.
+  Board, inbox, and PR state all matched cycle 228's report exactly (0 inbox, 0 open PRs, no
+  Ready/In Progress/In Review items, 8/12 Done). `main` CI green on the current head
+  `59cf708` (`test` and `onboarding-agent` both `success` — no flake judgment needed this
+  cycle). Both crons healthy: outer's last 5 scheduled runs show this cycle's own run, cycle
+  228's success, cycle 227's success, cycle 226's success, and the already-logged one-off
+  "native binary not found" failure (pre-dates cycle 226, no re-logging needed); worker's
+  last 5 all success, most recent (`34397630960`) success. No new #20/#21 recurrence in this
+  window. Pulled cycle 228's own outer-loop run (`34377969527`) denial count via `gh run view
+  <id> --log | grep permission_denials_count`: **1**, ordinary band (established range 0-14).
+  Posted this data point directly as a `gh issue comment` on #19, confirmed landed by reading
+  it back. Recomputed the undistilled count post-append (per RECIPES.md's own rule): 10
+  undistilled — at the ~10 distill threshold, so this cycle also ran the distill pass above.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
+## 2026-09-09 — #19: denial-count data point, cycle 227's own run = 2, ordinary band (cycle 228) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -46,7 +92,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-09 — #19: denial-count data point, cycle 226's own run = 1, ordinary band (cycle 227)
+## 2026-09-09 — #19: denial-count data point, cycle 226's own run = 1, ordinary band (cycle 227) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -68,7 +114,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-09 — nanobots-outer.yml: new scheduled-run failure shape, "Claude Code native binary not found" (ENOENT), single occurrence, self-healed on next schedule (cycle 226)
+## 2026-09-09 — nanobots-outer.yml: new scheduled-run failure shape, "Claude Code native binary not found" (ENOENT), single occurrence, self-healed on next schedule (cycle 226) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item; no code change, no new
   issue filed)
 - **What worked / what didn't:** Sync found the 2026-09-08T23:23:06Z scheduled
@@ -97,7 +143,7 @@ Entry format:
   matched immediately instead of re-diagnosed from scratch.
 - **Applies to:** triage | build
 
-## 2026-09-09 — #19: denial-count data point, cycle 225's own run = 1, ordinary band (cycle 226)
+## 2026-09-09 — #19: denial-count data point, cycle 225's own run = 1, ordinary band (cycle 226) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -116,7 +162,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-08 — #19: denial-count data point, cycle 224's own run = 6, ordinary band (cycle 225)
+## 2026-09-08 — #19: denial-count data point, cycle 224's own run = 6, ordinary band (cycle 225) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -136,7 +182,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-08 — #21: recurrence, new assertion sub-shape, cleared on first rerun (cycle 224)
+## 2026-09-08 — #21: recurrence, new assertion sub-shape, cleared on first rerun (cycle 224) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`245bb90`,
@@ -159,7 +205,7 @@ Entry format:
   without amendment.
 - **Applies to:** triage | verify
 
-## 2026-09-08 — #19: denial-count data point, cycle 223's own run = 2, ordinary band (cycle 224)
+## 2026-09-08 — #19: denial-count data point, cycle 223's own run = 2, ordinary band (cycle 224) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -178,7 +224,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-08 — #19: denial-count data point, cycle 222's own run = 1, ordinary band (cycle 223)
+## 2026-09-08 — #19: denial-count data point, cycle 222's own run = 1, ordinary band (cycle 223) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -198,7 +244,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-08 — #19: denial-count data point, cycle 221's own run = 4, ordinary band; also caught cycle 221's own post-pass recount off by one (cycle 222)
+## 2026-09-08 — #19: denial-count data point, cycle 221's own run = 4, ordinary band; also caught cycle 221's own post-pass recount off by one (cycle 222) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)

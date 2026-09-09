@@ -210,8 +210,12 @@ then narrated over instead of surfacing.
    220 (2026-09-07): values across cycles 208-220 (2, 2, 0, 6, 1, 1, 2, 1, 2, 2, 4, 2, 2) stay
    entirely within the established 0-14 range with no new extremes beyond the already-noted
    0-lows at cycles 206 and 210 — ~50 consecutive cycles now with the same "magnitude doesn't
-   predict accuracy" conclusion holding. `[distilled from 2026-08-26 through 2026-09-05
-   (cycles 171-208, #19); extended through 2026-09-07 (cycles 209-221, #19)]`
+   predict accuracy" conclusion holding. Extended through cycle 228 (2026-09-09): values
+   across cycles 221-228 (4, 1, 2, 6, 1, 1, 2, 1) stay entirely within the established 0-14
+   range with no new extremes — ~58 consecutive cycles now tracked with the same conclusion
+   holding. `[distilled from 2026-08-26 through 2026-09-05 (cycles 171-208, #19); extended
+   through 2026-09-07 (cycles 209-221, #19); extended through 2026-09-09 (cycles 222-228,
+   #19)]`
    **The data point must be posted as an actual `gh issue comment` on #19, not just recorded
    in LEARNINGS.md/the Status-issue report.** LOOP-PROMPT.md's "every action visible on
    GitHub, no private state" rule applies to this metric too — LEARNINGS is this loop's

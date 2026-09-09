@@ -174,6 +174,18 @@ the rule itself but change how you read the evidence gathered while applying it:
   one) plus the single non-clearing rerun from cycle 197 is still thin evidence; keep logging
   data points on #21 rather than changing the mechanical rule. `[distilled from 2026-09-07
   (cycle 221), #21]`
+- **A `nanobots-outer.yml` scheduled-run failure can take a second, distinct shape from #20's
+  tracked signature: a loud, fully-stack-traced `claude-code-action` installer failure**
+  (`ReferenceError: Claude Code native binary not found ... (ENOENT)`, surfacing *after* the
+  action's own install step already logged success) rather than #20's silent
+  `is_error:true, num_turns:1, total_cost_usd:0, permission_denials_count:0` shape with a
+  valid `result` object. Confirmed as a single occurrence (2026-09-08, cycle 226's Sync): the
+  immediately preceding 14 scheduled runs and the very next one both completed cleanly, and
+  the failing run's window held no code change explaining it — a transient infra blip per
+  RECIPES.md's dispatcher-retry recipe, not a fresh P0, and not a #20 recurrence (matched by
+  error shape, not just call site, per RECIPES.md's "match by error shape" rule). Cataloguing
+  this signature now so a future occurrence is recognized immediately instead of
+  re-diagnosed from scratch. `[distilled from 2026-09-08 (cycle 226), 2026-09-09 (cycle 229)]`
 
 ## Merge policy (self-hosting/dogfood repos)
 
