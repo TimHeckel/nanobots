@@ -19,6 +19,28 @@ Entry format:
 
 ---
 
+## 2026-09-10 — cycle 234: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 233 run = 6)
+- **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
+  8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`6f7b162`,
+  cycle 233's own docs-only commit) — both `test` and `onboarding-agent` jobs `success`, no
+  new #21 recurrence, no flake judgment needed. Re-verified cycle 233's claims against live
+  state before trusting them: `gh api .../commits/6f7b1624.../--jq '.files[].filename'`
+  confirmed the commit touches exactly `.nanobots/LEARNINGS.md` (local `git show --stat`
+  misleadingly listed all 102 repo files — the known shallow-clone artifact, not evidence of
+  fabrication); its #21 recurrence comment and #19 data-point comment both confirmed landed
+  by reading the comment bodies back. Both crons healthy: outer's last 5 scheduled runs
+  (this one, 233, 232, 231, 230) all success; worker's last 5 all success. 0 inbox items, 0
+  open PRs, no Ready/In Progress/In Review items — nothing to triage, review, or dispatch
+  this cycle. Posted #19's denial-count data point (cycle 233's own outer-loop run
+  `34501839899` = 6, ordinary band) and confirmed it landed.
+- **Lesson:** a cycle with literally nothing new to act on (no inbox, no PRs, no CI change,
+  no maintainer replies) still has real verification work — re-checking the prior cycle's
+  claims and posting the standing #19 metric — and that work is worth recording even though
+  no board item moved, so a future cycle scanning LEARNINGS can see the re-verification
+  chain stayed unbroken rather than assuming a gap means it lapsed.
+- **Applies to:** triage | review
+
 ## 2026-09-10 — #21: recurrence, first double-non-clearing rerun in this issue's history (cycle 233)
 - **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
