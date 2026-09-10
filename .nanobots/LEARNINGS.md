@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-09-10 — cycle 235: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 234 run = 0, second floor occurrence)
+- **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
+  8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`76558b7`,
+  cycle 234's own docs-only commit) — both `test` and `onboarding-agent` jobs `success`, no
+  new #21 recurrence this cycle (the prior one at cycle 233 was already logged and
+  commented on #21). Re-verified cycle 234's claims against live state before trusting them:
+  `gh api .../commits/6f7b1624.../--jq '.files[].filename'` confirmed the commit touches
+  exactly `.nanobots/LEARNINGS.md`; its own #19 data-point comment (cycle 233's denial count
+  = 6) confirmed landed by reading the comment body back. Both crons healthy: outer's last 5
+  scheduled runs (this one, 234, 233, 232, 231) all success/in-progress with no failures;
+  worker's last 5 all success. Checked each of #18/#20/#21's actual last comment body (not
+  just author) — all are the loop's own automated posts, no maintainer reply landed on any.
+  0 inbox items, 0 open PRs, no Ready/In Progress/In Review items — nothing to triage,
+  review, or dispatch this cycle. Pulled cycle 234's own outer-loop run (`34528891815`)
+  denial count: **0** — a second occurrence of the established floor (first seen at cycle
+  206, then 210), still comfortably within the ordinary 0-14 range. Posted this data point
+  on #19 and confirmed it landed. Recomputed the undistilled count post-append: 110 total
+  headers (109 entries), 103 `[distilled]` ⇒ **7** undistilled — below the ~10 threshold, no
+  distill pass this cycle.
+- **Lesson:** a second 0-floor occurrence (206, now 234) is still just one more data point
+  within the known range, not evidence the floor is trending down — consistent with the
+  standing conclusion that magnitude doesn't predict report accuracy.
+- **Applies to:** triage | review | verify
+
 ## 2026-09-10 — cycle 234: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 233 run = 6)
 - **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
   8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
