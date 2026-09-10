@@ -19,6 +19,58 @@ Entry format:
 
 ---
 
+## 2026-09-10 — #21: recurrence, first double-non-clearing rerun in this issue's history (cycle 233)
+- **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
+  Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`07cc139`,
+  cycle 232's own docs-only LEARNINGS commit), run 34470908689 — only `onboarding-agent`
+  failed; `test` passed. Diff confirmed docs-only via `gh api .../commits/07cc139
+  --jq '.files[].filename'`. Three consecutive attempts on the same commit, three different
+  failure texts, none network-shaped: (1) original run, `FAILED 4 of 29` — missing
+  `PROJECTS_PAT`, `DAYTONA_API_KEY`, `verify_daytona`, and "verified Daytona BEFORE storing
+  the key"; (2) first `gh run rerun --failed`, did not clear, `FAILED 5 of 29` — the same
+  four plus "agent set the OCR endpoint variables"; (3) second `gh run rerun --failed`, also
+  did not clear — the known "never produced a transcript" / `onboarding agent call failed:
+  terminated` sub-shape tracked on this issue since 2026-08-05. This is the first time in
+  #21's history that two consecutive reruns on one commit both stayed red, rather than
+  clearing on the first (most cycles) or second (cycle 221) attempt. Per the issue-agnostic
+  dedupe rule, posted as a comment on #21 (confirmed landed) rather than a fresh filing — did
+  not attempt a third rerun (two is the established evidence-gathering bound from cycle 221's
+  precedent) and did not change the flake-exception rule unilaterally off one instance.
+- **Lesson:** "rerun clears eventually" is not a given — surfacing a double-non-clearing
+  rerun as a stronger data point (not an automatic escalation) keeps the maintainer informed
+  without either crying wolf on nondeterminism or silently letting the flake rate creep
+  unnoticed. If a third consecutive non-clearing rerun is ever observed, that would be new
+  enough evidence to reconsider the "two-attempt bound" itself, not just log another data
+  point.
+- **Applies to:** triage | verify
+
+## 2026-09-10 — #19: denial-count data point, cycle 232's own run = 2, ordinary band (cycle 233)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 232's report against live state first —
+  commit `07cc139` confirmed via `gh api .../commits/07cc139948f177c74a034664312b331d2372621
+  1/--jq '.files[].filename'` to touch exactly `.nanobots/LEARNINGS.md` (matches the docs-only
+  claim). Its own #19 comment (cycle 231's denial count = 1) confirmed landed. Board, inbox,
+  and PR state all matched cycle 232's report exactly (0 inbox, 0 open PRs, no
+  Ready/In Progress/In Review items, 8/12 Done). Cycle 232's "main CI green on 07cc139" claim
+  was accurate as of Sync time (before that commit's own CI had resolved) — this cycle's own
+  Sync found `onboarding-agent` had since failed on that same commit (logged separately
+  above, on #21, per the dedupe rule — not a fresh P0). Both crons healthy: outer's last 5
+  scheduled runs show this cycle's own run, cycle 232's success, cycle 231's success, cycle
+  230's success, cycle 229's success; worker's last 5 all success. Pulled cycle 232's own
+  outer-loop run (`34470685234`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **2**, ordinary band (established range 0-14). Posted this data
+  point directly as a `gh issue comment` on #19, confirmed landed by reading it back.
+  Recomputed the undistilled count post-append (per RECIPES.md's own rule): 109 total headers
+  (108 entries), 103 marked `[distilled]` ⇒ **6** undistilled — below the ~10 distill
+  threshold, no distill pass this cycle.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-10 — #19: denial-count data point, cycle 231's own run = 1, ordinary band (cycle 232)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
