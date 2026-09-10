@@ -19,6 +19,30 @@ Entry format:
 
 ---
 
+## 2026-09-10 — #19: denial-count data point, cycle 231's own run = 1, ordinary band (cycle 232)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 231's report against live state first —
+  commit `67d2fe4` confirmed via `gh api .../commits/67d2fe43a56865a583a7534cf3ac59f0227900ae/
+  --jq '.files[].filename'` to touch exactly `.nanobots/LEARNINGS.md`, matching the docs-only
+  claim. Its own #19 comment (cycle 230's denial count = 3) confirmed landed. Board, inbox, and
+  PR state all matched cycle 231's report exactly (0 inbox, 0 open PRs, no Ready/In Progress/In
+  Review items, 8/12 Done). `main` CI green on the current head `67d2fe4` (`CI` job `success`
+  on this docs-only push — no flake judgment needed this cycle). Both crons healthy: outer's
+  last 5 scheduled runs show this cycle's own run (in progress), cycle 231's success, cycle
+  230's success, cycle 229's success, cycle 228's success; worker's last 5 all success. No new
+  #20/#21 recurrence in this window. Pulled cycle 231's own outer-loop run (`34438213587`)
+  denial count via `gh run view <id> --log | grep permission_denials_count`: **1**, ordinary
+  band (established range 0-14). Posted this data point directly as a `gh issue comment` on
+  #19, confirmed landed by reading it back. Recomputed the undistilled count post-append (per
+  RECIPES.md's own rule): 106 total headers (105 entries), 103 marked `[distilled]` ⇒ **3**
+  undistilled — well below the ~10 distill threshold, no distill pass this cycle.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-10 — #19: denial-count data point, cycle 230's own run = 3, ordinary band (cycle 231)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
