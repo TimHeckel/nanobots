@@ -19,6 +19,30 @@ Entry format:
 
 ---
 
+## 2026-09-10 — #19: denial-count data point, cycle 230's own run = 3, ordinary band (cycle 231)
+- **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
+  #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
+  actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
+- **What worked / what didn't:** re-verified cycle 230's report against live state first —
+  commit `672e1a9` confirmed via `gh api .../commits/672e1a960f2b4cd7.../--jq
+  '.files[].filename'` to touch exactly `.nanobots/LEARNINGS.md`, matching the docs-only
+  claim. Board, inbox, and PR state all matched cycle 230's report exactly (0 inbox, 0 open
+  PRs, no Ready/In Progress/In Review items, 8/12 Done). `main` CI green on the current head
+  `672e1a9` (`CI` job `success`; `onboarding-agent` job also `success` on this head — no flake
+  judgment needed this cycle). Both crons healthy: outer's last 5 scheduled runs show this
+  cycle's own run (in progress), cycle 230's success, cycle 229's success, cycle 228's success,
+  cycle 227's success; worker's last 5 all success. No new #20/#21 recurrence in this window.
+  Pulled cycle 230's own outer-loop run (`34416053934`) denial count via `gh run view <id>
+  --log | grep permission_denials_count`: **3**, ordinary band (established range 0-14).
+  Posted this data point directly as a `gh issue comment` on #19, confirmed landed by reading
+  it back. Recomputed the undistilled count post-append (per RECIPES.md's own rule): 105 total
+  headers (104 entries), 103 marked `[distilled]` ⇒ **2** undistilled — well below the ~10
+  distill threshold, no distill pass this cycle.
+- **Lesson:** no change to the standing conclusion — the count's magnitude still hasn't
+  correlated with report accuracy in either direction. Continuing to track per RECIPES.md's
+  standing instruction until #19's root cause lands.
+- **Applies to:** verify
+
 ## 2026-09-09 — #19: denial-count data point, cycle 229's own run = 3, ordinary band (cycle 230)
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
