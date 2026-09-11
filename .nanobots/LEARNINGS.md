@@ -19,6 +19,42 @@ Entry format:
 
 ---
 
+## 2026-09-11 — cycle 238: #21 third double-non-clearing rerun (discovered retroactively), #19 finds a new failure shape — a cycle that did real work and reported it nowhere
+- **Outcome:** n/a (Sync-time verification + a gap in the prior cycle's own execution, not a
+  dispatched item; board unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no
+  maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI still `failure` on the current head
+  (`8c6eb7d`, cycle 236's own docs-only commit), run 34564713824. Diff confirmed docs-only.
+  This run had three attempts, none of which cleared: original (`FAILED 4 of 29`), a first
+  `gh run rerun --failed` (`FAILED 3 of 29`, a subset), and a second (`FAILED 6 of 29`, a
+  different superset) — all non-network, all within #21's known assertion cluster. Posted as
+  a comment on #21 (confirmed landed) rather than a fresh filing, per the issue-agnostic
+  dedupe rule; this is the third double-non-clearing-rerun instance now (cycles 233, 236, and
+  this one), out of a small total number of recurrences.
+  Digging into *when* those two reruns happened turned up something new: both landed inside
+  cycle 237's own run window (11:22:28Z–11:25:39Z), meaning cycle 237 is the one that
+  triggered them — but cycle 237's run (34593576747: `is_error: false`, 63 turns, $1.19,
+  `permission_denials_count: 7`, all within the ordinary band) posted **no comment** on #1 or
+  #21 and made **no commit**. Every previously checked cycle under #19's ongoing
+  verification produced *some* visible artifact (even when its content was wrong); this is
+  the first observed case of a cycle doing real, costly investigative work and leaving zero
+  trace of it on GitHub — a silent step-7 skip, not a fabrication. Posted as a new data point
+  on #19 (confirmed landed) alongside the routine denial-count check for cycle 237.
+  0 inbox items, 0 open PRs, no Ready/In Progress/In Review items — nothing else to triage,
+  review, or dispatch this cycle. Recomputed the undistilled count post-append: 113 total
+  headers (112 entries), 103 `[distilled]` ⇒ **9** undistilled — still below the ~10
+  threshold but close; next cycle should expect a distill pass.
+- **Lesson:** the "verify a cycle's own claims against live state" check (recipe in
+  RECIPES.md) needs to extend one step further than "is the claimed content true" — it also
+  needs to ask "did the expected report get posted at all", since a cycle can complete
+  cleanly, spend real turns and money, and still produce nothing visible. Discovering this
+  meant the #21 evidence from cycle 237's reruns would otherwise have gone unposted forever
+  (nothing in a later cycle's Sync step re-examines an already-completed CI run's attempt
+  history unless something prompts a closer look). Worth watching whether this recurs before
+  treating it as a distinct sub-shape needing its own catalogue entry, same conservative
+  posture as #21's evidence-gathering approach.
+- **Applies to:** triage | verify
+
 ## 2026-09-11 — cycle 236: #21 second double-non-clearing rerun, #19 denial-count data point (cycle 235 run = 3)
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
