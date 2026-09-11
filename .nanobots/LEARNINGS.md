@@ -19,7 +19,43 @@ Entry format:
 
 ---
 
-## 2026-09-11 — cycle 238: #21 third double-non-clearing rerun (discovered retroactively), #19 finds a new failure shape — a cycle that did real work and reported it nowhere
+## 2026-09-11 — cycle 239: #21 fourth double-non-clearing rerun, #19 denial-count data point (cycle 238 run = 3, no repeat of the silent-report gap) [distilled]
+- **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
+  unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`869c355`,
+  cycle 238's own docs-only commit), run 34622677723 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/869c355 --jq '.files[].filename'`.
+  Original attempt `FAILED 7 of 29` (missing model credential, `PROJECTS_PAT`,
+  `DAYTONA_API_KEY`, `OCR_LLM_TOKEN`, OCR endpoint variables, `verify_daytona`, Daytona-
+  verified-before-storing-key); one `gh run rerun --failed` (the established two-attempt
+  bound) did not clear — `FAILED 5 of 29`, a different subset of the same known cluster.
+  Neither attempt is network-shaped, so condition 2 of the flake exception doesn't qualify
+  either. This is the fourth double-non-clearing-rerun instance now (cycles 233, 236, 238
+  retroactively, and this one) — 3 of the last 4 `main` pushes have needed a non-clearing
+  rerun, against a clean history before that. Posted as a comment on #21 per the
+  issue-agnostic dedupe rule (confirmed landed); did not attempt a second rerun (no board
+  work waiting on it either — 0 open PRs, no Ready/In Progress items). Re-verified cycle
+  238's claims against live state before trusting them: its commit, #21 comment, and #19
+  comment all confirmed landed exactly as reported. Pulled cycle 238's own outer-loop run
+  (`34622165635`) denial count: **3**, ordinary band — no repeat of cycle 237's silent-
+  report-nothing shape (cycle 238 posted both its expected comments and its LEARNINGS entry).
+  Posted this data point on #19 (confirmed landed). 0 inbox items, 0 open PRs, no
+  Ready/In Progress/In Review items — nothing else to triage, review, or dispatch. Recomputed
+  the undistilled count post-append: 114 total headers (113 entries), 103 `[distilled]` ⇒
+  **10** undistilled — at the ~10 threshold, ran a distill pass this cycle (see below;
+  distilled entries marked accordingly).
+- **Lesson:** the double-non-clearing-rerun pattern has now recurred four times across five
+  cycles with reports (233, 236, 237-retroactive/238, 239), a materially higher rate than the
+  "clears within two attempts" assumption the transient-flake exception was written around.
+  Per the distill pass below, this crossed from "log another data point" into "fold a
+  concrete recommendation into TRIAGE.md" — the accumulated evidence itself, not a single
+  instance, is what justifies acting on cycle 233's own "if this recurs, that's new enough
+  evidence" trigger. Also: the silent-report gap #19 found in cycle 237 has not recurred in
+  the one cycle since — one clean cycle isn't enough to call it resolved, but worth noting it
+  isn't a persistent failure mode either.
+- **Applies to:** triage | verify
+
+## 2026-09-11 — cycle 238: #21 third double-non-clearing rerun (discovered retroactively), #19 finds a new failure shape — a cycle that did real work and reported it nowhere [distilled]
 - **Outcome:** n/a (Sync-time verification + a gap in the prior cycle's own execution, not a
   dispatched item; board unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no
   maintainer replies on any)
@@ -55,7 +91,7 @@ Entry format:
   posture as #21's evidence-gathering approach.
 - **Applies to:** triage | verify
 
-## 2026-09-11 — cycle 236: #21 second double-non-clearing rerun, #19 denial-count data point (cycle 235 run = 3)
+## 2026-09-11 — cycle 236: #21 second double-non-clearing rerun, #19 denial-count data point (cycle 235 run = 3) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`b28d903`,
@@ -88,7 +124,7 @@ Entry format:
   instinct for a policy question that isn't yet resolved.
 - **Applies to:** triage | verify
 
-## 2026-09-10 — cycle 235: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 234 run = 0, second floor occurrence)
+## 2026-09-10 — cycle 235: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 234 run = 0, second floor occurrence) [distilled]
 - **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
   8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI green on the current head (`76558b7`,
@@ -113,7 +149,7 @@ Entry format:
   standing conclusion that magnitude doesn't predict report accuracy.
 - **Applies to:** triage | review | verify
 
-## 2026-09-10 — cycle 234: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 233 run = 6)
+## 2026-09-10 — cycle 234: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 233 run = 6) [distilled]
 - **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
   8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI green on the current head (`6f7b162`,
@@ -135,7 +171,7 @@ Entry format:
   chain stayed unbroken rather than assuming a gap means it lapsed.
 - **Applies to:** triage | review
 
-## 2026-09-10 — #21: recurrence, first double-non-clearing rerun in this issue's history (cycle 233)
+## 2026-09-10 — #21: recurrence, first double-non-clearing rerun in this issue's history (cycle 233) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment, not a dispatched item; board unchanged — 8/12
   Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`07cc139`,
@@ -161,7 +197,7 @@ Entry format:
   point.
 - **Applies to:** triage | verify
 
-## 2026-09-10 — #19: denial-count data point, cycle 232's own run = 2, ordinary band (cycle 233)
+## 2026-09-10 — #19: denial-count data point, cycle 232's own run = 2, ordinary band (cycle 233) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -187,7 +223,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-10 — #19: denial-count data point, cycle 231's own run = 1, ordinary band (cycle 232)
+## 2026-09-10 — #19: denial-count data point, cycle 231's own run = 1, ordinary band (cycle 232) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -211,7 +247,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-10 — #19: denial-count data point, cycle 230's own run = 3, ordinary band (cycle 231)
+## 2026-09-10 — #19: denial-count data point, cycle 230's own run = 3, ordinary band (cycle 231) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)
@@ -235,7 +271,7 @@ Entry format:
   standing instruction until #19's root cause lands.
 - **Applies to:** verify
 
-## 2026-09-09 — #19: denial-count data point, cycle 229's own run = 3, ordinary band (cycle 230)
+## 2026-09-09 — #19: denial-count data point, cycle 229's own run = 3, ordinary band (cycle 230) [distilled]
 - **Outcome:** n/a (standing metric pull, not a dispatched item; board unchanged — 8/12 Done,
   #18-21 still `summon-human`/Blocked, no maintainer replies on any, checked each issue's
   actual last comment body per RECIPES.md's author-alone-isn't-enough rule)

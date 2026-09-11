@@ -186,6 +186,22 @@ the rule itself but change how you read the evidence gathered while applying it:
   error shape, not just call site, per RECIPES.md's "match by error shape" rule). Cataloguing
   this signature now so a future occurrence is recognized immediately instead of
   re-diagnosed from scratch. `[distilled from 2026-09-08 (cycle 226), 2026-09-09 (cycle 229)]`
+- **The "double-non-clearing rerun" sub-pattern — the original attempt *and* its one
+  `gh run rerun --failed` both land in the known non-network assertion cluster, neither
+  clearing — has recurred materially more often than the "clears within two attempts"
+  assumption most of this dedupe treatment was built on.** Cycle 221 (2026-09-07) saw the
+  first non-clearing-then-clearing rerun and treated one instance as too thin to act on.
+  Since then it recurred at cycles 233 and 236 (each on its own commit), was discovered
+  retroactively at cycle 238 (two reruns cycle 237 triggered but never reported — see #19's
+  silent-report-gap finding), and recurred again at cycle 239 — four double-non-clearing
+  instances now, covering 3 of the last 4 commits pushed to `main` as of cycle 239. This
+  still isn't grounds to unilaterally widen condition 2's wording or change the two-attempt
+  evidence-gathering bound (per LOOP-PROMPT.md's "propose, don't silently deviate"
+  instinct) — continue posting each recurrence as a dedupe comment on #21, not a fresh P0 —
+  but the recommendation to have a human look at `tests/init-agent.e2e.mjs` should carry
+  more weight with each instance, and future dedupe comments should state the running total
+  explicitly (not just "recurred again") so the accumulating rate stays visible to whoever
+  eventually reviews it. `[distilled from 2026-09-10/11 (cycles 233, 236, 238, 239), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

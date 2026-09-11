@@ -213,9 +213,13 @@ then narrated over instead of surfacing.
    predict accuracy" conclusion holding. Extended through cycle 228 (2026-09-09): values
    across cycles 221-228 (4, 1, 2, 6, 1, 1, 2, 1) stay entirely within the established 0-14
    range with no new extremes — ~58 consecutive cycles now tracked with the same conclusion
-   holding. `[distilled from 2026-08-26 through 2026-09-05 (cycles 171-208, #19); extended
-   through 2026-09-07 (cycles 209-221, #19); extended through 2026-09-09 (cycles 222-228,
-   #19)]`
+   holding. Extended through cycle 238 (2026-09-11): values across cycles 229-238 (3, 3, 1,
+   2, 6, 0, 3, [cycle 236 — never reported, see the silent-report-gap point below], 7, 3)
+   stay entirely within the established 0-14 range with no new extremes — ~67 consecutive
+   tracked cycles now (accounting for the one known reporting gap), same conclusion holding.
+   `[distilled from 2026-08-26 through 2026-09-05 (cycles 171-208, #19); extended through
+   2026-09-07 (cycles 209-221, #19); extended through 2026-09-09 (cycles 222-228, #19);
+   extended through 2026-09-11 (cycles 229-238, #19)]`
    **The data point must be posted as an actual `gh issue comment` on #19, not just recorded
    in LEARNINGS.md/the Status-issue report.** LOOP-PROMPT.md's "every action visible on
    GitHub, no private state" rule applies to this metric too — LEARNINGS is this loop's
@@ -230,6 +234,18 @@ then narrated over instead of surfacing.
    should spot-check the immediately preceding cycle's claimed commits before treating
    LEARNINGS/RECIPES/TRIAGE as reflecting what the last report said. `[distilled from
    2026-08-17 #19]`
+10. **"Did the expected report land at all" is a separate check from "is the claimed content
+    accurate" — a cycle can complete cleanly and still post nothing.** Confirmed on #19
+    (2026-09-11, cycle 238): cycle 237's own run (`is_error: false`, 63 turns, $1.19,
+    `permission_denials_count: 7` — nothing about the run object itself looked wrong) had in
+    fact triggered two real `gh run rerun --failed` calls investigating a red #21 recurrence,
+    but posted **no** comment on #21 or the Status issue (#1) and made **no** commit — the
+    first observed case of a cycle doing substantive, costly work and leaving zero trace of
+    it on GitHub, as opposed to every prior #19 case (posting something, just with
+    inaccurate content). Before trusting "no new report since last cycle" as evidence a
+    cycle was idle, check that cycle's own run for tool activity (`gh run view <id> --log`)
+    — an active investigation with a silent step-7 skip looks identical to a quiet cycle from
+    the Status issue alone. `[distilled from 2026-09-11 (cycle 238), #19]`
 7. **"No maintainer reply" must be verified by reading each blocked issue's actual last
    comment body, not by checking who the author is.** The outer loop's own `PROJECTS_PAT` is a
    human-owned classic PAT (see RUNTIMES.md's auth facts), so every comment the loop itself
