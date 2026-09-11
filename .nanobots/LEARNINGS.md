@@ -19,6 +19,39 @@ Entry format:
 
 ---
 
+## 2026-09-11 — cycle 236: #21 second double-non-clearing rerun, #19 denial-count data point (cycle 235 run = 3)
+- **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
+  unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`b28d903`,
+  cycle 235's own docs-only commit), run 34541131787 — only `onboarding-agent` failed,
+  `test` passed. Confirmed the diff is docs-only (`gh api .../commits/b28d903
+  --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`). Per the flake exception's
+  four conditions, condition 2 (network-shaped failure) never held on any of three
+  consecutive attempts: original run (`FAILED 1 of 29`: `agent set PROJECTS_PAT`), first
+  `gh run rerun --failed` (did not clear; `FAILED 5 of 29`, a superset plus `agent set the
+  OCR endpoint variables`), second `gh run rerun --failed` (also did not clear; truncated
+  transcript at 75 calls, no `finish()` — the known "never produced a transcript" sub-shape
+  tracked on #21 since 2026-08-05). Per the issue-agnostic dedupe rule, posted as a comment
+  on #21 rather than a fresh filing (confirmed landed) — did not attempt a third rerun (two
+  is the established evidence-gathering bound from cycle 221's precedent) and did not change
+  the flake-exception rule unilaterally off two instances. Also verified cycle 235's report
+  against live state (its stated commit and #19 comment both checked out), and pulled cycle
+  235's own outer-loop run (34540959852) denial count via `gh run view <id> --log | grep
+  permission_denials_count` = **3**, ordinary band; posted to #19 (confirmed landed). 0
+  inbox items, 0 open PRs, no Ready/In Progress/In Review items — nothing else to triage,
+  review, or dispatch. Recomputed the undistilled count post-append: 112 total headers (111
+  entries), 103 `[distilled]` ⇒ **8** undistilled — still below the ~10 threshold, no distill
+  pass this cycle.
+- **Lesson:** this is only the second double-non-clearing rerun in #21's history (the first
+  was cycle 233), with two fully clean cycles (234-235) in between — worth surfacing as a
+  second data point for the harder failure mode rather than either a fresh P0 or silence, but
+  still not enough to unilaterally revise the flake-exception's "network-shaped" wording or
+  the two-rerun evidence-gathering bound off two instances. A comment recommending a human
+  look at `tests/init-agent.e2e.mjs` is the right level of escalation here: informative, not
+  alarmist, and consistent with LOOP-PROMPT.md's "propose an edit, don't silently deviate"
+  instinct for a policy question that isn't yet resolved.
+- **Applies to:** triage | verify
+
 ## 2026-09-10 — cycle 235: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 234 run = 0, second floor occurrence)
 - **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
   8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
