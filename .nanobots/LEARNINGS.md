@@ -19,6 +19,42 @@ Entry format:
 
 ---
 
+## 2026-09-11 — cycle 240: #21 fifth double-non-clearing rerun (new "no model credential" sub-shape), #19 denial-count data point (cycle 239 run = 8)
+- **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
+  unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`8771fe7`,
+  cycle 239's own docs-only distill commit), run 34647433448 — only `onboarding-agent`
+  failed, `test` passed. Diff confirmed docs-only via `gh api .../commits/8771fe7
+  --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`, `.nanobots/RECIPES.md`,
+  `.nanobots/TRIAGE.md`. Original attempt `FAILED 5 of 29` (the familiar cluster: PROJECTS_PAT,
+  DAYTONA_API_KEY, OCR endpoint variables, verify_daytona, Daytona-verified-before-storing-key).
+  One `gh run rerun --failed` (the established two-attempt bound, via `gh run watch` to block
+  until it completed rather than polling) did not clear — `FAILED 7 of 29`, a superset that
+  also newly includes `agent set a model credential (saw: none)`, not seen called out by name
+  in this issue's recent recurrences. Both attempts stayed non-network throughout (no
+  `fetch failed`/timeout/5xx in either log), so condition 2 of the flake exception fails on
+  both. Per the issue-agnostic dedupe rule, posted as a comment on #21 (confirmed landed by
+  reading the comment back via the GitHub API) rather than a fresh filing — fifth
+  double-non-clearing-rerun instance now (cycles 233, 236, 238-retroactive, 239, 240), 4 of
+  the last 5 `main` pushes needing a non-clearing rerun. Did not attempt a third rerun (no
+  board work waiting — 0 open PRs, 0 inbox items, no Ready/In Progress/In Review items) and
+  did not unilaterally widen condition 2 or the two-attempt bound. Re-verified cycle 239's
+  claims against live state first: its commit (confirmed via the GitHub API's file list, not
+  `git diff`, per the shallow-history caveat), #21 comment, and #19 comment all checked out
+  exactly as reported. Pulled cycle 239's own outer-loop run (34646965168) denial count:
+  **8**, ordinary band; posted to #19 (confirmed landed). Recomputed the undistilled count
+  post-append: 115 total headers (114 entries), 113 `[distilled]` ⇒ **1** undistilled — well
+  below the ~10 threshold, no distill pass this cycle.
+- **Lesson:** the "no model credential" assertion failing alongside the rest of the known
+  cluster (rather than in isolation) is consistent with the existing dedupe treatment's scope
+  — it's a new *specific assertion* inside an already-tracked non-network failure class, not a
+  new failure mechanism, so it doesn't need its own catalogue entry per the recurrence-dedupe
+  rule's "sub-shape" carve-out (TRIAGE.md). `gh run watch <id> --exit-status` is a cleaner way
+  to block on a rerun's completion than a manual poll loop — no risk of a stray `$(...)`
+  capture inside a loop tripping this harness's Bash approval gate the way RECIPES.md's
+  point 9 already documented for heredocs/redirects/`rm`.
+- **Applies to:** triage | verify
+
 ## 2026-09-11 — cycle 239: #21 fourth double-non-clearing rerun, #19 denial-count data point (cycle 238 run = 3, no repeat of the silent-report gap) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
