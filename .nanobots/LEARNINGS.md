@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-09-12 — cycle 241: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 240 run = 5)
+- **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
+  8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`7872f7e`,
+  cycle 240's own docs-only commit) — both `test` and `onboarding-agent` jobs `success`, no
+  new #21 recurrence this cycle. Re-verified cycle 240's claims against live state before
+  trusting them: `gh api .../commits/7872f7e0736b220caeb07c4081de6c447f9273d6
+  --jq '.files[].filename'` confirmed the commit touches exactly `.nanobots/LEARNINGS.md`;
+  its #21 comment (fifth double-non-clearing-rerun instance) and #19 comment (cycle 239's
+  denial count = 8) both confirmed landed by reading the comment bodies back. Checked each
+  of #18/#20/#21's actual last comment body (not just author) — all are the loop's own
+  automated posts, no maintainer reply landed on any. Both crons healthy: outer's last 5
+  scheduled runs (this one in progress, 240, 239, 238, 237) all success, no failures;
+  worker's last 5 all success. 0 inbox items, 0 open PRs, no Ready/In Progress/In Review
+  items — nothing else to triage, review, or dispatch this cycle. Pulled cycle 240's own
+  outer-loop run (`34657373184`) denial count: **5**, ordinary band. Posted this data point
+  on #19 and confirmed it landed. Recomputed the undistilled count post-append: 115 total
+  headers (114 entries), 113 `[distilled]` ⇒ **2** undistilled — well below the ~10
+  threshold, no distill pass this cycle.
+- **Lesson:** a fully quiet cycle (green CI, no board work, no new #21 recurrence) still
+  needs the same re-verification chain applied to the prior cycle's claims — nothing about
+  "nothing new happened" excuses skipping the standing checks that catch a hallucinated or
+  silently-skipped prior report.
+- **Applies to:** triage | review | verify
+
 ## 2026-09-11 — cycle 240: #21 fifth double-non-clearing rerun (new "no model credential" sub-shape), #19 denial-count data point (cycle 239 run = 8)
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
