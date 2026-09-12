@@ -19,6 +19,43 @@ Entry format:
 
 ---
 
+## 2026-09-12 — cycle 242: #21 sixth double-non-clearing rerun, #19 denial-count data point (cycle 241 run = 1)
+- **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
+  unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`f6d1780`,
+  cycle 241's own docs-only commit), run 34673442109 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/f6d1780 --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt `FAILED 1 of 29`
+  (`agent set the OCR endpoint variables`); one `gh run rerun --failed` (the established
+  two-attempt bound, via `gh run watch --exit-status`) did not clear — `FAILED 1 of 29` again,
+  a different specific assertion (`agent set PROJECTS_PAT`). Both attempts stayed non-network
+  throughout, so condition 2 of the flake exception fails on both — same known non-network
+  assertion cluster as the prior five instances. Posted as a comment on #21 per the
+  issue-agnostic dedupe rule (confirmed landed) — sixth double-non-clearing-rerun instance now
+  (cycles 233, 236, 238-retroactive, 239, 240, 242), 5 of the last 6 `main` pushes needing a
+  non-clearing rerun. Did not attempt a third rerun or widen condition 2/the two-attempt bound
+  — no board work waiting either (0 open PRs, 0 inbox items, no Ready/In Progress/In Review
+  items). Re-verified cycle 241's claims against live state first: its commit (confirmed via
+  the GitHub API file list), #21 comment, and #19 comment all checked out exactly as reported.
+  Pulled cycle 241's own outer-loop run (`34673345775`) denial count: **1**, within the
+  established 0-14 range (a new low tied only by the prior 0-lows at cycles 206/210, not a new
+  extreme); posted to #19 (confirmed landed). Checked #18/#20's last comment bodies (not just
+  author) — both still the loop's own automated posts, no maintainer reply. Both crons healthy:
+  outer's last 5 scheduled runs (this one in progress, 241, 240, 239, 238) all success; worker's
+  last 5 all success. Recomputed the undistilled count post-append: 117 total headers
+  (116 entries), 113 `[distilled]` ⇒ **3** undistilled — well below the ~10 threshold, no
+  distill pass this cycle.
+- **Lesson:** the running-total framing from TRIAGE.md's distilled entry continues to hold —
+  each new instance is one more data point toward "a human should look at
+  `tests/init-agent.e2e.mjs`," not grounds on its own to unilaterally widen the mechanical rule.
+  Six instances across the last ~9-10 pushes to `main` is a materially higher rate than the
+  "clears within two attempts" assumption the exception was originally written around, and each
+  instance keeps failing a *different specific* assertion within the same small known cluster
+  (OCR endpoint vars, PROJECTS_PAT, DAYTONA_API_KEY, model credential, `verify_daytona`) rather
+  than repeating one — consistent with live-model nondeterminism, not a deterministic
+  regression, per the standing sub-shape rule.
+- **Applies to:** triage | verify
+
 ## 2026-09-12 — cycle 241: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 240 run = 5)
 - **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
   8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
