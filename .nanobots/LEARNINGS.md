@@ -19,6 +19,46 @@ Entry format:
 
 ---
 
+## 2026-09-13 — cycle 246: #21 ninth double-non-clearing rerun, #19 denial-count data point (cycle 245 run = 4)
+- **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
+  unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`142d93d`,
+  cycle 245's own docs-only commit), run 34724588508 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/142d93d --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt `FAILED 5 of 29` (`agent set
+  PROJECTS_PAT`, `agent set DAYTONA_API_KEY`, `agent set the OCR endpoint variables`, `agent
+  ran verify_daytona`, `agent verified Daytona BEFORE storing the key`); one `gh run rerun
+  --failed` (the established two-attempt bound, via `gh run watch --exit-status`) did not
+  clear — `FAILED 1 of 29`, a smaller subset of the same known non-network cluster (`agent
+  set the OCR endpoint variables`). Both attempts stayed non-network throughout, so condition
+  2 of the flake exception fails on both. Posted as a comment on #21 per the issue-agnostic
+  dedupe rule (confirmed landed) — ninth double-non-clearing-rerun instance now (cycles 233,
+  236, 238-retroactive, 239, 240, 242, 244, 245, 246), 8 of the last 9 `main` pushes needing
+  a non-clearing rerun. Did not attempt a third rerun or widen condition 2/the two-attempt
+  bound — no board work waiting either (0 open PRs, 0 inbox items, no Ready/In Progress/In
+  Review items). Re-verified cycle 245's claims against live state first: its commit
+  (confirmed via the GitHub API file list), #21 comment, and #19 comment all checked out
+  exactly as reported. Pulled cycle 245's own outer-loop run (`34724371407` — not
+  `34717420106`, which is cycle 244's run; double-checked the cron run list by timestamp
+  before pulling) denial count: **4**, within the established 0-14 range, ordinary band;
+  posted to #19 (confirmed landed). Checked #18/#20's last comment bodies (not just author)
+  — both still the loop's own automated posts, no maintainer reply. Both crons healthy:
+  outer's last 5 scheduled runs (this one in progress, 245, 244, 243, 242) all success;
+  worker's last 5 all success. Recomputed the undistilled count post-append: 121 total
+  headers (120 entries), 113 `[distilled]` ⇒ **7** undistilled — below the ~10 threshold, no
+  distill pass this cycle.
+- **Lesson:** the running-total framing continues to hold — each new instance is one more
+  data point toward "a human should look at `tests/init-agent.e2e.mjs`," not grounds on its
+  own to unilaterally widen the mechanical rule. Nine instances across the last ~13-14 pushes
+  to `main` (8 of the last 9) keeps the rate materially higher than the "clears within two
+  attempts" assumption the exception was originally written around. Also: when pulling a
+  named cycle's own run ID for the denial-count metric, match by timestamp against the cron's
+  run list explicitly rather than assuming the most-recently-referenced run ID in a prior
+  comment is the right one — the run IDs for consecutive cycles are easy to transpose by one
+  position, exactly the off-by-one slip RECIPES.md's metric-citation rule already warns
+  about.
+- **Applies to:** triage | verify
+
 ## 2026-09-12 — cycle 245: #21 eighth double-non-clearing rerun, #19 denial-count data point (cycle 244 run = 8)
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
