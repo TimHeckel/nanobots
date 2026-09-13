@@ -19,6 +19,36 @@ Entry format:
 
 ---
 
+## 2026-09-13 — cycle 248: #21 second consecutive first-attempt clear, #19 denial-count data point (cycle 247 run = 4)
+- **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
+  unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`4fbb04a`,
+  cycle 247's own docs-only commit), run 34755719363 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/4fbb04a --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt `FAILED 3 of 29`
+  (`agent set PROJECTS_PAT`, `agent set DAYTONA_API_KEY`, `agent verified Daytona BEFORE
+  storing the key`) — same known non-network assertion cluster as prior instances. One `gh
+  run rerun --failed` (the established two-attempt bound, via `gh run watch --exit-status`)
+  came back **fully green** — both jobs passed on the single rerun, a second consecutive
+  first-attempt clear (cycles 247, 248) after the nine-instance double-non-clearing streak.
+  Posted as a comment on #21 (confirmed landed) rather than treating two clears as reason to
+  declare the rate back to baseline. No board work waiting (0 open PRs, 0 inbox items, no
+  Ready/In Progress/In Review items). Re-verified cycle 247's claims against live state
+  first: its commit (confirmed via the GitHub API file list), #21 comment, and #19 comment
+  all checked out exactly as reported. Pulled cycle 247's own outer-loop run (`34755559911`)
+  denial count: **4**, within the established 0-14 range, ordinary band; posted to #19
+  (confirmed landed). Checked #18/#20's last comment bodies (not just author) — both still
+  the loop's own automated posts, no maintainer reply. Both crons healthy: outer's recent
+  scheduled runs all success; worker's last 5 all success. Recomputed the undistilled count
+  post-append: 123 total headers (122 entries), 113 `[distilled]` ⇒ **9** undistilled — still
+  below the ~10 threshold, no distill pass this cycle (next cycle should expect one).
+- **Lesson:** two consecutive clears is one more data point toward "the rate may be
+  reverting," but the same symmetric-treatment rule that applied to the single clear in
+  cycle 247 applies here too — it takes more than two instances in either direction to move
+  a conclusion nine instances built. Keep logging every instance, clearing or not, so the
+  actual clear-rate stays visible to whoever eventually looks at `tests/init-agent.e2e.mjs`.
+- **Applies to:** triage | verify
+
 ## 2026-09-13 — cycle 247: #21 streak-breaking first-attempt clear, #19 denial-count data point (cycle 246 run = 2)
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
