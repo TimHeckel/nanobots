@@ -202,6 +202,23 @@ the rule itself but change how you read the evidence gathered while applying it:
   more weight with each instance, and future dedupe comments should state the running total
   explicitly (not just "recurred again") so the accumulating rate stays visible to whoever
   eventually reviews it. `[distilled from 2026-09-10/11 (cycles 233, 236, 238, 239), #21]`
+- **The double-non-clearing count kept climbing after the above (five more instances: cycles
+  240, 242, 244, 245, 246 — a brief two-instance clear streak at cycles 247-248 did not hold —
+  cycle 249 resumed it), reaching ten total instances against only two consecutive clears out
+  of the last 13 pushes to `main`, spanning ~4 weeks of tracking with no fix ever landed.**
+  This finally crossed this file's own "same job flakes repeatedly across cycles → file a
+  chore" rule (see the hard-rules bullet above) — cycle 249 filed #22
+  (`chore: tests/init-agent.e2e.mjs ... — harden or stop gating main`), triaged it (P2/M,
+  versioned plan posted, moved to Ready), rather than continuing to log data points on #21
+  indefinitely. **Lesson for future chore-threshold judgment calls of this shape:** a
+  "repeatedly" trigger with no explicit count checkpoint can be deferred one instance at a
+  time forever, since no single new data point ever looks different enough from the last one
+  to be "the" crossing point — treat a running total that keeps being restated cycle over
+  cycle (as this one was, every single time) as a standing prompt to ask "is this still just
+  tracking, or has it become dispatchable work?", not only a number to update. #21 remains
+  open as the live evidence trail (dedupe comments continue there); #22 is the actual
+  mitigation work and is tracked separately on the board. `[distilled from 2026-09-13 (cycles
+  240-249), #21/#22]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

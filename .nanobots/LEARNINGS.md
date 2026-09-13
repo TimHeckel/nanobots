@@ -19,7 +19,48 @@ Entry format:
 
 ---
 
-## 2026-09-13 — cycle 248: #21 second consecutive first-attempt clear, #19 denial-count data point (cycle 247 run = 4)
+## 2026-09-13 — cycle 249: #21 tenth double-non-clearing instance, filed #22 (chore), #19 denial-count data point (cycle 248 run = 3) [distilled]
+- **Outcome:** filed #22 (`chore`, P2/M, plan posted, moved to Ready); #21 comment (data point,
+  not a dispatched item); board otherwise unchanged before #22 landed (8/12 Done, #18-21 still
+  `summon-human`/Blocked, no maintainer replies on any)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`79d0e77`,
+  cycle 248's own docs-only commit), run 34768321225 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/79d0e77 --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt `FAILED 6 of 29`; two `gh run rerun
+  --failed` attempts (the established two-attempt bound, via `gh run watch --exit-status`)
+  both stayed red, each failing a different subset of the same known non-network cluster
+  (`FAILED 5 of 29`, then `FAILED 6 of 29`). Tenth double-non-clearing-rerun instance now
+  (cycles 233, 236, 238-retroactive, 239, 240, 242, 244, 245, 246, 249), immediately
+  following the two-instance clear streak at cycles 247-248 — 10 double-non-clearing vs. 2
+  consecutive clears out of the last 13 pushes to `main`. Posted as a data point on #21
+  (confirmed landed), same treatment as every prior instance. Given the accumulated total (10
+  instances, ~4 weeks of tracking, no fix ever landed) crossing TRIAGE.md's own "same job
+  flakes repeatedly → file a chore" rule, filed #22 (hardening/harden-or-move-off-`main`
+  chore for `tests/init-agent.e2e.mjs`), added it to the board, classified P2/M, posted a
+  versioned plan (marker verified by reading the comment back), and moved it to Ready — the
+  first time this recurring pattern converted from tracking into dispatchable work. No other
+  board work waiting (0 open PRs, 0 inbox items, no other Ready/In Progress/In Review items).
+  Re-verified cycle 248's claims against live state first: its commit, #21 comment, and #19
+  comment all checked out exactly as reported. Pulled cycle 248's own outer-loop run
+  (`34768093611`) denial count: **3**, ordinary band; posted to #19 (confirmed landed).
+  Checked #18/#20's last comment bodies (not just author) — both still the loop's own
+  automated posts, no maintainer reply. Both crons healthy: outer's recent scheduled runs all
+  success; worker's last runs all success. Recomputed the undistilled count *after* this
+  entry and the distill pass below: 9 entries (240-248) plus this one folded into
+  TRIAGE.md/RECIPES.md and marked `[distilled]` — undistilled drops back to low single
+  digits (recount below).
+- **Lesson:** tracking a recurring flake indefinitely without ever converting it into
+  dispatchable work is itself a policy gap — TRIAGE.md already said to file a chore "when the
+  same job flakes repeatedly across cycles," and 10 non-clearing instances plus ~4 weeks with
+  no fix is unambiguously past that bar, even though no single instance alone would have
+  crossed it. A chore-filing threshold framed as "the *same* job, repeatedly" needs an
+  explicit trigger point (a running count, checked every cycle) or it can be perpetually
+  deferred one data point at a time, the same failure mode `permission_denials_count` tracking
+  under #19 already avoids by being framed as a standing per-cycle check rather than a
+  judgment call each time.
+- **Applies to:** triage | verify
+
+## 2026-09-13 — cycle 248: #21 second consecutive first-attempt clear, #19 denial-count data point (cycle 247 run = 4) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`4fbb04a`,
@@ -49,7 +90,7 @@ Entry format:
   actual clear-rate stays visible to whoever eventually looks at `tests/init-agent.e2e.mjs`.
 - **Applies to:** triage | verify
 
-## 2026-09-13 — cycle 247: #21 streak-breaking first-attempt clear, #19 denial-count data point (cycle 246 run = 2)
+## 2026-09-13 — cycle 247: #21 streak-breaking first-attempt clear, #19 denial-count data point (cycle 246 run = 2) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`4d7c0df`,
@@ -83,7 +124,7 @@ Entry format:
   finding broke a pattern rather than extending it — no special-casing needed.
 - **Applies to:** triage | verify
 
-## 2026-09-13 — cycle 246: #21 ninth double-non-clearing rerun, #19 denial-count data point (cycle 245 run = 4)
+## 2026-09-13 — cycle 246: #21 ninth double-non-clearing rerun, #19 denial-count data point (cycle 245 run = 4) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`142d93d`,
@@ -123,7 +164,7 @@ Entry format:
   about.
 - **Applies to:** triage | verify
 
-## 2026-09-12 — cycle 245: #21 eighth double-non-clearing rerun, #19 denial-count data point (cycle 244 run = 8)
+## 2026-09-12 — cycle 245: #21 eighth double-non-clearing rerun, #19 denial-count data point (cycle 244 run = 8) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`6d21857`,
@@ -161,7 +202,7 @@ Entry format:
   deterministic regression.
 - **Applies to:** triage | verify
 
-## 2026-09-12 — cycle 244: #21 seventh double-non-clearing rerun, #19 denial-count data point (cycle 243 run = 1)
+## 2026-09-12 — cycle 244: #21 seventh double-non-clearing rerun, #19 denial-count data point (cycle 243 run = 1) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`a1f656a`,
@@ -198,7 +239,7 @@ Entry format:
   deterministic regression, per the standing sub-shape rule.
 - **Applies to:** triage | verify
 
-## 2026-09-12 — cycle 243: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 242 run = 1)
+## 2026-09-12 — cycle 243: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 242 run = 1) [distilled]
 - **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
   8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI green on the current head (`947ce20`,
@@ -224,7 +265,7 @@ Entry format:
   silently-skipped prior report.
 - **Applies to:** triage | review | verify
 
-## 2026-09-12 — cycle 242: #21 sixth double-non-clearing rerun, #19 denial-count data point (cycle 241 run = 1)
+## 2026-09-12 — cycle 242: #21 sixth double-non-clearing rerun, #19 denial-count data point (cycle 241 run = 1) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`f6d1780`,
@@ -261,7 +302,7 @@ Entry format:
   regression, per the standing sub-shape rule.
 - **Applies to:** triage | verify
 
-## 2026-09-12 — cycle 241: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 240 run = 5)
+## 2026-09-12 — cycle 241: quiet cycle, all re-verification clean, #19 denial-count data point (cycle 240 run = 5) [distilled]
 - **Outcome:** n/a (Sync-time verification only, not a dispatched item; board unchanged —
   8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI green on the current head (`7872f7e`,
@@ -286,7 +327,7 @@ Entry format:
   silently-skipped prior report.
 - **Applies to:** triage | review | verify
 
-## 2026-09-11 — cycle 240: #21 fifth double-non-clearing rerun (new "no model credential" sub-shape), #19 denial-count data point (cycle 239 run = 8)
+## 2026-09-11 — cycle 240: #21 fifth double-non-clearing rerun (new "no model credential" sub-shape), #19 denial-count data point (cycle 239 run = 8) [distilled]
 - **Outcome:** n/a (Sync-time policy judgment + verification, not a dispatched item; board
   unchanged — 8/12 Done, #18-21 still `summon-human`/Blocked, no maintainer replies on any)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`8771fe7`,
