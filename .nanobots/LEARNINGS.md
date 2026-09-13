@@ -19,6 +19,36 @@ Entry format:
 
 ---
 
+## 2026-09-13 — cycle 250: #21 single-rerun clear (does not extend cycle 249's resumed streak), #19 denial-count data point (cycle 249 run = 7)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8/13
+  Done/Blocked/Ready mix as of cycle 249, no maintainer replies on #18-21, #22 still Ready
+  awaiting `/nanobots start`)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`9669851`,
+  cycle 249's own docs-only commit — the distill-pass commit), run 34782474406 — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  .../commits/9669851 --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md` and
+  `.nanobots/TRIAGE.md`. Original attempt `FAILED 4 of 29` (`agent set DAYTONA_API_KEY`,
+  `agent set the OCR endpoint variables`, `agent ran verify_daytona`, `agent verified Daytona
+  BEFORE storing the key`) — same known non-network assertion cluster, no network-error text.
+  `gh run rerun --failed` (via `gh run watch --exit-status` to observe it land) came back
+  **green on the first attempt** — a single-rerun clear, not a double-non-clearing instance.
+  Posted as a dedupe comment on #21 (confirmed landed), consistent with the established
+  recurrence treatment; explicitly noted this does *not* extend cycle 249's "resumed streak"
+  language into a second cycle — 3 of the last 4 pushes (247, 248, 250) cleared on the first
+  attempt against 1 (249) that didn't. Re-verified cycle 249's claims first: commit, #21 and
+  #19 comments, and #22's filing (labels, priority/size, plan comment, Ready status) all
+  checked out. Pulled cycle 249's own outer-loop run (`34781982577`) denial count: **7**,
+  ordinary band; posted to #19 (confirmed landed). Checked #18/#19/#20's last comment bodies
+  (not just author) — all still the loop's own automated posts, no maintainer reply. Both
+  crons healthy: outer's recent scheduled runs all success; worker's last runs all success.
+  No open PRs, no inbox items, no In Progress/In Review items (WIP 0, cap 1).
+- **Lesson:** the recurrence data continues to be noisy rather than trending in either
+  direction — a "resumed streak" framing from one cycle earlier didn't hold into this one,
+  which is itself worth stating plainly rather than silently dropping the streak language
+  once it stops applying. #22 remains the actual mitigation; this comment is evidence for
+  whoever eventually works it, not grounds for a new policy change.
+- **Applies to:** triage | verify
+
 ## 2026-09-13 — cycle 249: #21 tenth double-non-clearing instance, filed #22 (chore), #19 denial-count data point (cycle 248 run = 3) [distilled]
 - **Outcome:** filed #22 (`chore`, P2/M, plan posted, moved to Ready); #21 comment (data point,
   not a dispatched item); board otherwise unchanged before #22 landed (8/12 Done, #18-21 still
