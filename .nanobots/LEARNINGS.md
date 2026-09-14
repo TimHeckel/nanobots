@@ -19,6 +19,38 @@ Entry format:
 
 ---
 
+## 2026-09-14 — cycle 251: #21 eleventh double-non-clearing instance, #19 denial-count data point (cycle 250 run = 4)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (9/13
+  Done/Blocked/Ready mix, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`0fa65c6`,
+  cycle 250's own docs-only commit), run 34789136162 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/0fa65c6 --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt `FAILED 1 of 29` (`agent set the OCR
+  endpoint variables`), no network-error text — same known non-network assertion cluster.
+  Both established rerun attempts (via `gh run watch --exit-status`) stayed red: first
+  rerun `FAILED 1 of 29` (same single assertion), second rerun `FAILED 7 of 29` (a wider
+  subset: `agent set a model credential (saw: none)`, `agent set PROJECTS_PAT`, `agent set
+  DAYTONA_API_KEY`, `agent set OCR_LLM_TOKEN`, `agent set the OCR endpoint variables`) — no
+  network-error text in either. Eleventh double-non-clearing instance (cycles 233, 236,
+  238-retroactive, 239, 240, 242, 244, 245, 246, 249, 251) against three single-attempt
+  clears (247, 248, 250). Posted as a dedupe comment on #21 (confirmed landed), same
+  treatment as every prior instance — no fresh P0, #22 remains the actual mitigation and has
+  not yet been approved to dispatch. Re-verified cycle 250's claims first: commit `0fa65c6`
+  (docs-only, matches), its #21 and #19 comments both checked out. Pulled cycle 250's own
+  outer-loop run (`34788922624`) denial count: **4**, ordinary band; posted to #19 (confirmed
+  landed). Checked #18/#20's last comment bodies (not just author) — both still the loop's
+  own automated posts, no maintainer reply. Both crons healthy: outer's recent scheduled runs
+  all success; worker's last runs all success. No open PRs, no inbox items, no In
+  Progress/In Review items (WIP 0, cap 1). Undistilled LEARNINGS count (pre-append):
+  `grep -c "^## "` → 125 headers (124 entries), suffix-anchored `[distilled]` count → 123 —
+  1 undistilled before this entry, 2 after; well under the ~10 distill threshold.
+- **Lesson:** the eleven-vs-three split continues to look like the dominant behavior rather
+  than an aberration — the three clears (247, 248, 250) never formed a sustained streak, each
+  broken by the very next push. Nothing here changes the standing recommendation: #22 is
+  filed, planned, and Ready; it just needs a human's `/nanobots start` to actually dispatch.
+- **Applies to:** triage | verify
+
 ## 2026-09-13 — cycle 250: #21 single-rerun clear (does not extend cycle 249's resumed streak), #19 denial-count data point (cycle 249 run = 7)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8/13
   Done/Blocked/Ready mix as of cycle 249, no maintainer replies on #18-21, #22 still Ready
