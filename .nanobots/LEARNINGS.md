@@ -19,6 +19,51 @@ Entry format:
 
 ---
 
+## 2026-09-14 — cycle 254: #21 twelfth double-non-clearing instance, #19 denial-count data point (cycle 253 run = 7) + a new partial-trace-gap variant
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`055ddb2`,
+  cycle 252's own docs-only commit), run 34845645885 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/055ddb2 --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt was the stall-shape variant (`FAILED —
+  the agent never produced a transcript`), not a straight assertion list. First
+  `gh run rerun --failed` (watched via `gh run watch --exit-status`): `FAILED 1 of 29`
+  (`agent set the OCR endpoint variables`). Second rerun: `FAILED 6 of 29` (a wider subset —
+  model credential, `PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint vars, both
+  `verify_daytona` assertions). No network-error text in either. Twelfth double-non-clearing
+  instance (cycles 233, 236, 238-retroactive, 239, 240, 242, 244, 245, 246, 249, 251, 254)
+  against four single-attempt clears (247, 248, 250, 252). Posted as a dedupe comment on #21
+  (confirmed landed) — no fresh P0, #22 remains the mitigation and still has no
+  `/nanobots start` approval.
+  Also discovered: between cycle 252's commit and this cycle, an outer-loop run
+  (34889317824, self-identified "cycle 253", 19:50:26Z, `is_error: false`, 55 turns, $1.24,
+  denial count 7) posted exactly one artifact — a "Cycle 253 check" comment on #19 — and
+  nothing else: no #21 comment, no Status-issue report, no LEARNINGS commit. A plausible
+  partial explanation: `main` CI's `onboarding-agent` job on `055ddb2` didn't finish until
+  19:56:45Z, after cycle 253's run had already ended (19:55:37Z), so it may genuinely have
+  found nothing red yet at Sync time — but that doesn't explain the missing Status report or
+  LEARNINGS commit, neither of which depends on CI having finished. This is a new variant of
+  the #19 "cycle completes cleanly but leaves no/partial trace" pattern (cycle 238's finding
+  was a *zero*-artifact case; this is a *one-of-three* case). Posted as a fresh data point on
+  #19 (confirmed landed) rather than escalated on its own. Re-verified cycle 252's own claims
+  first: commit `055ddb2` (docs-only, matches), its #21 and #19 comments both checked out
+  against live content. Checked #18/#20's last comment
+  bodies (not just author) — both still old automated posts, no maintainer reply. Both crons
+  healthy otherwise: outer's recent scheduled runs all success or (this one) in progress;
+  worker's last runs all success. No open PRs, no inbox items, no In Progress/In Review items
+  (WIP 0, cap 1). Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 127 headers
+  (126 entries), suffix-anchored `[distilled]` count → 123 — 3 undistilled before this entry,
+  4 after; still under the ~10 distill threshold.
+- **Lesson:** the silent/partial-report-gap pattern #19 tracks is not binary (full report vs.
+  zero trace) — a cycle can land *some* of its expected artifacts and skip the rest, which
+  looks even more like normal operation from a quick glance than a zero-trace gap would.
+  Checking "did the Status issue get its report this cycle" alone would have missed cycle
+  253's gap entirely, since the miss was on #1 and LEARNINGS, not on #19 itself. The standing
+  practice of spot-checking the *immediately preceding* cycle's claims before trusting them
+  is what caught this, not a special-purpose check.
+- **Applies to:** triage | verify
+
 ## 2026-09-14 — cycle 252: #21 twelfth-overall / fourth single-attempt clear (new assertion sub-shape), #19 denial-count data point (cycle 251 run = 3)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
