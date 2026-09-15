@@ -19,6 +19,45 @@ Entry format:
 
 ---
 
+## 2026-09-15 — cycle 258: #21 second consecutive triple-non-clearing instance (back-to-back with cycle 257's first), #19 denial-count data point (cycle 257 run = 2)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`c67f21c`,
+  cycle 257's own docs-only commit), run 34998984919 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/c67f21c --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 6 of 29` (model credential,
+  `PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint vars, both `verify_daytona` assertions), no
+  network-error text — the known non-network assertion cluster. First `gh run rerun --failed`
+  (watched via `gh run watch --exit-status`) stayed red: `FAILED 1 of 29` (`agent set the OCR
+  endpoint variables`). Second rerun stayed red too, same single assertion again — no
+  network-error text in either. This is the **second** triple-non-clearing instance (original
+  + both reruns all red), landing on the very next push after cycle 257's first-ever one —
+  two triples back-to-back, not an isolated spike. Posted as a dedupe comment on #21
+  (confirmed landed), explicitly flagging that cycle 257's own closing note ("if a triple (or
+  worse) recurs, that pattern — not a single instance — would be the trigger to reconsider the
+  two-attempt bound") is now satisfied by this recurrence; did not unilaterally change the
+  bound, per "propose, don't silently deviate." No fresh P0; #22 remains the mitigation, still
+  unapproved. Re-verified cycle 257's own claims first: commit `ce4ec78` (docs-only, matches),
+  its #21 and #19 comments both checked out against live content. Pulled cycle 257's own
+  outer-loop run (`34998370221`) denial count: **2**, ordinary band; posted to #19 (confirmed
+  landed). Checked #18/#20's last comment bodies in full (not just author) — both still the
+  loop's own automated posts, no maintainer reply. Both crons healthy: outer's recent
+  scheduled runs all success (this run in progress); worker's last runs all success. No open
+  PRs, no inbox items, no In Progress/In Review items (WIP 0/1). Undistilled LEARNINGS count
+  (pre-append): `grep -c "^## "` → 131 headers (130 entries), suffix-anchored `[distilled]`
+  count → 123 — 7 undistilled before this entry, 8 after; still under the ~10 distill
+  threshold but close enough to flag for the next cycle that reaches it.
+- **Lesson:** a "first-ever" instance of a new failure sub-pattern is itself weak evidence
+  about its future frequency — this pattern recurred on the very next opportunity, which is
+  the fastest a recurrence could possibly be observed. Two consecutive triples is still thin
+  (n=2) for redefining a mechanical rule, but per cycle 257's own stated trigger condition,
+  it's no longer nothing: worth surfacing plainly to whoever next reviews #21/#22 rather than
+  silently absorbing it into "still just tracking." If a third triple appears in the near
+  future, that would move this from "flag it" to "the two-attempt bound itself needs a
+  proposed edit."
+- **Applies to:** triage | verify
+
 ## 2026-09-15 — cycle 257: #21 first-ever triple-non-clearing instance (original + 2 reruns all red), #19 denial-count data point (cycle 256 run = 5)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
