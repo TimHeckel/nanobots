@@ -19,6 +19,37 @@ Entry format:
 
 ---
 
+## 2026-09-15 — cycle 256: quiet cycle — main CI clean on first attempt, no #21 dedupe needed, #19 denial-count data point (cycle 255 run = 3)
+- **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
+  Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI **green** on the current head
+  (`34a719d`, cycle 255's own docs-only commit), run 34930979596 — both `test` and
+  `onboarding-agent` succeeded on the original push-triggered run itself, with no
+  `gh run rerun --failed` needed at all. This breaks the run of consecutive cycles that each
+  needed at least one rerun to clear the known non-network `onboarding-agent` assertion
+  cluster (thirteen double-non-clearing instances and four single-rerun clears immediately
+  preceding this one, per cycle 255's tally) — the first fully clean original-push result in
+  that recent stretch, worth noting as a data point even though it needs no action: nothing
+  to dedupe on #21 this cycle since nothing was ever red. Re-verified cycle 255's own claims
+  first: commit `34a719d` (docs-only, matches, confirmed via `gh api
+  .../commits/34a719d --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`), its #21
+  and #19 comments both checked out against live content. Pulled cycle 255's own outer-loop
+  run (`34930624471`) denial count: **3**, ordinary band; posted to #19 (confirmed landed).
+  Checked #18/#20's last comment bodies (not just author) — both still the loop's own
+  automated posts, no maintainer reply. Checked #22 — still exactly one comment (the plan),
+  no `/nanobots start <hash>` line yet. Both crons healthy: outer's recent scheduled runs all
+  success; worker's last runs all success. No open PRs, no inbox items, no In
+  Progress/In Review items (WIP 0/1). Undistilled LEARNINGS count (pre-append):
+  `grep -c "^## "` → 129 headers (128 entries), suffix-anchored `[distilled]` count → 123 —
+  5 undistilled before this entry, 6 after; still under the ~10 distill threshold.
+- **Lesson:** the double-non-clearing streak was never a certainty every push — this cycle's
+  clean first-attempt result is evidence the underlying live-model nondeterminism still
+  produces occasional fully-clean runs, not that the flake has stopped. Doesn't change the
+  standing recommendation: #22 (harden or stop gating `main` on this job) is filed, planned,
+  and Ready; it still just needs a human's `/nanobots start`.
+- **Applies to:** triage | verify
+
 ## 2026-09-15 — cycle 255: #21 thirteenth double-non-clearing instance, #19 denial-count data point (cycle 254 run = 3)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
