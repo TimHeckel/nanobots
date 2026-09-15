@@ -19,6 +19,45 @@ Entry format:
 
 ---
 
+## 2026-09-15 — cycle 257: #21 first-ever triple-non-clearing instance (original + 2 reruns all red), #19 denial-count data point (cycle 256 run = 5)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`ce4ec78`,
+  cycle 256's own docs-only commit), run 34965152656 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/ce4ec78 --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 4 of 29` (model credential,
+  `PROJECTS_PAT`, +2 more), no network-error text — the known non-network assertion cluster.
+  First `gh run rerun --failed` (watched via `gh run watch --exit-status`) stayed red:
+  `FAILED 6 of 29`, a wider subset, still no network-error text. Second rerun *also* stayed
+  red: `FAILED 1 of 29` (`agent set PROJECTS_PAT`), narrower again, still no network-error
+  text. This is the first time all three attempts on one commit (original + both reruns)
+  stayed red — every prior instance cleared somewhere in that window (a single-attempt clear,
+  or the established "double-non-clearing" pattern where the second rerun clears). Stopped at
+  two reruns per the standing two-attempt evidence-gathering bound rather than trying a third,
+  and posted this as a dedupe comment on #21 (confirmed landed) — no fresh P0, #22 remains the
+  mitigation and still has no `/nanobots start` approval. Running tally: 14
+  double-or-worse-non-clearing instances (cycles 233, 236, 238-retroactive, 239, 240, 242, 244,
+  245, 246, 249, 251, 254, 255, 257) against four single-attempt clears (247, 248, 250, 252)
+  and cycle 256's one fully-clean-on-original-push observation. Re-verified cycle 256's own
+  claims first: commit `ce4ec78` (docs-only, matches), its #19 comment and Status-issue report
+  both checked out against live content. Pulled cycle 256's own outer-loop run (`34964874848`)
+  denial count: **5**, ordinary band; posted to #19 (confirmed landed). Checked #18/#20's last
+  comment bodies (not just author) — both still the loop's own automated posts, no maintainer
+  reply. Both crons healthy: outer's recent scheduled runs all success (this run in progress);
+  worker's last runs all success. No open PRs, no inbox items, no In Progress/In Review items
+  (WIP 0/1). Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 130 headers (129
+  entries), suffix-anchored `[distilled]` count → 123 — 6 undistilled before this entry, 7
+  after; still under the ~10 distill threshold.
+- **Lesson:** the double-non-clearing pattern this file has tracked since cycle 233 was itself
+  a floor, not a ceiling — a triple-non-clearing instance was always possible and this cycle
+  is the first observed case. Per the standing "propose, don't silently deviate" instinct, this
+  is surfaced as new evidence (and additional weight behind #22's recommendation), not grounds
+  to unilaterally extend the retry bound to three attempts as a new default. If a triple (or
+  worse) recurs, that pattern — not a single instance — would be the trigger to reconsider the
+  two-attempt bound explicitly.
+- **Applies to:** triage | verify
+
 ## 2026-09-15 — cycle 256: quiet cycle — main CI clean on first attempt, no #21 dedupe needed, #19 denial-count data point (cycle 255 run = 3)
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
