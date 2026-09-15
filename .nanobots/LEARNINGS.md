@@ -19,6 +19,42 @@ Entry format:
 
 ---
 
+## 2026-09-15 — cycle 255: #21 thirteenth double-non-clearing instance, #19 denial-count data point (cycle 254 run = 3)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`e0698af`,
+  cycle 254's own docs-only commit), run 34911357659 — only `onboarding-agent` failed,
+  `test` passed. Diff confirmed docs-only via `gh api .../commits/e0698af
+  --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt `FAILED 1
+  of 29` (`agent set the OCR endpoint variables`), no network-error text — the known
+  non-network assertion cluster. First `gh run rerun --failed` (watched via `gh run watch
+  --exit-status`) stayed red: `FAILED 3 of 29` (`agent set a model credential (saw:
+  DAYTONA_API_KEY, OCR_LLM_TOKEN, OCR_AUTOFIX_TOKEN)`, `agent set PROJECTS_PAT`, `agent set
+  the OCR endpoint variables`) — still no network-error text, same cluster, a different
+  subset than the original. Second rerun came back fully green on both jobs. Thirteenth
+  double-non-clearing instance (cycles 233, 236, 238-retroactive, 239, 240, 242, 244, 245,
+  246, 249, 251, 254, 255) against four single-attempt clears (247, 248, 250, 252). Posted
+  as a dedupe comment on #21 (confirmed landed) — no fresh P0, #22 remains the mitigation
+  and still has no `/nanobots start` approval. Re-verified cycle 254's own claims first:
+  commit `e0698af` (docs-only, matches), its #21 and #19 comments both checked out against
+  live content — a full trace this time, not the partial-report gap cycle 253 left. Pulled
+  cycle 254's own outer-loop run (`34910760271`) denial count: **3**, ordinary band; posted
+  to #19 (confirmed landed). Checked #18/#20's last comment bodies (not just author) — both
+  still the loop's own automated posts, no maintainer reply. Both crons healthy: outer's
+  recent scheduled runs all success; worker's last runs all success. No open PRs, no inbox
+  items, no In Progress/In Review items (WIP 0, cap 1). Undistilled LEARNINGS count
+  (pre-append): `grep -c "^## "` → 128 headers (127 entries), suffix-anchored `[distilled]`
+  count → 123 — 4 undistilled before this entry, 5 after; still under the ~10 distill
+  threshold.
+- **Lesson:** the thirteen-vs-four split continues unchanged from cycle 254's read — the
+  dominant behavior on this job is still two failed attempts before a clear, not the
+  exception. Nothing here changes the standing recommendation: #22 is filed, planned, and
+  Ready; it just needs a human's `/nanobots start` to actually dispatch. The undistilled
+  count (5) is close enough to the ~10 threshold to flag for the next cycle that reaches it,
+  but not yet at the line for a distill pass this cycle.
+- **Applies to:** triage | verify
+
 ## 2026-09-14 — cycle 254: #21 twelfth double-non-clearing instance, #19 denial-count data point (cycle 253 run = 7) + a new partial-trace-gap variant
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
