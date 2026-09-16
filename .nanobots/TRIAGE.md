@@ -219,6 +219,24 @@ the rule itself but change how you read the evidence gathered while applying it:
   open as the live evidence trail (dedupe comments continue there); #22 is the actual
   mitigation work and is tracked separately on the board. `[distilled from 2026-09-13 (cycles
   240-249), #21/#22]`
+- **A stronger sub-pattern than "double-non-clearing" has since appeared: a *triple*-non-clearing
+  instance, where the original attempt and *both* of the standing two reruns land in the known
+  non-network assertion cluster with neither clearing.** This never happened in the first ~4
+  weeks of tracking (cycles 233-255 stayed within "clears somewhere in two attempts" every
+  time) — the first occurrence was cycle 257 (2026-09-15), and it recurred on the very next two
+  pushes as well (cycles 258, 259), three in a row. Cycle 257's own closing note treated a
+  single instance as too thin to act on but named a recurrence as the trigger to reconsider the
+  two-attempt evidence-gathering bound explicitly; that trigger fired twice more before the
+  streak broke. The very next push after that (cycle 260, 2026-09-16) returned to the ordinary
+  double-non-clearing-then-clear shape (original attempt and first rerun both landed in the
+  cluster, second rerun cleared), so the triple shape is a recurring possibility layered on top
+  of the double pattern, not a new floor that replaced it. Per "propose, don't silently deviate,"
+  this has not yet been folded into a mechanical rule change (e.g. requiring a third rerun before
+  concluding); it stays logged as evidence on #21, with the standing recommendation (#22 is
+  filed, planned, Ready, and only needs a human's `/nanobots start`) carrying more weight with
+  each escalation. If a fourth or later triple-or-worse instance appears, propose extending the
+  two-attempt bound explicitly rather than absorbing it silently. `[distilled from 2026-09-15/16
+  (cycles 257-260), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

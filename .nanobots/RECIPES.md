@@ -246,6 +246,17 @@ then narrated over instead of surfacing.
     cycle was idle, check that cycle's own run for tool activity (`gh run view <id> --log`)
     — an active investigation with a silent step-7 skip looks identical to a quiet cycle from
     the Status issue alone. `[distilled from 2026-09-11 (cycle 238), #19]`
+11. **The trace-gap check above is not binary (zero trace vs. full report) — a cycle can land
+    *some* of its expected artifacts and skip the rest, which reads even more like normal
+    operation than a zero-trace gap would.** Confirmed on #19 (2026-09-14, cycle 254,
+    discovered retroactively): cycle 253's run (`is_error: false`, 55 turns, $1.24, denial
+    count 7) posted exactly one artifact — a data-point comment on #19 — and nothing else: no
+    #21 comment, no Status-issue report, no LEARNINGS commit. Checking only "did the Status
+    issue get its report" would have missed this entirely, since the miss was on #1 and
+    LEARNINGS, not on the one issue that did get a comment. Spot-check *every* expected
+    artifact of the immediately preceding cycle (Status comment, LEARNINGS commit, any
+    per-issue dedupe comment it should have posted), not just whichever one happens to be
+    easiest to check. `[distilled from 2026-09-14 (cycle 254), #19]`
 7. **"No maintainer reply" must be verified by reading each blocked issue's actual last
    comment body, not by checking who the author is.** The outer loop's own `PROJECTS_PAT` is a
    human-owned classic PAT (see RUNTIMES.md's auth facts), so every comment the loop itself
