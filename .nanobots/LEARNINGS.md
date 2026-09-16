@@ -19,6 +19,51 @@ Entry format:
 
 ---
 
+## 2026-09-16 — cycle 261: #21 second consecutive double-non-clearing-then-clear (confirms cycle 260's streak-break wasn't a one-off), #19 denial-count data point (cycle 260 run = 3)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`309396a`,
+  cycle 260's own docs-only commit), run 35091643925 — only `onboarding-agent` failed,
+  `test` passed. Diff confirmed docs-only via `gh api .../commits/309396a
+  --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`, `.nanobots/RECIPES.md`,
+  `.nanobots/TRIAGE.md` (cycle 260's distill-pass commit). Original attempt: `FAILED 5 of
+  29` (model credential, `DAYTONA_API_KEY`, OCR endpoint vars, both `verify_daytona`
+  assertions), no network-error text — the known non-network assertion cluster. First
+  `gh run rerun --failed` (watched via `gh run watch --exit-status`) stayed red: `FAILED 5
+  of 29`, a different subset (`PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint vars, both
+  `verify_daytona` assertions), still no network-error text. Second rerun came back green
+  on both jobs. This is the ordinary double-non-clearing-then-clear shape, the second one
+  in a row since cycle 260 broke the three-in-a-row triple streak (257-259) — one data
+  point isn't enough to call the triple shape retired, but two consecutive doubles after
+  the streak break is consistent with the triple being a recurring possibility layered on
+  the double pattern (as TRIAGE.md's distilled bullet already frames it) rather than a
+  regime change. Posted as a dedupe comment on #21 (confirmed landed). No fresh P0; #22
+  remains the mitigation, still unapproved. Re-verified cycle 260's own claims first:
+  commit `309396a` (docs-only, matches — files list confirmed), and its distill-pass
+  content spot-checked directly in TRIAGE.md/RECIPES.md (the triple-non-clearing pattern
+  and the partial-trace-gap generalization are both present and read as claimed; an
+  earlier plain-string grep for "triple-non-clearing" false-negatived on TRIAGE.md because
+  the markdown italicizes it as "triple*-non-clearing" — a regex-aware search confirmed the
+  content is there). Its #21 and #19 comments both checked out against live content, board
+  state matched. Pulled cycle 260's own outer-loop run (`35090948491`) denial count: **3**,
+  ordinary band; posted to #19 (confirmed landed). Checked #18/#20's last comment bodies in
+  full (not just author) — both still the loop's own automated reports, no maintainer
+  reply. Both crons healthy: outer's last 3 scheduled runs all success; worker's last 6
+  runs all success. No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1).
+  Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 134 headers (133 entries),
+  suffix-anchored `[distilled]` count (Grep tool) → 132 — 1 undistilled before this entry,
+  2 after; well under the ~10 distill threshold, no distill pass this cycle.
+- **Lesson:** a plain-string grep is not a safe way to spot-check whether a distill pass's
+  promoted content actually landed in a policy doc when the content itself uses markdown
+  emphasis (`*word*-suffix`) around the phrase being searched for — the asterisk breaks a
+  literal substring match even though the prose reads correctly to a human. Use a
+  regex-tolerant search (or search on a shorter, emphasis-free fragment) before concluding
+  a claimed doc edit is missing; a false negative here would have read exactly like cycle
+  260 fabricating its distill-pass claim, which recipe "verifying a cycle's own claims"
+  treats as a real, confirmed failure mode elsewhere in this repo's history.
+- **Applies to:** triage | verify
+
 ## 2026-09-16 — cycle 260: #21 back to double-non-clearing-then-clear (breaks the 257-259 triple streak), #19 denial-count data point (cycle 259 run = 12), distill pass run
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); ran a distill pass
   (LOOP-PROMPT.md step 5) since the undistilled count hit the ~10 threshold; board unchanged
