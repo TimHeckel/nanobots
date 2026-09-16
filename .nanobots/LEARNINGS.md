@@ -19,6 +19,52 @@ Entry format:
 
 ---
 
+## 2026-09-16 — cycle 259: #21 third consecutive triple-non-clearing instance (257, 258, 259), #19 denial-count data point (cycle 258 run = 0)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`49cec700`,
+  cycle 258's own docs-only commit), run 35025650140 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/49cec700 --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 4 of 29` (`DAYTONA_API_KEY`,
+  OCR endpoint variables, `verify_daytona`, verify-before-store ordering), no network-error
+  text — the known non-network assertion cluster. First `gh run rerun --failed` (watched via
+  `gh run watch --exit-status`) stayed red: `FAILED 4 of 29`, a different subset (model
+  credential seen as `PROJECTS_PAT, OCR_LLM_TOKEN`, `DAYTONA_API_KEY`, `verify_daytona`,
+  verify-before-store), still no network-error text. Second rerun stayed red too: `FAILED 4
+  of 29`, yet another subset (`DAYTONA_API_KEY`, `PROJECTS_PAT`, `OCR_LLM_TOKEN`, OCR
+  endpoint variables) — no network-error text either time. This is the **third** consecutive
+  triple-non-clearing instance (257, 258, 259 all red on original + both reruns), landing on
+  the very next push after cycle 258's second one. Posted as a dedupe comment on #21
+  (confirmed landed), explicitly naming this as stronger evidence than a single recurrence —
+  three in a row makes the triple the modal outcome for this job right now, not a spike — and
+  restated the standing recommendation (#22 is Ready, planned, and only needs a human's
+  approval) with more weight than cycle 258's flag. Did not unilaterally change the
+  two-attempt bound or touch LOOP-PROMPT.md/TRIAGE.md, per "propose, don't silently deviate."
+  No fresh P0; #22 remains the mitigation, still unapproved. Re-verified cycle 258's own
+  claims first: commit `49cec700` (docs-only, matches), its #21 and #19 comments both checked
+  out against live content. Pulled cycle 258's own outer-loop run (`35025046432`) denial
+  count: **0**, ordinary band; posted to #19 (confirmed landed). Checked #18/#20's last
+  comment bodies in full (not just author — both are posted via the same human-owned PAT the
+  loop itself uses, so author alone can't distinguish a maintainer reply from an automated
+  loop post) — both still the loop's own automated reports, no maintainer reply. Both crons
+  healthy: outer's recent scheduled runs all success (this run in progress); worker's last
+  five runs all success. No open PRs, no inbox items, no In Progress/In Review items (WIP
+  0/1). Undistilled LEARNINGS count (pre-append): real headers (excluding the format-example
+  header) 131, suffix-anchored `[distilled]` count 123 — 8 undistilled before this entry, 9
+  after; still under the ~10 distill threshold but one entry closer.
+- **Lesson:** a pattern's second occurrence can still read as "maybe a streak," but a third
+  consecutive occurrence with no exception in between is qualitatively different evidence —
+  it means the exception (a clean run) would now be the surprising outcome, not the rule.
+  When a standing policy explicitly names a recurrence count as its own trigger for
+  reconsideration (cycle 257's "if a triple recurs..."), each further instance should restate
+  that the trigger's evidentiary weight is still climbing, not just log another data point —
+  otherwise the accumulating signal reads as flat across cycle reports even when the
+  underlying rate is climbing. Still holds: escalating conviction is not the same as
+  unilateral authority to change the rule; the loop's job here is to make the case
+  undeniable for the human who holds the approval, not to route around them.
+- **Applies to:** triage | verify
+
 ## 2026-09-15 — cycle 258: #21 second consecutive triple-non-clearing instance (back-to-back with cycle 257's first), #19 denial-count data point (cycle 257 run = 2)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
