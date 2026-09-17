@@ -19,6 +19,32 @@ Entry format:
 
 ---
 
+## 2026-09-17 — cycle 265: #21 fourth triple-non-clearing instance (original + 2 reruns all red, after a 5-cycle clean gap), #19 denial-count data point (cycle 264 run = 3)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item; #21 stays open,
+  maintainer-pending)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`58cf3e9`,
+  cycle 264's own docs-only commit), run `35217186062` — only `onboarding-agent` failed,
+  `test` passed. Diff confirmed docs-only via `gh api .../commits/58cf3e9 --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 6 of
+  29` (model credential, `PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint vars,
+  `verify_daytona`, verify-before-store), no network-error text — the known non-network
+  cluster. First `gh run rerun --failed`: stayed red, same cluster, `FAILED 6 of 29`.
+  Second rerun: stayed red again, `FAILED 5 of 29`, narrower subset, still no
+  network-error text. Stopped at two reruns per the standing evidence-gathering bound —
+  this is the fourth triple-non-clearing instance on record (after the 257-259 back-to-back
+  streak), but the first one after a 5-cycle clean gap (260-264 were all
+  clean-on-first-push or ordinary double-then-clear), which is evidence the triple shape
+  is an occasional variant of the flake rather than tied to any recent change. Posted as a
+  dedupe comment on #21 (no fresh P0) and a #19 denial-count data point (cycle 264's own
+  run = 3, ordinary band) after re-verifying cycle 264's docs-only claim and its "no
+  maintainer reply on #18-21" claim against live content.
+- **Lesson:** a multi-cycle clean streak on this job (260-264) does not mean the
+  triple-non-clearing shape has stopped recurring — it's still the same underlying
+  live-model nondeterminism, just with an uneven interval. Nothing new to distill here
+  beyond what #21's own tally already tracks; #22 (harden or stop gating `main` on this
+  job) remains the actual fix, still Ready with an unexpired plan and still unapproved.
+- **Applies to:** triage
+
 ## 2026-09-17 — cycle 264: quiet cycle — main CI green on first attempt on aab1022, #19 denial-count data point (cycle 263 run = 0)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
