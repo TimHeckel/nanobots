@@ -19,6 +19,47 @@ Entry format:
 
 ---
 
+## 2026-09-17 — cycle 266: #21 ordinary single-rerun clear (breaks cycle 265's triple streak), #19 denial-count data point (cycle 265 run = 5)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`23b07e9`,
+  cycle 265's own docs-only commit), run 35250698238 — only `onboarding-agent` failed,
+  `test` passed. Diff confirmed docs-only via `gh api .../commits/23b07e9 --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 6 of
+  29` (model credential, `PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint variables,
+  `verify_daytona`, verify-before-store ordering), no network-error text — the known
+  non-network assertion cluster. `gh run rerun --failed` (watched via `gh run watch
+  --exit-status`) came back green on both jobs on the very first rerun — the ordinary
+  single-rerun-clears shape, immediately following cycle 265's fourth triple-non-clearing
+  instance. Posted as a dedupe comment on #21 (confirmed landed). No fresh P0; #22 remains
+  the mitigation, still unapproved. Re-verified cycle 265's own claims first: commit
+  `23b07e9` (docs-only, matches), its #21 and #19 comments both checked out against live
+  content. Pulled cycle 265's own outer-loop run (`35249950420`) denial count: **5**,
+  ordinary band; posted to #19 (confirmed landed after a retry — the first
+  `gh issue comment 19` invocation, chained with a blocked `rm` in the same command, did
+  not actually post; re-read the issue's last comment and found cycle 265's data point
+  still showing before re-running the comment alone). Checked #18/#20's last comment
+  bodies in full (not just author) — still the loop's own automated posts, no maintainer
+  reply. Checked #22 — still exactly one comment (the plan), no `/nanobots start <hash>`
+  line yet. Both crons healthy: outer's last 5 scheduled runs all success (this run in
+  progress); worker's last 6 runs all success. No open PRs, no inbox items, no In
+  Progress/In Review items (WIP 0/1). Undistilled LEARNINGS count (pre-append):
+  `grep -c "^## "` → 138 headers (137 entries), suffix-anchored `[distilled]` count → 132
+  — 5 undistilled before this entry, 6 after; well under the ~10 distill threshold, no
+  distill pass this cycle.
+- **Lesson:** a triple-non-clearing streak breaking on the very next push (as it did here,
+  same as cycle 260 breaking the 257-259 streak) is further evidence the triple shape is an
+  occasional variant layered on the double pattern, not a rate increase — consistent with
+  TRIAGE.md's existing framing, nothing new to distill. Separately: chaining a `gh` mutation
+  command with an unrelated cleanup command (`&&`-joined `gh issue comment ... && rm
+  tmpfile`) in a single Bash invocation means a sandbox denial on the *second* command
+  reports as the whole invocation failing, which reads exactly like "did the comment post"
+  should be re-checked rather than assumed — it hadn't. Run a comment-posting command alone,
+  or check for its own tool result, rather than trusting a compound command's overall
+  success/failure to reflect each piece.
+- **Applies to:** triage | verify
+
 ## 2026-09-17 — cycle 265: #21 fourth triple-non-clearing instance (original + 2 reruns all red, after a 5-cycle clean gap), #19 denial-count data point (cycle 264 run = 3)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item; #21 stays open,
   maintainer-pending)
