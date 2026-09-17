@@ -19,6 +19,47 @@ Entry format:
 
 ---
 
+## 2026-09-16 — cycle 263: quiet cycle — main CI still clean on fbea5df, #19 denial-count data point (cycle 262 run = 2), flagged cycle 262's skipped LEARNINGS commit
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI still **green** on the current head
+  (`fbea5df`, cycle 261's docs-only commit, unchanged since cycle 262 also found it clean)
+  — confirmed via `gh run view 35125500909 --json jobs`, both `test` and `onboarding-agent`
+  succeeded on the original push-triggered run. No rerun needed, nothing to dedupe on #21.
+  Re-verified cycle 262's own claims first: cycle 262 posted a Status-issue report and a
+  #19 data-point comment but **no LEARNINGS.md commit** — `git log` confirms `fbea5df`
+  (cycle 261's commit) is still the repo's most recent commit, so cycle 262 genuinely made
+  no commit, matching what it stated plainly in its own report ("No LEARNINGS commit —
+  nothing reached Done and no CI-red judgment call to record"). This is *not* the silent
+  "partial trace gap" failure mode RECIPES.md's verifying-claims recipe warns about (cycle
+  262 disclosed the omission explicitly, it wasn't discovered by absence) — but it is the
+  first cycle in the recent quiet-cycle stretch (255, 256, 260-262 before it) to skip the
+  LEARNINGS entry that every other quiet Sync-only cycle in this window still posted.
+  Flagged this as a data point on #19 (confirmed landed) rather than treating one
+  transparent, self-explained instance as a problem on its own. Pulled cycle 262's own
+  outer-loop run (`35151568499`) denial count: **2**, ordinary band; posted to #19
+  (confirmed landed). Checked #18/#20's last comment bodies in full (not just author) —
+  both still the loop's own automated posts, no maintainer reply. Checked #22 — still
+  exactly one comment (the plan), no `/nanobots start <hash>` line yet. Both crons healthy:
+  outer's recent scheduled runs all success (this run in progress); worker's last 5 runs
+  all success. No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1).
+  Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 135 headers (134 entries),
+  suffix-anchored `[distilled]` count (Grep tool) → 132 — 2 undistilled before this entry,
+  3 after; well under the ~10 distill threshold, no distill pass this cycle.
+- **Lesson:** a cycle explaining *why* it skipped an expected artifact is meaningfully
+  different from silently dropping it (the failure mode RECIPES.md already tracks under
+  #19) — the explanation itself is the audit trail — but a one-off, explained deviation
+  from an established per-cycle pattern is still worth a single data-point note rather than
+  either ignoring it or over-reacting to n=1. If a second cycle skips its LEARNINGS commit
+  for a similar "nothing new to record" rationale, that would be the point to ask whether
+  the LOOP-PROMPT.md Learn step actually requires a LEARNINGS entry every cycle or only
+  when something reached Done/died — right now the established practice (every quiet cycle
+  in this file logs one) is stricter than a literal reading of step 5's text, and that gap
+  between text and practice is exactly the kind of thing worth a proposed clarification
+  rather than each cycle re-deciding it alone.
+- **Applies to:** triage | verify
+
 ## 2026-09-16 — cycle 261: #21 second consecutive double-non-clearing-then-clear (confirms cycle 260's streak-break wasn't a one-off), #19 denial-count data point (cycle 260 run = 3)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
