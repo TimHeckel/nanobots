@@ -19,6 +19,37 @@ Entry format:
 
 ---
 
+## 2026-09-17 — cycle 264: quiet cycle — main CI green on first attempt on aab1022, #19 denial-count data point (cycle 263 run = 0)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-21)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`aab1022`,
+  cycle 263's own docs-only LEARNINGS commit) on the **original push-triggered run**
+  (`35183712597`) — both `test` and `onboarding-agent` jobs succeeded first try, confirmed
+  via `gh run view 35183712597 --json jobs`. No rerun needed, nothing to dedupe on #21 this
+  cycle. Re-verified cycle 263's own claims first: its Status-issue comment and #19
+  data-point comment both landed and read back correctly against live state; the claimed
+  commit `aab1022` exists and touches exactly `.nanobots/LEARNINGS.md`
+  (`gh api repos/{owner}/{repo}/commits/aab1022 --jq '.files[].filename'`), matching its
+  "docs-only" framing. Pulled cycle 263's own outer-loop run (`35183562289`) denial count
+  via `gh run view 35183562289 --log | grep -i permission_denials_count`: **0** — the third
+  0-value on record (prior lows: cycles 206, 210), still just one more data point inside the
+  established 0-14 band, not a level shift. Checked #18/#19/#20's last comment bodies in
+  full (not just author) — all three still the loop's own automated posts, no maintainer
+  reply. Checked #21's last comment (cycle 261's dedupe note) — same, no maintainer reply,
+  and nothing new to add this cycle since CI didn't go red. Checked #22 — still exactly one
+  comment (the plan), no `/nanobots start <hash>` line yet. Both crons healthy: outer's
+  last 5 scheduled runs all success (this run in progress); worker's last 5 runs all
+  success. No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1).
+  Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 136 headers (135 entries),
+  suffix-anchored `[distilled]` count (Grep tool) → 132 — 3 undistilled before this entry, 4
+  after; well under the ~10 distill threshold, no distill pass this cycle.
+- **Lesson:** cycle 262's skipped-LEARNINGS-commit deviation (flagged in cycle 263's entry)
+  did not recur here — this cycle posted its own LEARNINGS entry normally, so that data
+  point stays at n=1 and doesn't yet warrant the policy clarification cycle 263 floated.
+  Treat it as resolved/not-a-pattern unless a second skip appears in a future quiet cycle.
+- **Applies to:** triage | verify
+
 ## 2026-09-16 — cycle 263: quiet cycle — main CI still clean on fbea5df, #19 denial-count data point (cycle 262 run = 2), flagged cycle 262's skipped LEARNINGS commit
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
