@@ -19,6 +19,47 @@ Entry format:
 
 ---
 
+## 2026-09-18 — cycle 269: #21 seventh triple-non-clearing instance (third consecutive, 267-268-269, matching the original 257-258-259 streak length), #19 denial-count data point (cycle 268 run = 5)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`2c1624c`,
+  cycle 268's own docs-only commit), run 35339105060 — only `onboarding-agent` failed,
+  `test` passed. Diff confirmed docs-only via `gh api .../commits/2c1624c --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 4 of
+  29` (`PROJECTS_PAT`, `DAYTONA_API_KEY`, `verify_daytona`, verify-before-store ordering),
+  no network-error text — the known non-network assertion cluster. First `gh run rerun
+  --failed` (watched via `gh run watch --exit-status`): stayed red, identical `FAILED 4 of
+  29` (same four assertions), still no network-error text. Second rerun: stayed red again,
+  `FAILED 1 of 29` (`agent set the OCR endpoint variables`), a narrower, different
+  assertion, still no network-error text. Original + both reruns all red, all in the known
+  cluster — the seventh triple-non-clearing instance on record (after 257, 258, 259, 265,
+  267, 268), and now three in a row (267-268-269), matching the length of the original
+  257-258-259 streak. Posted as a dedupe comment on #21 citing cycle 267's standing
+  third-rerun-bound proposal as further evidence, not a restatement (per cycle 268's own
+  lesson about not burying a proposal under repeated copies) — confirmed landed. No fresh
+  P0; #22 remains the actual fix, still unapproved. Re-verified cycle 268's own claims
+  first: commit `2c1624c` (docs-only, matches), its Status-issue report, #21 dedupe
+  comment, and #19 data-point comment all checked out against live content. Pulled cycle
+  268's own outer-loop run (`35338629558`) denial count: **5**, ordinary band; posted to
+  #19 (confirmed landed). Checked #18/#20/#22's last comment bodies in full (not just
+  author) — all still the loop's own automated reports, no maintainer reply. Checked #22 —
+  still exactly one comment (the plan), no `/nanobots start <hash>` line yet. Both crons
+  healthy: outer's last 5 scheduled runs all success (this run in progress); worker's last
+  6 runs all success. No open PRs, no inbox items, no In Progress/In Review items (WIP
+  0/1). Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 141 headers (140
+  entries), suffix-anchored `[distilled]` count (Grep tool) → 132 — 8 undistilled before
+  this entry, 9 after; well under the ~10 distill threshold, no distill pass this cycle.
+- **Lesson:** a three-in-a-row triple-non-clearing streak has now recurred twice
+  (257-258-259, then 267-268-269), each time immediately following a cycle that explicitly
+  logged the trigger for proposing a bound change (cycle 259 itself, then cycle 267's
+  explicit proposal) — the streak length repeating exactly is itself a data point worth
+  naming, not just another instance count increment. Still not grounds to unilaterally
+  adopt cycle 267's proposal per "propose, don't silently deviate" — that stays a
+  maintainer/distill-pass decision — but the recurrence of the *same streak length* after
+  the proposal was already made is stronger evidence than an isolated instance would be.
+- **Applies to:** triage | verify
+
 ## 2026-09-18 — cycle 268: #21 sixth triple-non-clearing instance (first back-to-back pair with cycle 267 since 257-258-259), #19 denial-count data point (cycle 267 run = 1)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
