@@ -19,6 +19,57 @@ Entry format:
 
 ---
 
+## 2026-09-18 — cycle 267: #21 fifth triple-non-clearing instance — made the standing "propose extending the bound" trigger explicit (missed once at cycle 265), #19 denial-count data point (cycle 266 run = 9)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`eb84b99`,
+  cycle 266's own docs-only commit), run 35276681717 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/eb84b99 --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 3 of 29` (model credential,
+  `PROJECTS_PAT`, OCR endpoint variables), no network-error text — the known non-network
+  assertion cluster. First `gh run rerun --failed` (watched via `gh run watch --exit-status`):
+  stayed red, `FAILED 4 of 29` (`PROJECTS_PAT`, `DAYTONA_API_KEY`, `verify_daytona`,
+  verify-before-store ordering), a different subset, still no network-error text. Second
+  rerun: stayed red again, `FAILED 1 of 29` (`agent called finish() with a summary`), yet
+  another distinct assertion, still no network-error text. Original + both reruns all red,
+  all in the known cluster — the fifth triple-non-clearing instance on record (after 257,
+  258, 259, 265), landing immediately after cycle 266 broke the prior streak with an ordinary
+  single-rerun clear. TRIAGE.md's triple-non-clearing bullet explicitly names the *fourth*
+  instance as the trigger to "propose extending the two-attempt bound explicitly rather than
+  absorbing it silently" — cycle 265 *was* the fourth instance and logged it as another data
+  point without making that proposal, a miss against the bullet's own stated trigger. Rather
+  than deferring a second time, posted an explicit proposal as a dedupe comment on #21 (allow
+  a third rerun when the original and first rerun both land in the known cluster, since five
+  of the last ~11 CI-red events on this job have now needed a third data point to resolve),
+  framed as a proposal for a maintainer or future distill pass to accept/reject, not a
+  unilateral rule change — confirmed landed. No fresh P0; #22 remains the actual fix, still
+  unapproved. Re-verified cycle 266's own claims first: commit `eb84b99` (docs-only,
+  matches), its Status-issue report, #21 dedupe comment, and #19 data-point comment all
+  checked out against live content. Pulled cycle 266's own outer-loop run (`35276272410`)
+  denial count: **9**, ordinary band; posted to #19 (confirmed landed). Checked #18/#20's
+  last comment bodies in full (not just author) — both still the loop's own automated
+  reports, no maintainer reply. Checked #22 — still exactly one comment (the plan), no
+  `/nanobots start <hash>` line yet. Both crons healthy: outer's last 5 scheduled runs all
+  success (this run in progress); worker's last 6 runs all success. No open PRs, no inbox
+  items, no In Progress/In Review items (WIP 0/1). Undistilled LEARNINGS count (pre-append):
+  `grep -c "^## "` → 139 headers (138 entries), suffix-anchored `[distilled]` count (Grep
+  tool) → 132 — 6 undistilled before this entry, 7 after; well under the ~10 distill
+  threshold, no distill pass this cycle.
+- **Lesson:** a bullet's own explicit "if X instance appears, propose Y" trigger can still be
+  missed even when the file is read every cycle, if the cycle that hits the trigger treats it
+  as "just log one more data point" the same way it treated the prior three instances — the
+  trigger language distinguishing "this one is different, act on it" from routine
+  evidence-logging is easy to read past when the surrounding paragraph's shape (diff,
+  clusters, no-network-text) looks identical to the last several. Catching this one cycle late
+  (fifth instance instead of fourth) is better than deferring indefinitely the way the
+  chore-threshold lesson (cycle 249) warned a restated-but-never-acted-on running total can.
+  Framing the actual proposal as a comment for maintainer/distill-pass review, rather than
+  editing the two-attempt rule in TRIAGE.md directly this cycle, keeps the "propose, don't
+  silently deviate" instinct intact — the bound feeds a P0-vs-dedupe judgment call, and
+  changing it unilaterally is a bigger step than logging evidence of when to change it.
+- **Applies to:** triage | verify
+
 ## 2026-09-17 — cycle 266: #21 ordinary single-rerun clear (breaks cycle 265's triple streak), #19 denial-count data point (cycle 265 run = 5)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
