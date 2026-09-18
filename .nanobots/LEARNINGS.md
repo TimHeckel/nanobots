@@ -19,6 +19,38 @@ Entry format:
 
 ---
 
+## 2026-09-18 — cycle 271: #21 ordinary single-rerun clear (second in a row, breaks any incipient streak at zero), #19 denial-count data point (cycle 270 run = 4)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`c1f2add`,
+  cycle 270's own docs-only distill commit), run
+  [35394504113](https://github.com/TimHeckel/nanobots/actions/runs/35394504113) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via
+  `gh api repos/.../commits/c1f2add --jq '.files[].filename'` → exactly
+  `.nanobots/LEARNINGS.md`, `RECIPES.md`, `TRIAGE.md`. Original attempt: `FAILED 1 of 29`
+  (`agent set PROJECTS_PAT`), no network-error text — the known non-network assertion
+  cluster. `gh run rerun --failed` came back green on both jobs on the first rerun (job
+  wall time ~69s, ordinary duration — some intermediate `gh api .../jobs` polls read stale
+  `in_progress` after the job had actually completed, a reminder that job-level status via
+  that endpoint lags the truth by tens of seconds and shouldn't be over-read). Posted as a
+  dedupe comment on #21 (confirmed landed). No fresh P0; #22 remains the mitigation, still
+  unapproved. Pulled cycle 270's own outer-loop run (`35393924631`) denial count: **4**,
+  ordinary band; posted to #19 (confirmed landed). Checked #18/#20/#22's last comment
+  bodies in full — still the loop's own automated posts, no maintainer reply. No inbox
+  items, no open PRs, no In Progress/In Review items (WIP 0/1). Both crons healthy: outer's
+  last 5 scheduled runs all success (this run in progress); worker's last 6 runs all
+  success. Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 143 headers (142
+  entries), suffix-anchored `[distilled]` count → 141 — 1 undistilled before this entry, 2
+  after; well under the ~10 threshold, no distill pass this cycle.
+- **Lesson:** two consecutive ordinary single-rerun clears (cycles 270, 271) after the
+  267-269 triple streak is consistent with the existing "recurring variant, not a new
+  floor" framing — no new pattern to distill. The stale-jobs-API-read observation above is
+  new: a `gh api repos/.../actions/runs/<id>/jobs` poll can report `in_progress` for a job
+  that `completed_at` shows already finished tens of seconds earlier — worth knowing before
+  treating a slow-looking poll sequence as evidence of an unusually long run.
+- **Applies to:** triage | verify
+
 ## 2026-09-18 — cycle 270: #21 ordinary single-rerun clear (breaks the 267-268-269 triple streak), #19 denial-count data point (cycle 269 run = 10), distill pass run
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); ran a distill pass
   (LOOP-PROMPT.md step 5) since the undistilled count hit the ~10 threshold; board unchanged
