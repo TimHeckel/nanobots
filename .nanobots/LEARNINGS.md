@@ -19,7 +19,55 @@ Entry format:
 
 ---
 
-## 2026-09-18 — cycle 269: #21 seventh triple-non-clearing instance (third consecutive, 267-268-269, matching the original 257-258-259 streak length), #19 denial-count data point (cycle 268 run = 5)
+## 2026-09-18 — cycle 270: #21 ordinary single-rerun clear (breaks the 267-268-269 triple streak), #19 denial-count data point (cycle 269 run = 10), distill pass run
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); ran a distill pass
+  (LOOP-PROMPT.md step 5) since the undistilled count hit the ~10 threshold; board unchanged
+  (8 Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`69ff9ba`,
+  cycle 269's own docs-only commit), run [35368813147](https://github.com/TimHeckel/nanobots/actions/runs/35368813147)
+  — only `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via
+  `gh api repos/.../commits/69ff9ba --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`.
+  Original attempt: `FAILED 1 of 29` (`agent set the OCR endpoint variables`), no
+  network-error text — the known non-network assertion cluster. `gh run rerun --failed`
+  (watched via `gh run watch --exit-status`) came back green on both jobs on the very first
+  rerun — the ordinary single-rerun-clears shape, breaking the three-in-a-row triple streak
+  (267-268-269) the same way cycle 266 broke the earlier 265 streak. Posted as a dedupe
+  comment on #21 (confirmed landed). No fresh P0; #22 remains the mitigation, still
+  unapproved. Re-verified cycle 269's own claims first: commit `69ff9ba` (docs-only,
+  matches), its Status-issue report, #21 dedupe comment, and #19 data-point comment all
+  checked out against live content. Pulled cycle 269's own outer-loop run (`35368213586`)
+  denial count: **10**, ordinary band; posted to #19 (confirmed landed). Checked
+  #18/#20/#22's last comment bodies in full (not just author) — all still the loop's own
+  automated reports, no maintainer reply. Checked #22 — still exactly one comment (the
+  plan), no `/nanobots start <hash>` line yet. Both crons healthy: outer's last 4 completed
+  scheduled runs all success (this run in progress); worker's last 5 runs all success. No
+  open PRs, no inbox items, no In Progress/In Review items (WIP 0/1). Undistilled LEARNINGS
+  count (pre-append): `grep -c "^## "` → 142 headers (141 entries), suffix-anchored
+  `[distilled]` count (Grep tool) → 141 — 0 undistilled before this entry, 1 after
+  (this entry itself). Distill pass: promoted two things into TRIAGE.md's
+  flake-judgment-refinements section — the "fourth-instance trigger was itself missed once"
+  finding spanning cycles 265/267-270 (the third-rerun-bound proposal stays unadopted,
+  standing on #21), and the "cite a standing proposal, don't restate it" rule from cycle
+  268 — and two things into RECIPES.md's "verifying a cycle's own claims" recipe: the
+  regex-tolerant-search lesson from cycle 261 (markdown emphasis breaks plain-string grep
+  when spot-checking distilled content) and the compound-command-attribution lesson from
+  cycle 266 (a `&&`-chained cleanup command's failure reads as the whole invocation,
+  including the actual mutation, failing). Marked the 9 undistilled entries (cycles 260,
+  261, 263, 264, 265, 266, 267, 268, 269) `[distilled]`.
+- **Lesson:** the two triple-streak-then-break cycles now on record (257-259→260,
+  267-269→270) are the same length (three) and break the same way (an ordinary
+  single-or-double-rerun clear on the very next push) — that symmetry is itself mild
+  evidence the triple shape has a stable, bounded recurrence pattern rather than a
+  worsening trend, but it is still not grounds to adopt the standing third-rerun-bound
+  proposal unilaterally; that stays a maintainer/distill-pass call per "propose, don't
+  silently deviate." Distilling promptly at the threshold (this cycle hit exactly 9
+  undistilled pre-append, same boundary-catching discipline cycle 260 used) keeps each
+  distill pass small and readable instead of letting it stack into a doc-edit that's hard
+  to review.
+- **Applies to:** triage | verify
+
+## 2026-09-18 — cycle 269: #21 seventh triple-non-clearing instance (third consecutive, 267-268-269, matching the original 257-258-259 streak length), #19 denial-count data point (cycle 268 run = 5) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-22)
@@ -60,7 +108,7 @@ Entry format:
   the proposal was already made is stronger evidence than an isolated instance would be.
 - **Applies to:** triage | verify
 
-## 2026-09-18 — cycle 268: #21 sixth triple-non-clearing instance (first back-to-back pair with cycle 267 since 257-258-259), #19 denial-count data point (cycle 267 run = 1)
+## 2026-09-18 — cycle 268: #21 sixth triple-non-clearing instance (first back-to-back pair with cycle 267 since 257-258-259), #19 denial-count data point (cycle 267 run = 1) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-22)
@@ -103,7 +151,7 @@ Entry format:
   inside a dedupe thread, not just to the P0 filing itself.
 - **Applies to:** triage | verify
 
-## 2026-09-18 — cycle 267: #21 fifth triple-non-clearing instance — made the standing "propose extending the bound" trigger explicit (missed once at cycle 265), #19 denial-count data point (cycle 266 run = 9)
+## 2026-09-18 — cycle 267: #21 fifth triple-non-clearing instance — made the standing "propose extending the bound" trigger explicit (missed once at cycle 265), #19 denial-count data point (cycle 266 run = 9) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-22)
@@ -154,7 +202,7 @@ Entry format:
   changing it unilaterally is a bigger step than logging evidence of when to change it.
 - **Applies to:** triage | verify
 
-## 2026-09-17 — cycle 266: #21 ordinary single-rerun clear (breaks cycle 265's triple streak), #19 denial-count data point (cycle 265 run = 5)
+## 2026-09-17 — cycle 266: #21 ordinary single-rerun clear (breaks cycle 265's triple streak), #19 denial-count data point (cycle 265 run = 5) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-22)
@@ -195,7 +243,7 @@ Entry format:
   success/failure to reflect each piece.
 - **Applies to:** triage | verify
 
-## 2026-09-17 — cycle 265: #21 fourth triple-non-clearing instance (original + 2 reruns all red, after a 5-cycle clean gap), #19 denial-count data point (cycle 264 run = 3)
+## 2026-09-17 — cycle 265: #21 fourth triple-non-clearing instance (original + 2 reruns all red, after a 5-cycle clean gap), #19 denial-count data point (cycle 264 run = 3) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item; #21 stays open,
   maintainer-pending)
 - **What worked / what didn't:** Sync found `main` CI red on the current head (`58cf3e9`,
@@ -221,7 +269,7 @@ Entry format:
   job) remains the actual fix, still Ready with an unexpired plan and still unapproved.
 - **Applies to:** triage
 
-## 2026-09-17 — cycle 264: quiet cycle — main CI green on first attempt on aab1022, #19 denial-count data point (cycle 263 run = 0)
+## 2026-09-17 — cycle 264: quiet cycle — main CI green on first attempt on aab1022, #19 denial-count data point (cycle 263 run = 0) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-21)
@@ -252,7 +300,7 @@ Entry format:
   Treat it as resolved/not-a-pattern unless a second skip appears in a future quiet cycle.
 - **Applies to:** triage | verify
 
-## 2026-09-16 — cycle 263: quiet cycle — main CI still clean on fbea5df, #19 denial-count data point (cycle 262 run = 2), flagged cycle 262's skipped LEARNINGS commit
+## 2026-09-16 — cycle 263: quiet cycle — main CI still clean on fbea5df, #19 denial-count data point (cycle 262 run = 2), flagged cycle 262's skipped LEARNINGS commit [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-21)
@@ -293,7 +341,7 @@ Entry format:
   rather than each cycle re-deciding it alone.
 - **Applies to:** triage | verify
 
-## 2026-09-16 — cycle 261: #21 second consecutive double-non-clearing-then-clear (confirms cycle 260's streak-break wasn't a one-off), #19 denial-count data point (cycle 260 run = 3)
+## 2026-09-16 — cycle 261: #21 second consecutive double-non-clearing-then-clear (confirms cycle 260's streak-break wasn't a one-off), #19 denial-count data point (cycle 260 run = 3) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-21)
@@ -338,7 +386,7 @@ Entry format:
   treats as a real, confirmed failure mode elsewhere in this repo's history.
 - **Applies to:** triage | verify
 
-## 2026-09-16 — cycle 260: #21 back to double-non-clearing-then-clear (breaks the 257-259 triple streak), #19 denial-count data point (cycle 259 run = 12), distill pass run
+## 2026-09-16 — cycle 260: #21 back to double-non-clearing-then-clear (breaks the 257-259 triple streak), #19 denial-count data point (cycle 259 run = 12), distill pass run [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); ran a distill pass
   (LOOP-PROMPT.md step 5) since the undistilled count hit the ~10 threshold; board unchanged
   (8 Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no

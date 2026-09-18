@@ -257,6 +257,21 @@ then narrated over instead of surfacing.
     artifact of the immediately preceding cycle (Status comment, LEARNINGS commit, any
     per-issue dedupe comment it should have posted), not just whichever one happens to be
     easiest to check. `[distilled from 2026-09-14 (cycle 254), #19]`
+12. **When spot-checking whether a prior cycle's distill-pass content actually landed in
+    TRIAGE.md/RECIPES.md, use a regex-tolerant search, not a plain literal-string grep** — the
+    promoted prose can carry markdown emphasis (e.g. `*triple*-non-clearing`) around exactly the
+    phrase being checked, and a plain substring match false-negatives on the asterisk even though
+    the content is present and reads correctly to a human. A false negative here reads exactly
+    like the claimed doc edit never happened, which "verifying a cycle's own claims" (recipe
+    below) already treats as a real, confirmed failure mode elsewhere — don't let the search
+    method itself manufacture a false instance of it. `[distilled from 2026-09-16 (cycle 261)]`
+13. **Chaining a GitHub-mutating command with an unrelated cleanup command in one Bash invocation
+    (e.g. `&&`-joined `gh issue comment ... && rm tmpfile`) means a denial or failure on the
+    *second* command reports the whole invocation as failed** — which reads exactly like "the
+    comment never posted" even when it did. Run a comment/mutation command alone, or check its
+    own tool result specifically, rather than trusting a compound command's overall exit status to
+    reflect each piece independently. `[distilled from 2026-09-17 (cycle 266)]`
+
 7. **"No maintainer reply" must be verified by reading each blocked issue's actual last
    comment body, not by checking who the author is.** The outer loop's own `PROJECTS_PAT` is a
    human-owned classic PAT (see RUNTIMES.md's auth facts), so every comment the loop itself

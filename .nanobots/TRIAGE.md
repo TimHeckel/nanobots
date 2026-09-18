@@ -237,6 +237,33 @@ the rule itself but change how you read the evidence gathered while applying it:
   each escalation. If a fourth or later triple-or-worse instance appears, propose extending the
   two-attempt bound explicitly rather than absorbing it silently. `[distilled from 2026-09-15/16
   (cycles 257-260), #21]`
+- **The fourth-instance trigger above was itself missed once.** Cycle 265 (2026-09-17) was the
+  fourth triple-non-clearing instance — arriving after a 5-cycle clean gap (260-264), evidence the
+  triple shape is an occasional variant unrelated to any recent change rather than a rising rate —
+  but its own entry logged it as another data point without posting the "propose extending the
+  bound" comment the earlier bullet's own trigger calls for. Cycle 267 caught this one cycle late
+  (on the fifth instance) and posted the explicit proposal to #21: allow a third rerun when the
+  original and first rerun both land in the known cluster, framed for a maintainer/distill-pass
+  decision, not adopted unilaterally. The lesson generalizes past this specific trigger: an
+  explicit "if X recurs, propose Y" bullet in this file can still be missed even when read every
+  cycle, if the cycle that hits the trigger reads the surrounding evidence's *shape* (diff,
+  cluster, no-network-text) as routine because it looks like the last several instances, rather
+  than checking whether the count itself just crossed the stated number. This is the same failure
+  mode the chore-threshold lesson below (originally from cycle 249) already names for "repeatedly"
+  triggers — it applies just as much to a triggered rerun-bound proposal as to a chore-filing
+  decision. The streak that followed (267-268-269, three in a row, matching the original
+  257-258-259 length) broke on the very next push after that too (cycle 270, 2026-09-18, ordinary
+  single-rerun clear) — consistent with the "recurring variant, not a new floor" framing holding
+  across two full triple-streak-then-break cycles now. The third-rerun-bound proposal itself
+  remains unadopted, still standing on #21 for a maintainer or future distill pass to decide.
+  `[distilled from 2026-09-17 through 2026-09-18 (cycles 265, 267-270), #21]`
+- **Once a proposal has been posted explicitly on a tracking issue (e.g. cycle 267's third-rerun
+  proposal above), further confirming instances should cite it and add the new data point, not
+  restate the proposal's text.** This is the existing "recurrence under an open P0 → dedupe
+  comment, not a fresh filing" rule applied one level deeper: it covers a *proposal* living inside
+  a dedupe thread, not just the P0 filing itself. Repeating the same ask verbatim every time new
+  evidence reinforces it would bury the original text a reviewer needs to act on under
+  near-duplicate copies. `[distilled from 2026-09-18 (cycle 268), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 
