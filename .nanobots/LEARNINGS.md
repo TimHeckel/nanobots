@@ -19,6 +19,49 @@ Entry format:
 
 ---
 
+## 2026-09-18 — cycle 268: #21 sixth triple-non-clearing instance (first back-to-back pair with cycle 267 since 257-258-259), #19 denial-count data point (cycle 267 run = 1)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`cbfe90b`,
+  cycle 267's own docs-only commit), run 35308411210 — only `onboarding-agent` failed, `test`
+  passed. Diff confirmed docs-only via `gh api .../commits/cbfe90b --jq '.files[].filename'`
+  → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 1 of 29` (`agent set the OCR
+  endpoint variables`), no network-error text — the known non-network assertion cluster.
+  First `gh run rerun --failed` (watched via `gh run watch --exit-status`): stayed red,
+  `FAILED 5 of 29` (`PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint variables,
+  `verify_daytona`, verify-before-store ordering), a wider subset, still no network-error
+  text. Second rerun: stayed red again, `FAILED 4 of 29` (`DAYTONA_API_KEY`, OCR endpoint
+  variables, `verify_daytona`, verify-before-store ordering), narrower subset, still no
+  network-error text. Original + both reruns all red, all in the known cluster — the sixth
+  triple-non-clearing instance on record (after 257, 258, 259, 265, 267), and notably the
+  first time two triples have landed on consecutive cycles since the original 257-258-259
+  back-to-back streak. Posted as a dedupe comment on #21 stating this explicitly as further
+  evidence toward cycle 267's already-posted proposal (allow a third rerun when the original
+  and first rerun both land in the known cluster), not a fresh re-proposal — the proposal
+  itself stays a single standing ask for a maintainer/distill pass, restating it every
+  instance would just make it noisier without adding weight the running tally doesn't already
+  carry. No fresh P0; #22 remains the actual fix, still unapproved. Re-verified cycle 267's
+  own claims first: commit `cbfe90b` (docs-only, matches), its Status-issue report, #21
+  proposal comment, and #19 data-point comment all checked out against live content. Pulled
+  cycle 267's own outer-loop run (`35308031161`) denial count: **1**, ordinary band; posted
+  to #19 (confirmed landed). Checked #18/#20's last comment bodies in full (not just author)
+  — both still the loop's own automated reports, no maintainer reply. Checked #22 — still
+  exactly one comment (the plan), no `/nanobots start <hash>` line yet. Both crons healthy:
+  outer's last 5 scheduled runs all success (this run in progress); worker's last 6 runs all
+  success. No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1). Undistilled
+  LEARNINGS count (pre-append): `grep -c "^## "` → 140 headers (139 entries), suffix-anchored
+  `[distilled]` count (Grep tool) → 132 — 7 undistilled before this entry, 8 after; well
+  under the ~10 distill threshold, no distill pass this cycle.
+- **Lesson:** once a proposal has been made explicit on a tracking issue (cycle 267's
+  third-rerun proposal), the right move for further confirming evidence is to cite it and
+  add the data point, not restate the proposal itself — repeating the same ask verbatim each
+  time it's reinforced would bury the original text a reviewer needs to act on under
+  near-duplicate copies. This mirrors the existing "recurrence under an open P0 → dedupe
+  comment, not a fresh filing" rule one level deeper: it also applies to a *proposal* living
+  inside a dedupe thread, not just to the P0 filing itself.
+- **Applies to:** triage | verify
+
 ## 2026-09-18 — cycle 267: #21 fifth triple-non-clearing instance — made the standing "propose extending the bound" trigger explicit (missed once at cycle 265), #19 denial-count data point (cycle 266 run = 9)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
