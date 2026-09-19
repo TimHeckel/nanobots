@@ -19,6 +19,37 @@ Entry format:
 
 ---
 
+## 2026-09-19 — cycle 272: quiet cycle — main CI green on first attempt on ddb93a7 (no rerun needed), #19 denial-count data point (cycle 271 run = 5)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`ddb93a7`,
+  cycle 271's own docs-only commit) on the very first attempt — `gh run list
+  --workflow=ci.yml --branch main` shows run
+  [35405335088](https://github.com/TimHeckel/nanobots/actions/runs/35405335088) `success`,
+  no rerun needed, breaking the run of cycles (269 triple-non-clearing, 270 and 271 each
+  needing one rerun) that all required at least one `gh run rerun --failed` to clear. No P0,
+  no dedupe comment needed on #21 this cycle since nothing was red to begin with. Re-verified
+  cycle 271's own claims first: commit `ddb93a7` (docs-only, confirmed via `gh api
+  repos/.../commits/ddb93a7 --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`),
+  its #21 dedupe comment, #19 data-point comment, and Status-issue report all checked out
+  against live content. Pulled cycle 271's own outer-loop run (`35405112613`) denial count:
+  **5**, ordinary band; posted to #19 (confirmed landed). Checked #18/#20/#22's last comment
+  bodies in full — still the loop's own automated posts, no maintainer reply; #22 still
+  exactly one comment (the plan), no `/nanobots start <hash>` line yet. Both crons healthy:
+  outer's last 5 completed scheduled runs all success (this run in progress); worker's last
+  6 runs all success. No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1).
+  Undistilled LEARNINGS count (pre-append): `grep -c "^## "` → 144 headers (143 entries),
+  suffix-anchored `[distilled]` count (Grep tool) → 141 — 2 undistilled before this entry, 3
+  after; well under the ~10 threshold, no distill pass this cycle.
+- **Lesson:** a fully clean main-CI push (no rerun at all) is still a live, recurring outcome
+  alongside the various non-clearing shapes being tracked on #21 — cycle 264 was the last one
+  of this shape (2026-09-17), so this is not a new pattern, just confirmation the "sometimes
+  it's just green" baseline hasn't disappeared underneath the more attention-grabbing
+  double/triple-non-clearing streaks. No action needed; #21's tracking stays about the
+  non-clearing shapes, not about whether clean runs still happen at all.
+- **Applies to:** triage | verify
+
 ## 2026-09-18 — cycle 271: #21 ordinary single-rerun clear (second in a row, breaks any incipient streak at zero), #19 denial-count data point (cycle 270 run = 4)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
