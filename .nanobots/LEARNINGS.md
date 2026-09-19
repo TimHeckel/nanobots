@@ -19,6 +19,44 @@ Entry format:
 
 ---
 
+## 2026-09-19 — cycle 273: #21 eighth triple-non-clearing instance (recurs after 3-cycle clean gap), #19 denial-count data point (cycle 272 run = 2)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`b5f41f2`,
+  cycle 272's own docs-only commit), run
+  [35421907357](https://github.com/TimHeckel/nanobots/actions/runs/35421907357) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/.../commits/b5f41f2 --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`.
+  Ran the standard two-attempt evidence gather: the original attempt and both reruns all
+  failed, each missing a different subset of the known non-network assertion cluster
+  (original: PROJECTS_PAT/OCR_LLM_TOKEN/OCR endpoint vars; rerun 1: PROJECTS_PAT only; rerun
+  2: DAYTONA_API_KEY/verify_daytona/verify-before-store) — no `fetch failed`/timeout/5xx text
+  in any log. This is the eighth triple-non-clearing instance tracked on #21 (after 257, 258,
+  259, 265, 267, 268, 269), arriving after a 3-cycle clean gap (270-272 all cleared within one
+  rerun or landed green outright) — consistent with the "recurring variant, not a new floor"
+  framing rather than a rising rate. Posted as a dedupe comment on #21 citing the running
+  total, per the standing rule for recurrences under an open, maintainer-pending P0; did not
+  attempt a third rerun (the cycle-267 proposal to allow one remains unadopted, not something
+  to act on unilaterally). Re-verified cycle 272's own claims first: commit `b5f41f2`
+  (docs-only, confirmed via the API), its #19 data-point comment, and Status-issue report all
+  checked out against live content. Pulled cycle 272's own outer-loop run (`35421781895`)
+  denial count: **2**, ordinary band; posted to #19 (confirmed landed). Checked #18/#20/#22's
+  last comment bodies in full — still the loop's own automated posts, no maintainer reply;
+  #22 still exactly one comment (the plan), no `/nanobots start <hash>` line yet. Both crons
+  healthy: outer's last 5 completed scheduled runs all success; worker's last 5 runs all
+  success. No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1). Undistilled
+  LEARNINGS count (pre-append): `grep -c "^## "` → 145 headers (144 entries), suffix-anchored
+  `[distilled]` count (Grep tool) → 141 — 3 undistilled before this entry, 4 after; well under
+  the ~10 threshold, no distill pass this cycle.
+- **Lesson:** the "clean gap between recurring-shape instances" pattern seen in the
+  double-non-clearing tracking (cycles 247-248's brief clear streak, resumed at 249) now also
+  shows up in the triple-non-clearing sub-pattern — a 3-cycle gap (270-272) did not mean the
+  shape had stopped recurring, it recurred again on the very next red push. Treat gaps of this
+  length as ordinary noise in the recurrence rate, not evidence the pattern resolved, the same
+  way the double-non-clearing tracking already learned to.
+- **Applies to:** triage | verify
+
 ## 2026-09-19 — cycle 272: quiet cycle — main CI green on first attempt on ddb93a7 (no rerun needed), #19 denial-count data point (cycle 271 run = 5)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
