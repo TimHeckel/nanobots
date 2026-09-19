@@ -19,6 +19,40 @@ Entry format:
 
 ---
 
+## 2026-09-19 — cycle 274: #21 ordinary single-rerun clear (breaks the eighth-triple streak at one), #19 denial-count data point (cycle 273 run = 7)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`42c7802`,
+  cycle 273's own docs-only commit), run
+  [35439100316](https://github.com/TimHeckel/nanobots/actions/runs/35439100316) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/.../commits/42c7802 --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`.
+  Original attempt: `FAILED 5 of 29` (`PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint
+  variables, `verify_daytona`, verify-before-store ordering), no network-error text — the
+  known non-network assertion cluster. `gh run rerun --failed` (watched via `gh run watch
+  --exit-status`) came back green on both jobs on the very first rerun, breaking cycle 273's
+  eighth-triple-non-clearing instance at a single ordinary clear rather than a ninth
+  consecutive or paired triple. Posted as a dedupe comment on #21 (confirmed landed). No
+  fresh P0; #22 remains the mitigation, still unapproved. Re-verified cycle 273's own claims
+  first: commit `42c7802` (docs-only, matches), its #21 dedupe comment, and its Status-issue
+  report all checked out against live content. Pulled cycle 273's own outer-loop run
+  (`35438849468`) denial count: **7**, ordinary band; posted to #19 (confirmed landed).
+  Checked #18/#20/#21/#22's last comment bodies in full — still the loop's own automated
+  posts, no maintainer reply; #22 still exactly one comment (the plan), no `/nanobots start
+  <hash>` line yet. Both crons healthy: outer's last 5 completed scheduled runs all success
+  (this run in progress); worker's last 5 runs all success. No open PRs, no inbox items, no
+  In Progress/In Review items (WIP 0/1). Undistilled LEARNINGS count (pre-append): `grep -c
+  "^## "` → 146 headers (145 entries), suffix-anchored `[distilled]` count (Grep tool) →
+  141 — 4 undistilled before this entry, 5 after; well under the ~10 threshold, no distill
+  pass this cycle.
+- **Lesson:** the "clean gap doesn't mean the pattern stopped" framing from cycle 273 cuts
+  both ways — a single triple instance also doesn't establish a new floor; the very next
+  push cleared on the first rerun, same as the ordinary-clear majority of pushes tracked so
+  far. Keep reading each recurrence (or non-recurrence) as one more data point in an
+  already-established distribution, not as confirmation of a trend in either direction.
+- **Applies to:** triage | verify
+
 ## 2026-09-19 — cycle 273: #21 eighth triple-non-clearing instance (recurs after 3-cycle clean gap), #19 denial-count data point (cycle 272 run = 2)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
