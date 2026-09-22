@@ -19,6 +19,41 @@ Entry format:
 
 ---
 
+## 2026-09-22 — cycle 276: quiet cycle — outer cron healthy again, main CI green on first attempt on bc6ffc7, #19 denial-count data point (cycle 275 run = 11)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`bc6ffc7`,
+  cycle 275's own docs-only commit) on the very first attempt — no rerun needed, no P0, no
+  #21 dedupe comment required. Checked `nanobots-outer.yml`'s recent scheduled history: the
+  13-run failure streak cycle 275 escalated on #20 ended at its own run
+  ([35757486622](https://github.com/TimHeckel/nanobots/actions/runs/35757486622),
+  2026-09-22T16:57:10Z, success) and every scheduled run since — including the one this
+  session is running in — has stayed green; no fresh recurrence to log. Re-verified cycle
+  275's own claims first: commit `bc6ffc7` (docs-only, confirmed via `gh api
+  repos/.../commits/bc6ffc7 --jq '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`),
+  its #20 recurrence comment (all 13 run links present, correctly framed as the
+  second-largest incident on record), and its Status-issue report all checked out against
+  live content. Pulled cycle 275's own outer-loop run's `permission_denials_count`: **11**,
+  ordinary band; posted to #19 (confirmed landed). Checked #18/#20/#21/#22's full comment
+  bodies (not just author) — all still the loop's own automated posts, no maintainer reply;
+  #22 still exactly one comment (the plan), no `/nanobots start <hash>` line yet. Both crons
+  healthy: outer's last 2 completed scheduled runs (post-streak) both success; worker's last
+  8 runs all success. No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1).
+  Undistilled LEARNINGS count (pre-append): suffix-anchored `^## .*distilled` count (Grep
+  tool) → 141 against 148 total `^## ` headers (one of which is the entry-format template in
+  the file's own header, so 147 real entries) — 6 undistilled before this entry, 7 after;
+  well under the ~10 threshold, no distill pass this cycle.
+- **Lesson:** counting `^## ` headers directly over-counts by one because the file's own
+  entry-format template block (lines 10-18) starts with a literal `## YYYY-MM-DD — ...` line
+  that matches the same pattern — subtract that one line before treating a raw header count
+  as the entry count, the same class of counting trap the suffix-anchored `[distilled]` grep
+  already exists to avoid for the distilled side. Also: the 13-run streak's resolution itself
+  is confirmation, not just a hope — two clean scheduled runs since the streak broke (this
+  cycle's own trigger included) is early but real evidence the recovery held, worth stating
+  plainly rather than re-flagging #20 as still at-risk with no new data.
+- **Applies to:** triage | verify
+
 ## 2026-09-22 — cycle 275: #20 recurrence at 13 consecutive scheduled failures (~2.6 days), by far the largest since the original 28-run filing
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
