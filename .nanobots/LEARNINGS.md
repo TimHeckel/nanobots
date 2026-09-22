@@ -19,6 +19,37 @@ Entry format:
 
 ---
 
+## 2026-09-22 — cycle 275: #20 recurrence at 13 consecutive scheduled failures (~2.6 days), by far the largest since the original 28-run filing
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found the last successful scheduled `nanobots-outer.yml`
+  run was cycle 274's own (`35453188205`, 2026-09-19T15:53:01Z); every scheduled run after it
+  failed, 13 in a row, through `35722552384` (2026-09-22T11:38:13Z), before this cycle's own
+  run completed normally. Checked 4 of the 13 failed runs' logs directly (`35648250122`,
+  `35670568242`, `35688742909`, `35722552384`) — identical `is_error:true, num_turns:1` shape
+  to #20's original filing, not the distinct "loud installer failure" shape from cycle 226.
+  `show_full_output` is still unset on `nanobots-outer.yml` — option 1 from #20's original
+  filing was never adopted, so the underlying error text is still never captured. No new
+  inbox items, no open PRs, no main CI events outside the outer/worker crons (nothing pushed
+  to `main` during the gap), board state consistent with live GitHub — impact was purely lost
+  triage/review/learn cadence for ~2.6 days, same as the original incident. Posted as a
+  recurrence comment on #20 (confirmed landed), not a fresh P0, per the standing dedupe rule —
+  but flagged explicitly that 13 in a row is an order of magnitude past every prior recurrence
+  (all exactly 1 run, self-resolving on the next attempt) and re-surfaced the `show_full_output`
+  recommendation with more weight, since "just monitor" no longer matches the escalating
+  magnitude. Did not touch `.github/nanobots-outer.yml` myself — hard-gated, needs a maintainer
+  or explicit approval.
+- **Lesson:** the recurrence-dedupe treatment (comment, don't refile) holds even at 13x the
+  previous largest instance — the trigger for a *fresh* filing is a distinct failure shape, not
+  a bigger magnitude of the same one. But magnitude is still worth escalating *within* the
+  dedupe comment itself: re-stating a stale recommendation at the same weight every time,
+  regardless of how much worse the evidence has gotten, risks the same "repeatedly never quite
+  crosses the line" trap TRIAGE.md's chore-threshold lesson already names for #21/#22 — a
+  literal order-of-magnitude jump is exactly the kind of data point that should raise a
+  recommendation's visibility even while the mechanical dedupe-not-refile rule stays unchanged.
+- **Applies to:** triage | prompt
+
 ## 2026-09-19 — cycle 274: #21 ordinary single-rerun clear (breaks the eighth-triple streak at one), #19 denial-count data point (cycle 273 run = 7)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
