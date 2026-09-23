@@ -264,6 +264,19 @@ the rule itself but change how you read the evidence gathered while applying it:
   a dedupe thread, not just the P0 filing itself. Repeating the same ask verbatim every time new
   evidence reinforces it would bury the original text a reviewer needs to act on under
   near-duplicate copies. `[distilled from 2026-09-18 (cycle 268), #21]`
+- **The recurrence-dedupe treatment (comment on the open P0, don't refile) holds even when a new
+  instance is an order of magnitude larger than every prior one — magnitude is not itself grounds
+  for a fresh filing.** But magnitude is still worth escalating *within* that same dedupe comment:
+  restating a standing recommendation at the same weight regardless of how much worse the evidence
+  has gotten risks the same "repeatedly never quite crosses the line" trap this file's own
+  chore-threshold lesson names elsewhere. Confirmed on #20 (2026-09-22, cycle 275): after ~4 weeks
+  of this shape self-resolving within exactly one scheduled run every time it recurred, a 13-run
+  consecutive-failure streak (~2.6 days) appeared — over 10x any prior recurrence — with the same
+  root cause never diagnosed (`show_full_output` still unset on `nanobots-outer.yml`, so the
+  underlying error text has never once been captured). Posted as a dedupe comment, not a fresh P0,
+  but re-surfaced the `show_full_output` recommendation with explicitly higher weight than prior
+  recurrence comments gave it, since "just keep monitoring" no longer matched the scale of the gap
+  it was leaving. `[distilled from 2026-09-22 (cycle 275), #20]`
 
 ## Merge policy (self-hosting/dogfood repos)
 

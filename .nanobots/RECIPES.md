@@ -131,6 +131,12 @@ are expensive to find later.
     board risk — #18's eventual fix should scope to "retry any transient `gh project list
     --owner` failure", not just the one error string its title names. `[distilled from
     2026-08-12, 2026-08-14 #18, 2026-08-17 (cycles 125/126)]`
+14. **A `gh api repos/.../actions/runs/<id>/jobs` poll can report a job as `in_progress` for
+    tens of seconds after `completed_at` shows it already finished.** Don't read a slow-looking
+    sequence of polls against this endpoint as evidence a run is taking unusually long — check
+    the job's own `completed_at`/`conclusion` fields, or just wait for `gh run watch
+    --exit-status` to converge, rather than trusting the live status text mid-poll.
+    `[distilled from 2026-09-18 (cycle 271)]`
 
 ## recipe: reviewing an open PR not on the board
 
