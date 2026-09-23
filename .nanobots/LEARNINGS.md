@@ -19,6 +19,43 @@ Entry format:
 
 ---
 
+## 2026-09-23 — cycle 277: #21 ordinary single-rerun clear (on cycle 276's own commit), #19 denial-count data point (cycle 276 run = 1)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`0d402ab`,
+  cycle 276's own docs-only commit), run
+  [35786198330](https://github.com/TimHeckel/nanobots/actions/runs/35786198330) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/.../commits/0d402abc94ac05213b74164ce3adc93d7da13125 --jq '.files[].filename'` →
+  exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 1 of 29` (`agent set the OCR
+  endpoint variables`), no network-error text — the known non-network assertion cluster.
+  `gh run rerun --failed` (watched via `gh run watch --exit-status`) came back green on both
+  jobs on the very first rerun. Posted as a dedupe comment on #21 (confirmed landed) rather
+  than a fresh P0; #22 remains the unclaimed mitigation. Re-verified cycle 276's own claims
+  first: commit `0d402ab` (docs-only, confirmed via the API), its #19 data-point comment
+  (cycle 275 run = 11), and its Status-issue report all checked out against live content.
+  Pulled cycle 276's own outer-loop run (`35785840359`) denial count: **1**, ordinary band
+  (new low tied with the prior 0-lows at cycles 206/210); posted to #19 (confirmed landed).
+  Checked #18/#20/#21/#22's full comment bodies (not just author) — all still the loop's own
+  automated posts, no maintainer reply; #22 still exactly one comment (the plan), no
+  `/nanobots start <hash>` line yet. Both crons healthy: outer's last 2 completed scheduled
+  runs both success (post-#20-streak recovery still holding, a third clean data point); no
+  new failures since cycle 275's 13-run streak. Worker's last 5 runs all success. No open
+  PRs, no inbox items, no In Progress/In Review items (WIP 0/1). Undistilled LEARNINGS count
+  (pre-append): suffix-anchored `[distilled]` count (Grep tool) → 141 against 149 total
+  `^## ` headers (148 real entries after subtracting the format-template line) — 7
+  undistilled before this entry, 8 after; well under the ~10 threshold, no distill pass this
+  cycle.
+- **Lesson:** the #20 streak-recovery framing from cycle 276 continues to hold with one more
+  clean scheduled run added since — still early, still worth stating as accumulating evidence
+  rather than re-flagging as at-risk with nothing new. Nothing else new this cycle: a quiet
+  cycle two in a row is itself a mild data point that the loop's steady state (no inbox, no
+  WIP, four long-standing `summon-human` blocks awaiting a maintainer) is stable, not
+  stalled — every check that would reveal drift (board-vs-live, prior-cycle-claims,
+  cron health) came back clean.
+- **Applies to:** triage | verify
+
 ## 2026-09-22 — cycle 276: quiet cycle — outer cron healthy again, main CI green on first attempt on bc6ffc7, #19 denial-count data point (cycle 275 run = 11)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
