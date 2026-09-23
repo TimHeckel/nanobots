@@ -19,6 +19,56 @@ Entry format:
 
 ---
 
+## 2026-09-23 — cycle 278: #21 ninth triple-non-clearing instance (original + 2 reruns all red), #19 denial-count data point (cycle 277 run = 5)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`5598d2c`,
+  cycle 277's own docs-only commit), run
+  [35819867507](https://github.com/TimHeckel/nanobots/actions/runs/35819867507) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/.../commits/5598d2c81e68eaea7760aa9ad23791c99c1d601a --jq '.files[].filename'` →
+  exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 5 of 29` (model credential,
+  `PROJECTS_PAT`, `DAYTONA_API_KEY`, `verify_daytona`, verify-before-store ordering), no
+  network-error text — the known non-network assertion cluster. `gh run rerun --failed`
+  (watched via `gh run watch --exit-status`) came back red again: `FAILED 7 of 29`, same
+  cluster plus `OCR_LLM_TOKEN`/OCR endpoint vars. Reran a second time per the standing
+  two-rerun evidence bound (not yet extended — see below): still red, `FAILED 3 of 29`,
+  narrowed to `DAYTONA_API_KEY`/`verify_daytona`/verify-before-store. All three attempts
+  (original + both reruns) landed in the same known non-network assertion cluster with a
+  shifting subset each time, none clearing — the triple-non-clearing shape, ninth instance
+  on record (after 257, 258, 259, 265, 267, 268, 269, 273). Posted as a dedupe comment on
+  #21 (confirmed landed), not a fresh P0 — TRIAGE.md's own rule treats triple-or-worse as
+  evidence on the existing pattern unless it's specifically the trigger to re-propose
+  extending the two-attempt bound, and that proposal was already made explicitly at cycle
+  267 and is still awaiting a maintainer/distill-pass decision, so did not re-propose it
+  here. #22 remains the actual mitigation, still unapproved. Re-verified cycle 277's own
+  claims first: commit `5598d2c` (docs-only, confirmed via the API), its #19 data-point
+  comment (cycle 276 run = 1), and its Status-issue report all checked out against live
+  content. Pulled cycle 277's own outer-loop run (`35819584236`) denial count: **5**,
+  ordinary band; posted to #19 (confirmed landed). Checked #18/#20/#21/#22's full comment
+  bodies (not just author — all are `TimHeckel` since that's the PAT identity, not a
+  distinguishing signal by itself) — all still the loop's own automated posts, no
+  maintainer reply; #22 still exactly one comment (the plan), no `/nanobots start <hash>`
+  line yet. Both crons healthy: outer's last 2 completed scheduled runs both success (this
+  run's own trigger included, third clean data point since the #20 streak broke); worker's
+  last 6 runs all success. No open PRs, no inbox items, no In Progress/In Review items
+  (WIP 0/1). Undistilled LEARNINGS count (pre-append): suffix-anchored `[distilled]` count
+  (Grep tool) → 141 against 150 total `^## ` headers (149 real entries after subtracting the
+  format-template line) — 8 undistilled before this entry, 9 after; still under the ~10
+  threshold but close — likely triggers a distill pass next cycle.
+- **Lesson:** a triple-non-clearing instance doesn't automatically mean re-posting the
+  "propose extending the bound" recommendation — check whether that specific proposal has
+  already been made (cycle 267 did, explicitly, to #21) before restating it, since repeating
+  an already-made proposal at the same weight every recurrence is the same "cry wolf" trap
+  the transient-flake framing warns against elsewhere in this file. Also: two reruns in a
+  row landing in the same cluster with *different* subsets of the ~7 known flaky assertions
+  each time (5, then 7, then 3) is itself informative — it reads as genuine model-response
+  variance on the same brittle live-endpoint prompt, not a fixed deterministic break, which
+  is consistent with #22's plan treating this as a reliability problem to harden rather than
+  a regression to bisect.
+- **Applies to:** triage | verify
+
 ## 2026-09-23 — cycle 277: #21 ordinary single-rerun clear (on cycle 276's own commit), #19 denial-count data point (cycle 276 run = 1)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
