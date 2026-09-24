@@ -19,6 +19,59 @@ Entry format:
 
 ---
 
+## 2026-09-24 — cycle 284: caught cycle 283's own LEARNINGS append deleting cycle 282's header line instead of inserting above it; restored it; #19 denial-count data point (cycle 283 run = 3)
+- **Outcome:** n/a (Sync-time verification catch + a docs-repair, not a dispatched item);
+  board unchanged (8 Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no
+  `/nanobots start`, no maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`05a45ed`,
+  cycle 283's own docs-only commit), first attempt, no rerun
+  ([36033142821](https://github.com/TimHeckel/nanobots/actions/runs/36033142821)). Re-verified
+  cycle 283's own claims first: commit `05a45ed` touches exactly `.nanobots/LEARNINGS.md`
+  (confirmed via the GitHub API, matching its docs-only claim), and its #21 comment
+  (`5818743423`) and #19 comment (`5818747682`) are both present and read back correctly via
+  their own comment IDs. While recomputing the undistilled LEARNINGS count as a routine check,
+  a raw `grep -c "^## "` returned 155 — one lower than what cycle 283's own append should have
+  produced (156, since cycle 282 had already added a proper header). Diffed cycle 282's
+  (`6a4f6fb`) and cycle 283's (`05a45ed`) commits via the GitHub API's `.files[].patch`: cycle
+  282 correctly inserted its header above cycle 281's; cycle 283 then added its own entry by
+  string-replacing cycle 282's exact header line with its own, instead of inserting a new
+  header above it — deleting cycle 282's `## ` header while leaving its full entry body
+  (Outcome/What worked/Lesson/Applies-to) orphaned underneath cycle 283's own
+  `**Applies to:**` line with no header of its own. The content wasn't lost, only the header,
+  which is why the file still read coherently to a skim — but it silently broke every
+  header-based count (this cycle's own recount included) and would have made cycle 282's entry
+  unfindable by header search. Restored the missing header verbatim (recovered from cycle
+  282's own commit diff: `## 2026-09-24 — cycle 282: third consecutive first-attempt-clean
+  main CI, no #21 event; #19 denial-count data point (cycle 281 run = 3)`) directly above its
+  orphaned body. Posted the full finding to #19 (confirmed landed via its own comment ID,
+  `5822612664`) alongside cycle 283's own outer-loop run
+  ([36032496614](https://github.com/TimHeckel/nanobots/actions/runs/36032496614)) denial
+  count: **3**, ordinary band. Checked #18/#20/#22's last comment bodies in full (not just
+  author) — all still the loop's own automated posts, no maintainer reply; #22 still exactly
+  one comment (the plan), no `/nanobots start <hash>` line yet. No fresh #21 event this cycle
+  (CI was clean, nothing to dedupe). No open PRs, no inbox items, no In Progress/In Review
+  items (WIP 0/1), board matches live GitHub for all 13 items. Undistilled LEARNINGS count
+  (post-fix, pre-append): suffix-anchored `[distilled]` count (Grep tool) → 149 against 156
+  total `^## ` headers (155 real entries after subtracting the format-template line) — 6
+  undistilled before this entry, 7 after; still under the ~10 threshold, no distill pass this
+  cycle.
+- **Lesson:** LEARNINGS.md's "never delete entries" invariant can be violated by the append
+  step itself, not just by an out-of-band edit — if a cycle appends its new entry by matching
+  and replacing the string of the *previous* top header (rather than purely inserting a new
+  header line directly after the `---` separator, leaving every existing line untouched), a
+  single off-by-one in the edit's anchor silently deletes the entry that used to own that
+  header line while leaving its body intact, which reads as normal to anyone skimming prose
+  rather than diffing headers. This is a distinct failure shape from every prior #19 instance
+  (fabricated commits, false status claims, silent report gaps) — the commit was real, the
+  new entry's content was real and accurate, but the edit's *mechanics* damaged a neighboring,
+  already-true entry. Generalizes past LEARNINGS specifically: any append-only file edited via
+  "replace the current first entry's marker line with mine" instead of "insert my marker line
+  before the current first entry, touching nothing else" carries the same risk. Worth
+  promoting to RECIPES.md at the next distill pass: always add new LEARNINGS entries via a
+  pure insertion immediately after the `---` separator line, never via a replace anchored on
+  the current top header's text.
+- **Applies to:** triage | verify | prompt
+
 ## 2026-09-24 — cycle 283: retroactively caught cycle 281 misreporting `1abd415`'s red CI as clean; real streak was 2, not 3; #21 + #19 comments posted; #19 denial-count data point (cycle 282 run = 2)
 - **Outcome:** n/a (Sync-time verification catch, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
@@ -66,6 +119,7 @@ Entry format:
   TRIAGE.md's "compound claim" lesson.
 - **Applies to:** triage | verify | prompt
 
+## 2026-09-24 — cycle 282: third consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 281 run = 3)
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
   maintainer replies on #18-22)
