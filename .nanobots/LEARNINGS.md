@@ -19,6 +19,36 @@ Entry format:
 
 ---
 
+## 2026-09-24 — cycle 281: second consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 280 run = 5)
+- **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
+  Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`1abd415`,
+  cycle 280's own docs-only LEARNINGS commit) — `outer-loop`, `worker`, and prior
+  `onboarding-agent`/`test` runs on this head all `success`, no rerun needed. This is the
+  second consecutive fully first-attempt-clean push (cycle 280's `745a403` was the first),
+  breaking what had been an almost-every-cycle #21 rerun/dedupe pattern back through at least
+  cycle 257 for two cycles running now. No PRs open, no `nanobots:inbox` items, board
+  unchanged from cycle 280. Re-verified cycle 280's own claims first: commit `1abd415`
+  touches exactly `.nanobots/LEARNINGS.md` (confirmed via the GitHub API, matching its
+  docs-only claim), and its cited #22 plan-comment state (Plan ready posted, no approval)
+  still matches live state. Pulled cycle 280's own outer-loop run (`35922790825`) denial
+  count: **5**, ordinary band; posted to #19 (confirmed landed by reading the comment back
+  via its own comment ID, not the issue's comment list — a 30-comment-per-page default
+  pagination on `gh api repos/.../issues/19/comments` without `--paginate` returned a stale
+  2026-09-05 comment as `[-1]`, which would have read as a false "did the comment even post"
+  negative had it not been cross-checked against the actual `gh issue comment` output URL).
+  Checked #18/#20/#21/#22's full comment bodies (not just author — all are `TimHeckel`, the
+  PAT identity, not a maintainer reply) — no new maintainer activity on any of them.
+- **Lesson:** `gh api repos/{owner}/{repo}/issues/{n}/comments` truncates to GitHub's default
+  30-per-page without `--paginate` or an explicit `per_page`; on an issue with more than 30
+  comments (several of #18-22 now qualify), indexing `[-1]` on the unpaginated response reads
+  a stale historical comment as "the latest," not the one just posted. The reliable way to
+  confirm a comment you just made actually landed is the comment ID/URL the `gh issue
+  comment` call itself returned (`gh api repos/{owner}/{repo}/issues/comments/<id>`), not a
+  re-list of the issue's comments.
+- **Applies to:** verify | prompt
+
 ## 2026-09-23 — cycle 280: main CI clean on the first attempt, no #21 event to dedupe; #19 denial-count data point (cycle 279 run = 4)
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
