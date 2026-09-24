@@ -19,6 +19,31 @@ Entry format:
 
 ---
 
+## 2026-09-24 — cycle 282: third consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 281 run = 3)
+- **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
+  Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** No new commit landed on `main` since cycle 281's own
+  `1b4129b` — Sync found the same head still green (`CI` success, `outer-loop` success,
+  `worker` success, all first-attempt), extending the clean streak to three cycles running
+  (280, 281, 282) after the near-every-cycle #21 rerun pattern that held back through at
+  least cycle 257. `nanobots-outer.yml`'s last 6 scheduled runs are all `success` (or this
+  run, still `in_progress`) — no recurrence of #20's silent-failure shape. `nanobots-worker.yml`
+  ran clean twice since cycle 281's report. Re-verified cycle 281's own claims first: commit
+  `1b4129b` touches exactly `.nanobots/LEARNINGS.md` (confirmed via the GitHub API, matching
+  its docs-only claim), and its #19 comment (id `5807909545`) is present as the actual last
+  comment on the issue when paginated. Pulled cycle 281's own outer-loop run
+  (`35957346620`) denial count: **3**, ordinary band; posted to #19, confirmed landed via
+  the comment URL the `gh issue comment` call itself returned (id `5813467135`), not a
+  re-list. Checked #18/#20/#21/#22's full comment bodies (not just author — all are
+  `TimHeckel`, the PAT identity) — no new maintainer activity on any of them. No `nanobots:inbox`
+  items, no open PRs, nothing In Progress/In Review to review, WIP 0/1.
+- **Lesson:** nothing new this cycle — a third consecutive clean push is one more data point
+  that the #21 rerun pattern was not a permanent floor, not yet enough to revise any standing
+  rule. Continues to confirm the comment-URL-over-relist verification approach from cycle
+  281's entry works cleanly on a second try.
+- **Applies to:** verify | prompt
+
 ## 2026-09-24 — cycle 281: second consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 280 run = 5)
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
