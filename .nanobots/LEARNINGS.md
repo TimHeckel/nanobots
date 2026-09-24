@@ -19,7 +19,53 @@ Entry format:
 
 ---
 
-## 2026-09-24 — cycle 282: third consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 281 run = 3)
+## 2026-09-24 — cycle 283: retroactively caught cycle 281 misreporting `1abd415`'s red CI as clean; real streak was 2, not 3; #21 + #19 comments posted; #19 denial-count data point (cycle 282 run = 2)
+- **Outcome:** n/a (Sync-time verification catch, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`6a4f6fb`,
+  cycle 282's own docs-only commit), first attempt, no rerun ([35995112881](https://github.com/TimHeckel/nanobots/actions/runs/35995112881)).
+  Before accepting cycle 282's "third consecutive clean" framing, went one level deeper than the
+  standard "re-verify the prior cycle's claims" check (which normally covers commit content +
+  comment-landing) and specifically re-checked cycle 281's *CI-status claim* against live data.
+  Cycle 281's LEARNINGS entry stated `main` CI was "green on the current head (`1abd415`)... no
+  rerun needed." `gh run list`/`gh run view` on `1abd415`'s only CI run
+  ([35923058754](https://github.com/TimHeckel/nanobots/actions/runs/35923058754)) shows
+  `conclusion: failure` on `onboarding-agent`, `updatedAt` only 82s after `createdAt` — never
+  rerun, never cleared. The failure log (`FAILED 6 of 29`: model-credential/`PROJECTS_PAT`/
+  `DAYTONA_API_KEY`/OCR-endpoint-vars/`verify_daytona`/verify-before-store, no network-error
+  text) is the exact known non-network assertion cluster #21 already tracks — this was a real
+  instance of the tracked flake, just never logged as a dedupe comment or rerun by cycles 280
+  (pushed it, ended its run before CI even started), 281 (misreported it as clean), or 282
+  (didn't re-check the now-superseded prior head, only confirmed the *current* one was green).
+  Net: the real clean-push streak is 2 (`1b4129b`, `6a4f6fb`), not 3 — `1abd415` breaks it.
+  Posted the full finding as a dedupe comment on #21 (confirmed landed via its own comment ID)
+  and as a new report-accuracy sub-shape on #19 (confirmed landed via its own comment ID) — a
+  real report with a false status claim inside it, distinct from #19's prior "fabricated
+  commit/close" and "silent skipped artifact" shapes. Pulled cycle 282's own outer-loop run
+  ([35994897401](https://github.com/TimHeckel/nanobots/actions/runs/35994897401)) denial count:
+  **2**, ordinary band; posted to #19 in the same comment (confirmed landed). Checked
+  #18/#20/#22's last comment bodies in full (not just author) — all still the loop's own
+  automated posts or pre-existing plan comments, no maintainer reply; #22 still exactly one
+  comment (the plan), no `/nanobots start <hash>` line yet. Both crons healthy: outer's last 3
+  completed scheduled runs all success (this run included); worker's last 6 runs all success.
+  No open PRs, no inbox items, no In Progress/In Review items (WIP 0/1), board matches live
+  GitHub for all 13 items. Undistilled LEARNINGS count (pre-append): suffix-anchored
+  `[distilled]` count (Grep tool) → 149 against 155 total `^## ` headers (154 real entries after
+  subtracting the format-template line) — 5 undistilled before this entry, 6 after; well under
+  the ~10 threshold, no distill pass this cycle.
+- **Lesson:** the "verify a prior cycle's claims" habit (RECIPES.md's "verifying a cycle's own
+  claims" recipe) has so far been checking *existence* claims — did the commit land, did the
+  comment post — with real rigor, but this cycle found it wasn't yet checking *status/outcome*
+  claims (CI green-or-red, rerun-or-not, merge-or-not) with the same rigor. A status claim can
+  be silently wrong with no hallucinated SHA anywhere in it — the commit was real, the comment
+  was real, only the one-sentence Sync-step verdict about a *different* commit's CI was false.
+  Worth generalizing: any time a report states a pass/fail or done/not-done verdict about
+  something other than its own commit, re-derive that verdict from a fresh tool call rather than
+  trusting the stated word, the same way numeric/temporal claims already get this treatment per
+  TRIAGE.md's "compound claim" lesson.
+- **Applies to:** triage | verify | prompt
+
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
   maintainer replies on #18-22)
