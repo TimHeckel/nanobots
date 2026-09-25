@@ -19,6 +19,39 @@ Entry format:
 
 ---
 
+## 2026-09-25 — cycle 286: first fully first-attempt-clean main CI since cycle 282, no #21 event; #19 denial-count data point (cycle 285 run = 4)
+- **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
+  Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI green on the current head (`d87ec66`,
+  cycle 285's own docs-only commit), run
+  [36096908297](https://github.com/TimHeckel/nanobots/actions/runs/36096908297) — both
+  `onboarding-agent` and `test` `success` on the first attempt, `run_attempt: 1`, no rerun
+  needed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/d87ec6656c1b4a529e1158d33411c8180a047777 --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. No fresh #21 event to dedupe this
+  cycle. Re-verified cycle 285's own claims first: the commit's docs-only scope, its #21
+  dedupe comment (id `5827068452`) and #19 data-point comment (id `5827069521`) both read
+  back correctly via their own comment IDs and match the cycle's report. Pulled cycle 285's
+  own outer-loop run (`36096533841`) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **4**, ordinary band; posted to #19 (confirmed landed). Checked
+  #18/#20/#21/#22's full comment bodies (not just author — all are `TimHeckel`, the PAT
+  identity, not a maintainer reply) — all still the loop's own automated posts; #22 still
+  exactly one comment (the plan), no `/nanobots start <hash>` line yet. Both crons healthy:
+  outer's last 6 completed scheduled runs all `success` (this run included); worker's last 6
+  runs all `success`. No open PRs, no `nanobots:inbox` items, no In Progress/In Review items
+  (WIP 0/1), board matches live GitHub for all 13 items. Undistilled LEARNINGS count
+  (post-append): suffix-anchored `[distilled]` count (Grep tool) → 149 against 159 total
+  `^## ` headers (158 real entries after subtracting the format-template line) — 9
+  undistilled after this entry; still under the ~10 threshold, no distill pass this cycle,
+  but next cycle is likely to cross it.
+- **Lesson:** nothing new beyond confirming the standing patterns hold — this is the first
+  fully clean first-attempt push since cycle 282 (cycles 283 and 285 each needed a rerun or
+  a retroactive correction), consistent with the "clean gap doesn't establish a new floor"
+  framing already in TRIAGE.md: a clean cycle is one data point, not evidence the flake rate
+  has actually dropped.
+- **Applies to:** triage | verify
+
 ## 2026-09-25 — cycle 285: #21 ordinary single-rerun clear on 61ebc8f (cycle 284's commit); #19 denial-count data point (cycle 284 run = 5)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
