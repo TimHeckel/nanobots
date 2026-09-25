@@ -19,6 +19,43 @@ Entry format:
 
 ---
 
+## 2026-09-25 — cycle 285: #21 ordinary single-rerun clear on 61ebc8f (cycle 284's commit); #19 denial-count data point (cycle 284 run = 5)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`61ebc8f`,
+  cycle 284's own docs-only commit), run
+  [36062413634](https://github.com/TimHeckel/nanobots/actions/runs/36062413634) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/61ebc8f8fe5f975d1daeec08d808fa614378fd5b --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 1 of
+  29` (`agent set the OCR endpoint variables`), no network-error text — the known
+  non-network assertion cluster. `gh run rerun --failed` (watched via `gh run watch
+  --exit-status`) came back green on both jobs on the very first rerun — the ordinary
+  single-rerun-clears shape. Posted as a dedupe comment on #21 (confirmed landed). No fresh
+  P0; #22 remains the mitigation, still unapproved (`/nanobots start` not yet posted).
+  Re-verified cycle 284's own claims first: commit `61ebc8f` touches exactly
+  `.nanobots/LEARNINGS.md` (confirmed via the GitHub API, matching its docs-only claim); the
+  header it claimed to restore (cycle 282's) is present and correctly sequenced in the live
+  file, directly above cycle 283's own header with no gap; and its #19 comment (id
+  `5822612664`) is confirmed landed by reading it back via its own comment ID. Pulled cycle
+  284's own outer-loop run (`36061936397`) denial count: **5**, ordinary band; posted to #19
+  (confirmed landed). Checked #18/#20/#22's full comment bodies (not just author — all are
+  `TimHeckel`, the PAT identity, not a maintainer reply) — all still the loop's own automated
+  posts; #22 still exactly one comment (the plan), no `/nanobots start <hash>` line yet.
+  Both crons healthy: outer's last 6 completed scheduled runs all `success` (this run
+  included); worker's last 6 runs all `success`. No open PRs, no inbox items, no In
+  Progress/In Review items (WIP 0/1). Undistilled LEARNINGS count (post-append):
+  suffix-anchored `[distilled]` count (Grep tool) → 149 against 158 total `^## ` headers
+  (157 real entries after subtracting the format-template line) — 7 undistilled before this
+  entry, 8 after; still under the ~10 threshold, no distill pass this cycle.
+- **Lesson:** nothing new beyond confirming the standing patterns hold — the recurrence-dedupe
+  treatment on #21 (comment, don't refile) and the "verify the prior cycle's claims against
+  live state every cycle" habit (this time including a positive check that a *previously
+  broken* file section, the restored header, actually stayed correct) both worked cleanly
+  again with zero discrepancies found.
+- **Applies to:** triage | verify
+
 ## 2026-09-24 — cycle 284: caught cycle 283's own LEARNINGS append deleting cycle 282's header line instead of inserting above it; restored it; #19 denial-count data point (cycle 283 run = 3)
 - **Outcome:** n/a (Sync-time verification catch + a docs-repair, not a dispatched item);
   board unchanged (8 Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no
