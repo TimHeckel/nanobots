@@ -19,7 +19,82 @@ Entry format:
 
 ---
 
-## 2026-09-25 — cycle 286: first fully first-attempt-clean main CI since cycle 282, no #21 event; #19 denial-count data point (cycle 285 run = 4)
+## 2026-09-25 — cycle 287: #21 double-non-clearing recurrence on bc16e81; caught cycle 279's distill pass silently skipping cycle 270's own header; distill pass run
+- **Outcome:** n/a (Sync-time judgment call + a distill pass, not a dispatched item); board
+  unchanged (8 Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no
+  `/nanobots start`, no maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`bc16e81`,
+  cycle 286's own docs-only commit), run
+  [36131825563](https://github.com/TimHeckel/nanobots/actions/runs/36131825563) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/bc16e81971425c14074dab4224efa9c80b0fad09 --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 6 of 29`
+  (model credential, `PROJECTS_PAT`, `DAYTONA_API_KEY`, `OCR_LLM_TOKEN`, `verify_daytona`,
+  verify-before-store), no network-error text. First `gh run rerun --failed` (watched via
+  `gh run watch --exit-status`): still red, `FAILED 2 of 29`, a different pair
+  (`PROJECTS_PAT`, OCR endpoint vars) — the double-non-clearing shape. Second rerun cleared
+  both jobs. Posted as a dedupe comment on #21 (confirmed landed via its own comment URL),
+  citing the standing #22 recommendation rather than restating it at length. No fresh P0.
+  Re-verified cycle 286's own claims first: commit `bc16e81` (docs-only, confirmed via the
+  API) and its #19 data-point comment (cycle 285 run = 4, id `IC_kwDORRuHcM8AAAABW5wrqA`)
+  both checked out against live content. Pulled cycle 286's own outer-loop run
+  (`36131599036`, confirmed as the run that produced `bc16e81` by matching timestamps —
+  11:50:32Z trigger, 11:52:58Z commit) denial count: **2**, ordinary band; posted to #19
+  (confirmed landed). Checked #18/#20/#22's full comment bodies (not just author — all are
+  `TimHeckel`, the PAT identity, not a maintainer reply) — all still the loop's own automated
+  posts; #22 still exactly one comment (the plan), no `/nanobots start <hash>` line yet.
+  Board matches live GitHub for all 13 items (verified via `gh project item-list`), no open
+  PRs, no `nanobots:inbox` items, no In Progress/In Review items (WIP 0/1). Both crons
+  healthy: outer's last 6 completed scheduled runs all `success` (this run included);
+  worker's last 6 runs all `success`.
+
+  Undistilled LEARNINGS count (pre-append): suffix-anchored `[distilled]` count (Grep tool)
+  → 149 against 159 total `^## ` headers (158 real entries after subtracting the
+  format-template line) — 9 undistilled before this entry, crossing the ~10 threshold once
+  this entry itself is added. While identifying which 9 entries those were (cycles 286, 285,
+  284, 283, 282, 281, 280, 279, and — found by listing every unmarked header explicitly
+  rather than assuming the most-recent-N — **cycle 270**, not cycle 271 or any cycle between
+  271-278 as cycle 279's own distill-pass entry implied), found that cycle 279's pass had
+  stated "9 undistilled before this entry" (accurate) but then "Marked the 8 undistilled
+  entries (cycles 271-278) `[distilled]`" — only 8 of the 9, silently skipping cycle 270
+  itself (cycle 270 ran its *own* distill pass at the time, promoting real content into
+  TRIAGE.md/RECIPES.md, but per convention a distill-pass entry never marks itself — it
+  waits for a *later* pass to mark it, and cycle 279's pass was that later pass for cycle
+  270 specifically, yet missed it). Verified cycle 270's promoted content (the
+  fourth-instance-trigger-missed-once finding and the cite-don't-restate rule in TRIAGE.md;
+  the regex-tolerant-search and compound-command-attribution items in RECIPES.md) is in
+  fact present and correct in both files — the promotions themselves were never lost, only
+  the source entry's own `[distilled]` marker was never applied, an undercount identical in
+  shape to cycle 284's finding about cycle 283's header-deletion bug (both are LEARNINGS
+  bookkeeping slips that left real, correct content intact) but distinct in mechanism (an
+  omission from a marking loop, not a destructive string-replace). Distill pass this cycle:
+  reviewed all 9 pre-existing undistilled entries. Two genuinely new promotions: (1) into
+  RECIPES.md's "touching the GitHub API" recipe (items 15-16) — cycle 284's pure-insertion
+  append rule (add new LEARNINGS headers by inserting after the `---` separator, never by
+  replacing the current top header's text) and cycle 281's `gh api .../comments` 30-per-page
+  pagination gotcha (confirm a just-posted comment by its own returned ID/URL, not by
+  re-listing and indexing `[-1]`); (2) into RECIPES.md's "verifying a cycle's own claims"
+  recipe (item 14) — cycle 283's finding that a report's pass/fail or done/not-done
+  *verdict* about something other than its own commit needs the same fresh-tool-call
+  re-derivation as a numeric/temporal claim, generalizing the existing "compound claim" item.
+  Cycles 270, 282, 285, 286 reviewed but yielded no new durable rule beyond what's already
+  captured or was a pure data point — marked `[distilled]` anyway per the same treatment
+  cycle 279's pass used for confirmatory entries. Applied this cycle's own pure-insertion
+  rule (the one just promoted) when writing this entry: inserted directly after the `---`
+  separator, touching no existing line.
+- **Lesson:** a distill pass's own "marked N entries" claim is exactly the kind of
+  compound/status claim item 14 (newly promoted this cycle) now names explicitly — cycle 279
+  stated an accurate pre-count (9) but an inaccurate post-action count (8 marked, 1 silently
+  dropped), and nothing caught it for eight cycles because every intervening cycle's own
+  undistilled-count recompute matched what cycle 279's *count* implied without re-deriving
+  *which specific headers* carried the marker. Enumerating unmarked headers explicitly
+  (`grep -v "\[distilled\]"` over every `^## ` line) rather than trusting a prior cycle's
+  named range is the reliable check — the same "verify by re-deriving, not by trusting the
+  stated word" discipline this file keeps re-learning in new shapes, this time applied to
+  the loop's own distill-pass bookkeeping rather than a commit or a CI verdict.
+- **Applies to:** triage | verify | prompt
+
+## 2026-09-25 — cycle 286: first fully first-attempt-clean main CI since cycle 282, no #21 event; #19 denial-count data point (cycle 285 run = 4) [distilled]
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
   maintainer replies on #18-22)
@@ -52,7 +127,7 @@ Entry format:
   has actually dropped.
 - **Applies to:** triage | verify
 
-## 2026-09-25 — cycle 285: #21 ordinary single-rerun clear on 61ebc8f (cycle 284's commit); #19 denial-count data point (cycle 284 run = 5)
+## 2026-09-25 — cycle 285: #21 ordinary single-rerun clear on 61ebc8f (cycle 284's commit); #19 denial-count data point (cycle 284 run = 5) [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
   maintainer replies on #18-22)
@@ -89,7 +164,7 @@ Entry format:
   again with zero discrepancies found.
 - **Applies to:** triage | verify
 
-## 2026-09-24 — cycle 284: caught cycle 283's own LEARNINGS append deleting cycle 282's header line instead of inserting above it; restored it; #19 denial-count data point (cycle 283 run = 3)
+## 2026-09-24 — cycle 284: caught cycle 283's own LEARNINGS append deleting cycle 282's header line instead of inserting above it; restored it; #19 denial-count data point (cycle 283 run = 3) [distilled]
 - **Outcome:** n/a (Sync-time verification catch + a docs-repair, not a dispatched item);
   board unchanged (8 Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no
   `/nanobots start`, no maintainer replies on #18-22)
@@ -142,7 +217,7 @@ Entry format:
   the current top header's text.
 - **Applies to:** triage | verify | prompt
 
-## 2026-09-24 — cycle 283: retroactively caught cycle 281 misreporting `1abd415`'s red CI as clean; real streak was 2, not 3; #21 + #19 comments posted; #19 denial-count data point (cycle 282 run = 2)
+## 2026-09-24 — cycle 283: retroactively caught cycle 281 misreporting `1abd415`'s red CI as clean; real streak was 2, not 3; #21 + #19 comments posted; #19 denial-count data point (cycle 282 run = 2) [distilled]
 - **Outcome:** n/a (Sync-time verification catch, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
   maintainer replies on #18-22)
@@ -189,7 +264,7 @@ Entry format:
   TRIAGE.md's "compound claim" lesson.
 - **Applies to:** triage | verify | prompt
 
-## 2026-09-24 — cycle 282: third consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 281 run = 3)
+## 2026-09-24 — cycle 282: third consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 281 run = 3) [distilled]
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
   maintainer replies on #18-22)
@@ -214,7 +289,7 @@ Entry format:
   281's entry works cleanly on a second try.
 - **Applies to:** verify | prompt
 
-## 2026-09-24 — cycle 281: second consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 280 run = 5)
+## 2026-09-24 — cycle 281: second consecutive first-attempt-clean main CI, no #21 event; #19 denial-count data point (cycle 280 run = 5) [distilled]
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
   maintainer replies on #18-22)
@@ -244,7 +319,7 @@ Entry format:
   re-list of the issue's comments.
 - **Applies to:** verify | prompt
 
-## 2026-09-23 — cycle 280: main CI clean on the first attempt, no #21 event to dedupe; #19 denial-count data point (cycle 279 run = 4)
+## 2026-09-23 — cycle 280: main CI clean on the first attempt, no #21 event to dedupe; #19 denial-count data point (cycle 279 run = 4) [distilled]
 - **Outcome:** n/a (Sync-time check, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
   maintainer replies on #18-22)
@@ -280,7 +355,7 @@ Entry format:
   discrepancies found.
 - **Applies to:** triage | verify
 
-## 2026-09-23 — cycle 279: #21 ordinary single-rerun clear (breaks the ninth-triple streak at one), #19 denial-count data point (cycle 278 run = 6), distill pass run
+## 2026-09-23 — cycle 279: #21 ordinary single-rerun clear (breaks the ninth-triple streak at one), #19 denial-count data point (cycle 278 run = 6), distill pass run [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); ran a distill pass
   (LOOP-PROMPT.md step 5) since the undistilled count hit the ~10 threshold; board unchanged
   (8 Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no
@@ -620,7 +695,7 @@ Entry format:
   treating a slow-looking poll sequence as evidence of an unusually long run.
 - **Applies to:** triage | verify
 
-## 2026-09-18 — cycle 270: #21 ordinary single-rerun clear (breaks the 267-268-269 triple streak), #19 denial-count data point (cycle 269 run = 10), distill pass run
+## 2026-09-18 — cycle 270: #21 ordinary single-rerun clear (breaks the 267-268-269 triple streak), #19 denial-count data point (cycle 269 run = 10), distill pass run [distilled]
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); ran a distill pass
   (LOOP-PROMPT.md step 5) since the undistilled count hit the ~10 threshold; board unchanged
   (8 Done/4 Blocked/1 Ready, #22 still Ready with a plan but no `/nanobots start` approval, no

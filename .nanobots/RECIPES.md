@@ -137,6 +137,23 @@ are expensive to find later.
     the job's own `completed_at`/`conclusion` fields, or just wait for `gh run watch
     --exit-status` to converge, rather than trusting the live status text mid-poll.
     `[distilled from 2026-09-18 (cycle 271)]`
+15. **When appending to an append-only file (LEARNINGS.md's own entries), insert the new
+    header immediately after the fixed anchor point (the `---` separator), never by matching
+    and replacing the current top header's text.** An edit anchored on "replace the current
+    first entry's marker line with mine" silently deletes the entry that used to own that line
+    while leaving its body orphaned underneath — a single off-by-one in the anchor damages a
+    neighboring, already-true entry, and the file still reads coherently to a skim since only
+    the header (not the content) is lost. This is a distinct failure shape from a fabricated
+    claim: the commit is real and the new content is real, only the edit's *mechanics* broke
+    something else. Generalizes past LEARNINGS specifically to any append-only file edited this
+    way. `[distilled from 2026-09-24 (cycle 284)]`
+16. **`gh api repos/{owner}/{repo}/issues/{n}/comments` truncates to GitHub's default 30-per-page
+    without `--paginate` or an explicit `per_page`.** On an issue with more than 30 comments,
+    indexing `[-1]` on the unpaginated response silently returns a stale historical comment
+    instead of the one you just posted — reading as a false "did my comment even land" negative.
+    Confirm a comment you just made by the comment ID/URL the `gh issue comment` call itself
+    returned (`gh api repos/{owner}/{repo}/issues/comments/<id>`), not by re-listing the issue's
+    comments. `[distilled from 2026-09-24 (cycle 281)]`
 
 ## recipe: reviewing an open PR not on the board
 
@@ -348,3 +365,15 @@ then narrated over instead of surfacing.
    hrs old" against an actual ~17.6 hours, harmless only because the 48h nudge threshold
    wasn't close under either number. `[distilled from 2026-08-25 (cycle 163), covering cycle
    161's #20-assignee catch and cycle 127's #19-age catch]`
+14. **A report's pass/fail or done/not-done *verdict* about something other than its own
+    commit needs the same re-derivation discipline as a numeric or temporal claim (item 6
+    above) — a status claim can be silently wrong with no hallucinated SHA anywhere in it.**
+    Confirmed on #21/#19 (2026-09-24, cycle 283): cycle 281's LEARNINGS entry stated `main`
+    CI was "green on the current head... no rerun needed," but `gh run view` on that exact
+    head showed `conclusion: failure`, never rerun, never cleared — a real commit, a real
+    comment, only the one-sentence CI-status verdict about a *different* commit was false.
+    The existing "verify a prior cycle's claims" habit had been checking *existence* (did the
+    commit land, did the comment post) with real rigor but not *status/outcome* claims with
+    the same rigor — before trusting "CI was green," "the rerun cleared it," or "the merge
+    went through," re-derive that verdict from a fresh tool call rather than trusting the
+    stated word. `[distilled from 2026-09-24 (cycle 283)]`
