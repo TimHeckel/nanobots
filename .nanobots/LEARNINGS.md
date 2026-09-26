@@ -19,6 +19,57 @@ Entry format:
 
 ---
 
+## 2026-09-26 — cycle 290: #21 triple-non-clearing recurrence on 44d9bda2 (9th instance, the cycle right after 289's break); #19 denial-count data point (cycle 289 run = 0)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`44d9bda2`,
+  cycle 289's own docs-only commit), run
+  [36219658672](https://github.com/TimHeckel/nanobots/actions/runs/36219658672) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/44d9bda2f6d7ba8b6d8ae7b7651767be71b1a707 --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 1 of
+  29` (`agent set PROJECTS_PAT`), no network-error text. First `gh run rerun --failed`
+  (watched via `gh run watch --exit-status`): still red, `FAILED 2 of 29` (`agent set
+  PROJECTS_PAT`, `agent set the OCR endpoint variables`). Second rerun: still red, `FAILED 1
+  of 29` (`agent set PROJECTS_PAT`) — a triple-non-clearing instance, the 9th tracked (after
+  cycles 257, 258, 259, 265, 267, 268, 269, 288), arriving the very next cycle after 289's
+  ordinary double-non-clearing-then-clear broke the prior 8th-instance streak — the triple
+  shape recurring immediately after a clean break, same as it has after every prior break in
+  this file. Per the standing (still unadopted) third-rerun-bound proposal from cycle 267,
+  stopped at two reruns rather than attempting a third unilaterally. Posted as a dedupe
+  comment on #21 (confirmed landed via its own comment ID, `5845894979`), citing the running
+  instance count rather than restating the proposal at length. No fresh P0; #22 remains the
+  mitigation, still unapproved.
+
+  Re-verified cycle 289's own claims first: commit `44d9bda2` (docs-only, confirmed via the
+  API — exactly `LEARNINGS.md`, matching its claim) and its #21 comment (id `5843375642`,
+  double-non-clearing-then-clear, breaks the 8-triple streak at one) and #19 comment (id
+  `5843375715`, denial count 3) both checked out against live content. Pulled cycle 289's own
+  outer-loop run (`36219376255`, confirmed as the run that produced `44d9bda2` by matching
+  timestamps — 04:57:49Z trigger, 05:03:19Z commit) denial count via `gh run view <id> --log
+  | grep permission_denials_count`: **0**, ordinary band, ties the prior lows at cycles
+  206/210; posted to #19 (confirmed landed via its own comment ID, `5845895543`). Checked
+  #18/#20/#22's full comment bodies (not just author — all are `TimHeckel`, the PAT identity,
+  not a maintainer reply) — all still the loop's own automated posts; #22 still exactly one
+  comment (the plan), no `/nanobots start <hash>` line yet. Board matches live GitHub for all
+  13 items (verified via `gh project item-list`), no open PRs, no `nanobots:inbox` items, no
+  In Progress/In Review items (WIP 0/1). Both crons healthy: outer's last 6 completed
+  scheduled runs all `success` (this cycle's own run still in progress at write time); worker's
+  last 6 runs all `success`.
+
+  Undistilled LEARNINGS count (pre-append): suffix-anchored `[distilled]` count (Grep tool)
+  → 158 against 162 total `^## ` headers (161 real entries after subtracting the
+  format-template line) — 3 undistilled before this entry, 4 after; well under the ~10
+  threshold, no distill pass this cycle.
+- **Lesson:** the triple-non-clearing sub-pattern continues to recur immediately after every
+  streak-break observed so far in this file (cycle 260 after 257-259; cycle 270 after
+  267-269; now cycle 290 the cycle right after 289's single-instance break) — a single clean
+  or ordinary-double cycle has never yet been followed by more than one such cycle before the
+  triple shape resumes. Still just one more data point for the standing, unadopted
+  third-rerun-bound proposal, not new grounds to adopt it unilaterally.
+- **Applies to:** triage | verify
+
 ## 2026-09-26 — cycle 289: #21 ordinary double-non-clearing recurrence on 8118a96 (breaks the 8-in-a-row triple streak); #19 denial-count data point (cycle 288 run = 3)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
