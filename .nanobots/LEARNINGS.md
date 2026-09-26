@@ -19,6 +19,52 @@ Entry format:
 
 ---
 
+## 2026-09-26 — cycle 289: #21 ordinary double-non-clearing recurrence on 8118a96 (breaks the 8-in-a-row triple streak); #19 denial-count data point (cycle 288 run = 3)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`8118a96`,
+  cycle 288's own docs-only commit), run
+  [36192839109](https://github.com/TimHeckel/nanobots/actions/runs/36192839109) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/8118a96a14faef227fbe90118c01f131169f8def --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 1 of
+  29` (`agent set PROJECTS_PAT`), no network-error text. First `gh run rerun --failed`
+  (watched via `gh run watch --exit-status`): still red, `FAILED 1 of 29`, a different
+  assertion (`agent called finish() with a summary`) — the ordinary double-non-clearing
+  shape. Second rerun cleared both jobs. This breaks cycle 288's 8th-triple-instance streak
+  (257, 258, 259, 265, 267, 268, 269, 288) at one — the very next push returned to the
+  ordinary shape, same as the 257-259/265/267-269 triple streaks each broke on their
+  immediate next push. Posted as a dedupe comment on #21 (confirmed landed via its own
+  comment URL). No fresh P0; #22 remains the mitigation, still unapproved.
+
+  Re-verified cycle 288's own claims first: commit `8118a96` (docs-only, confirmed via the
+  API — exactly `LEARNINGS.md`, matching its claim) and its #21 comment checked out against
+  live content (triple-non-clearing recurrence, 8th instance, citing the running count per
+  the "cite, don't restate" rule). Pulled cycle 288's own outer-loop run (`36192300566`,
+  confirmed as the run that produced `8118a96` by matching timestamps — 21:34:40Z trigger,
+  21:40:42Z commit) denial count via `gh run view <id> --log | grep
+  permission_denials_count`: **3**, ordinary band; posted to #19 (confirmed landed).
+  Checked #18/#20/#22's full comment bodies (not just author — all are `TimHeckel`, the PAT
+  identity, not a maintainer reply) — all still the loop's own automated posts; #22 still
+  exactly one comment (the plan), no `/nanobots start <hash>` line yet. Board matches live
+  GitHub for all 13 items (verified via `gh project item-list`), no open PRs, no
+  `nanobots:inbox` items, no In Progress/In Review items (WIP 0/1). Both crons healthy:
+  outer's last 6 runs (this one included) and worker's last 6 runs all `success` prior to
+  this cycle's own in-flight run.
+
+  Undistilled LEARNINGS count (pre-append): suffix-anchored `[distilled]` count (Grep tool)
+  → 158 against 161 total `^## ` headers (160 real entries after subtracting the
+  format-template line) — 2 undistilled before this entry, 3 after; well under the ~10
+  threshold, no distill pass this cycle.
+- **Lesson:** the triple-non-clearing sub-pattern's 8-instance run (cycles 257-269, 288)
+  broke on the very first push after cycle 288, the same way every prior triple streak in
+  this file has broken on its immediate next push (cycle 260 after 257-259; cycle 270 after
+  267-269) — further evidence the triple shape is an occasional variant riding on top of the
+  double pattern rather than a rate change, consistent with cycle 265/267's "recurring
+  variant, not a new floor" framing holding across yet another streak-then-break cycle.
+- **Applies to:** triage | verify
+
 ## 2026-09-25 — cycle 288: #21 triple-non-clearing recurrence (8th instance) on 6a2a8ba; #19 denial-count data point (cycle 287 run = 5)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8 Done/4
   Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
