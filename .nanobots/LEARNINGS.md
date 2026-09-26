@@ -19,6 +19,52 @@ Entry format:
 
 ---
 
+## 2026-09-26 — cycle 292: #21 triple-non-clearing recurrence on dccae8e (10th instance, second in a row after 290, with 291 clean between); #19 denial-count data point (cycle 291 run = 2)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Re-verified cycle 291's claims first: commit `dccae8e`
+  confirmed docs-only via the API (`.nanobots/LEARNINGS.md` only), and its two comments
+  (`5847879278` on #19 — denial count 3 for cycle 290's run; the #21 dedupe comment cycle
+  291 said it did *not* need to post, since Sync found no #21 event that cycle) both
+  checked out.
+
+  Sync found `main` CI red on the current head (`dccae8e`, cycle 291's own docs-only
+  commit), run [36255470562](https://github.com/TimHeckel/nanobots/actions/runs/36255470562)
+  — only `onboarding-agent` failed, `test` passed; diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/dccae8e.../files` → exactly `.nanobots/LEARNINGS.md`.
+  Original attempt: `FAILED 6 of 29` (model-credential/PROJECTS_PAT/DAYTONA_API_KEY/OCR-vars/
+  verify_daytona cluster), no network-error text. First `gh run rerun --failed` (watched via
+  `gh run watch --exit-status`): still red, `FAILED 7 of 29`, same cluster. Second rerun:
+  still red, `FAILED 1 of 29` (`agent set PROJECTS_PAT`) — a **triple-non-clearing**
+  instance, the 10th tracked (after cycles 257, 258, 259, 265, 267, 268, 269, 288, 290),
+  and the second in a row after 290 (with cycle 291 itself landing clean in between) — the
+  first back-to-back-with-a-gap recurrence pattern, distinct from the immediately-consecutive
+  recurrences noted in the 290 entry. Per the standing (still unadopted) third-rerun-bound
+  proposal from cycle 267, stopped at two reruns. Posted as a dedupe comment on #21
+  (confirmed landed via its own comment ID, `5849956249`), citing the running instance count.
+  No fresh P0; #22 remains the actual mitigation, still Ready/unapproved.
+
+  Pulled cycle 291's own outer-loop run (`36255276000`, the run that produced `dccae8e`)
+  denial count via `gh run view <id> --log | grep permission_denials_count`: **2**, ordinary
+  band; posted to #19 (confirmed landed via its own comment ID, `5849957767`). Checked
+  #18/#20's full comment bodies (not just author — both are `TimHeckel`, the PAT identity,
+  not a maintainer reply). Board matches live GitHub for all 13 items (verified via `gh
+  project item-list`), no open PRs, no `nanobots:inbox` items, no In Progress/In Review
+  items (WIP 0/1). Both crons healthy: outer's last 5 completed scheduled runs all
+  `success` (this cycle's own run still in progress at write time); worker's last 6 runs all
+  `success`.
+
+  Undistilled LEARNINGS count (pre-append): suffix-anchored `[distilled]` count (Grep tool)
+  → 158 against 164 total `^## ` headers (163 real entries after subtracting the
+  format-template line) — 5 undistilled before this entry, 6 after; well under the ~10
+  threshold, no distill pass this cycle.
+- **Lesson:** the triple-non-clearing shape can recur with exactly one clean cycle
+  interposed (290 → 291 clean → 292), not only immediately back-to-back or after a longer
+  gap as previously logged — another data point for "recurring variant, not a rising
+  floor," not evidence of a new pattern requiring a rule change.
+- **Applies to:** triage | verify
+
 ## 2026-09-26 — cycle 291: main CI clean on the first attempt (d320f11), no #21 event; #19 denial-count data point (cycle 290 run = 3)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
