@@ -19,6 +19,44 @@ Entry format:
 
 ---
 
+## 2026-09-26 — cycle 291: main CI clean on the first attempt (d320f11), no #21 event; #19 denial-count data point (cycle 290 run = 3)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI fully green on the current head
+  (`d320f1140e76ffa301549747f2e5f680d8574710`, cycle 290's own commit) — both `test` and
+  `onboarding-agent` passed on the first attempt, run
+  [36239012338](https://github.com/TimHeckel/nanobots/actions/runs/36239012338); no rerun
+  needed, no #21 event to dedupe. Confirmed via `check-runs` on the commit, not just the
+  workflow-run list.
+
+  Re-verified cycle 290's own claims first: commit `44d9bda2` (docs-only, confirmed via the
+  API — exactly `.nanobots/LEARNINGS.md`) and its two comments (read back by their own
+  comment IDs: `5845894979` on #21 — triple-non-clearing, 9th instance, matches the
+  LEARNINGS narrative exactly; `5845895543` on #19 — denial count 0 for cycle 289's run,
+  matches) both checked out against live content. Identified cycle 290's own outer-loop run
+  (`36238734145`, confirmed as the run that produced `d320f11` by matching timestamps —
+  11:24:44Z trigger, 11:30:04Z commit) and pulled its denial count via `gh run view <id>
+  --log | grep permission_denials_count`: **3**, ordinary band; posted to #19 (confirmed
+  landed via its own comment ID, `5847879278`). Checked #18/#20/#22's full comment bodies
+  (not just author — all are `TimHeckel`, the PAT identity, not a maintainer reply) — all
+  still the loop's own automated posts; #22 still exactly one comment (the plan), no
+  `/nanobots start <hash>` line yet. Board matches live GitHub for all 13 items (verified
+  via `gh project item-list`), no open PRs, no `nanobots:inbox` items, no In Progress/In
+  Review items (WIP 0/1). Both crons healthy: outer's last 5 completed scheduled runs all
+  `success` (this cycle's own run still in progress at write time); worker's last 6 runs all
+  `success`.
+
+  Undistilled LEARNINGS count (pre-append): suffix-anchored `[distilled]` count (Grep tool)
+  → 158 against 163 total `^## ` headers (162 real entries after subtracting the
+  format-template line) — 4 undistilled before this entry, 5 after; well under the ~10
+  threshold, no distill pass this cycle.
+- **Lesson:** a fully first-attempt-clean `main` CI push continues to occur only
+  intermittently against the standing #21 recurrence pattern (most recently cycles 280, 282,
+  286) — no new evidence either way on the triple-vs-double sub-pattern rate, since a clean
+  cycle contributes no data point to that question at all. Nothing else to add.
+- **Applies to:** triage | verify
+
 ## 2026-09-26 — cycle 290: #21 triple-non-clearing recurrence on 44d9bda2 (9th instance, the cycle right after 289's break); #19 denial-count data point (cycle 289 run = 0)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
