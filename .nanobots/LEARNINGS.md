@@ -19,6 +19,59 @@ Entry format:
 
 ---
 
+## 2026-09-27 — cycle 295: #21 triple-non-clearing recurrence on c0b1246 (12th instance, first immediately-back-to-back — cycle 294 was also a triple instance with no clean cycle between); #19 denial-count data point (cycle 294 run = 3)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Re-verified cycle 294's claims first: commit `c0b1246`
+  confirmed docs-only via the API (`.nanobots/LEARNINGS.md` only), and its two comments
+  (`5852960256` on #21 — 11th triple-non-clearing instance; `5852960333` on #19 — denial
+  count 2 for cycle 293's run) both checked out against live content.
+
+  Sync found `main` CI red on the current head (`c0b1246`, cycle 294's own docs-only
+  commit), run [36297126425](https://github.com/TimHeckel/nanobots/actions/runs/36297126425)
+  — only `onboarding-agent` failed, `test` passed; diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/c0b1246.../files` → exactly `.nanobots/LEARNINGS.md`.
+  Original attempt: `FAILED 7 of 29` (model-credential/PROJECTS_PAT/DAYTONA_API_KEY/OCR-vars/
+  verify_daytona cluster), no network-error text — the known non-network assertion cluster.
+  First `gh run rerun --failed` (watched via `gh run watch --exit-status`): still red,
+  `FAILED 3 of 29` (`DAYTONA_API_KEY`, `verify_daytona` cluster). Second rerun: still red,
+  `FAILED 4 of 29` (`DAYTONA_API_KEY`, OCR endpoint vars, `verify_daytona`) — a
+  **triple-non-clearing** instance, the 12th tracked (after cycles 257, 258, 259, 265, 267,
+  268, 269, 288, 290, 292, 294), and — unlike every prior recurrence in this file, which had
+  at least one clean cycle interposed — the **first immediately-back-to-back** instance:
+  cycle 294's own Sync-time check (on the prior head, `db6cb45`) was *itself* a triple
+  instance, with this cycle's check landing on the very next head and also triple. Per the
+  standing (still unadopted) third-rerun-bound proposal from cycle 267, stopped at two
+  reruns. Posted as a dedupe comment on #21 (confirmed landed via its own comment ID,
+  `5855675595`), citing the running instance count and the new back-to-back shape. No fresh
+  P0; #22 remains the mitigation, still Ready/unapproved.
+
+  Pulled cycle 294's own outer-loop run (`36296817422`, confirmed as the run that produced
+  `c0b1246` by matching timestamps — 05:18:23Z trigger, 05:24:42Z commit) denial count via
+  `gh run view <id> --log | grep permission_denials_count`: **3**, ordinary band; posted to
+  #19 (confirmed landed via its own comment ID, `5855675818`). Checked #18/#20/#22's full
+  comment bodies (not just author — all are `TimHeckel`, the PAT identity, not a maintainer
+  reply) — all still the loop's own automated posts; #22 still exactly one comment (the
+  plan), no `/nanobots start <hash>` line yet. Board matches live GitHub for all 13 items
+  (verified via `gh project item-list`), no open PRs, no `nanobots:inbox` items, no In
+  Progress/In Review items (WIP 0/1). Both crons healthy: outer's last 6 completed scheduled
+  runs all `success` (this cycle's own run still in progress at write time); worker's last 6
+  runs all `success`.
+
+  Undistilled LEARNINGS count (pre-append): suffix-anchored `[distilled]` count (Grep tool)
+  → 158 against 167 total `^## ` headers (166 real entries after subtracting the
+  format-template line) — 8 undistilled before this entry, 9 after; approaching the ~10
+  threshold — likely triggers a distill pass next cycle if another undistilled entry lands.
+- **Lesson:** the triple-non-clearing shape can occur on two consecutive cycles with no
+  clean cycle interposed at all — a stronger recurrence than any previously logged (which
+  always had at least one clean cycle between triples, per cycles 290 and 292's notes on
+  "immediately-consecutive" vs. "back-to-back-with-a-gap"). This is one data point, not
+  proof of a rising floor, but it's the first time the gap has closed to zero — worth
+  flagging explicitly for whoever eventually reviews the accumulated #21/#22 evidence, since
+  it weakens the case that a clean cycle reliably intervenes.
+- **Applies to:** triage | verify
+
 ## 2026-09-27 — cycle 294: #21 triple-non-clearing recurrence on db6cb45 (11th instance); #19 denial-count data point (cycle 293 run = 2)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
