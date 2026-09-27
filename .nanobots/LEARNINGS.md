@@ -19,6 +19,54 @@ Entry format:
 
 ---
 
+## 2026-09-27 — cycle 297: #21 triple-non-clearing recurrence on 0a04f410 (13th instance, one-cycle gap after 295's zero-gap pair); #19 denial-count data point (cycle 296 run = 6)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`0a04f410`,
+  cycle 296's own docs-only commit), run
+  [36335542023](https://github.com/TimHeckel/nanobots/actions/runs/36335542023) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/0a04f4108ee8f3eaed790d7eb677acbdc276d942 --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md` and `.nanobots/TRIAGE.md`.
+
+  Original attempt: `FAILED 1 of 29` (`agent set PROJECTS_PAT`), no network-error text. First
+  `gh run rerun --failed` (watched via `gh run watch --exit-status`): still red, `FAILED 7 of
+  29` (model credential, `PROJECTS_PAT`, `DAYTONA_API_KEY`, `OCR_LLM_TOKEN`, OCR endpoint
+  vars) — the known non-network assertion cluster. Second rerun: still red, `FAILED 5 of 29`
+  (`PROJECTS_PAT`, `DAYTONA_API_KEY`, OCR endpoint vars, `verify_daytona`, "verified Daytona
+  before storing the key") — a **triple-non-clearing** instance, the 13th tracked (after
+  cycles 257, 258, 259, 265, 267, 268, 269, 288, 290, 292, 294, 295). Per the standing (still
+  unadopted) third-rerun-bound proposal from cycle 267, stopped at two reruns. This follows
+  cycle 296's ordinary single-rerun clear, so the gap since the last triple (295, itself
+  back-to-back with 294) is one clean/ordinary cycle — not a second zero-gap recurrence,
+  consistent with cycle 296's own prediction that the zero-gap shape was a one-off rather than
+  a new floor. Posted as a dedupe comment on #21 (confirmed landed via its own comment ID,
+  `5859966424`). No fresh P0; #22 remains the mitigation, still Ready/unapproved.
+
+  Pulled cycle 296's own outer-loop run (`36335148098`, confirmed as the run that produced
+  `0a04f410` by matching timestamps — 16:57:44Z trigger, 17:04:15Z commit) denial count via
+  `gh run view <id> --log | grep permission_denials_count`: **6**, ordinary band; posted to
+  #19 (confirmed landed via its own comment ID, `5859967173`). Checked #18/#20/#22's full
+  comment bodies (not just author — all are `TimHeckel`, the PAT identity, not a maintainer
+  reply) — all still the loop's own automated posts; #22 still exactly one comment (the
+  plan), no `/nanobots start <hash>` line yet. Board matches live GitHub for all 13 items
+  (verified via `gh project item-list`), no open PRs, no `nanobots:inbox` items, no In
+  Progress/In Review items (WIP 0/1). Outer cron healthy: last 6 completed scheduled runs
+  (before this cycle's own, still in progress at write time) all `success`; worker cron's
+  last 6 runs all `success`.
+
+  Undistilled LEARNINGS count (pre-append): 169 total `^## ` headers (168 real entries after
+  subtracting the format-template line) against 167 suffix-anchored `[distilled]` headers
+  (Grep tool, per RECIPES.md's approval-workaround item) → 1 undistilled before this entry, 2
+  after — well under the ~10 threshold, no distill pass this cycle.
+- **Lesson:** the zero-gap back-to-back triple recurrence (cycle 295) did not repeat on the
+  very next triple instance — a one-cycle gap (296's ordinary clear) separated it from this
+  cycle's 13th instance, matching cycle 296's own prediction and every prior streak-break
+  pattern in this file. One more data point that the zero-gap shape from cycle 295 was an
+  occasional variant, not evidence of a rate increase.
+- **Applies to:** triage | verify
+
 ## 2026-09-27 — cycle 296: #21 ordinary single-rerun clear on 7c4aaf3 (breaks cycle 295's zero-gap back-to-back triple pair); #19 denial-count data point (cycle 295 run = 3); distill pass run
 - **Outcome:** n/a (Sync-time judgment call + a distill pass, not a dispatched item); board
   unchanged (8 Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no
