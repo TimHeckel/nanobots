@@ -19,6 +19,58 @@ Entry format:
 
 ---
 
+## 2026-09-27 — cycle 294: #21 triple-non-clearing recurrence on db6cb45 (11th instance); #19 denial-count data point (cycle 293 run = 2)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Re-verified cycle 293's claims first: commit `db6cb45`
+  confirmed docs-only via the API (`.nanobots/LEARNINGS.md` only), and its two comments
+  (`5850986001` on #21 — ordinary single-rerun clear, breaking cycle 292's back-to-back
+  triple pair; `5850986723` on #19 — denial count 2 for cycle 292's run) both checked out
+  against live content.
+
+  Sync found `main` CI red on the current head (`db6cb45`, cycle 293's own docs-only
+  commit), run [36280290988](https://github.com/TimHeckel/nanobots/actions/runs/36280290988)
+  — only `onboarding-agent` failed, `test` passed; diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/db6cb4501790ddb5a31d39869c4fef71f5ffd958/files` → exactly
+  `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 5 of 29` (`agent set PROJECTS_PAT`,
+  `agent set DAYTONA_API_KEY`, `agent set the OCR endpoint variables`, `agent ran
+  verify_daytona`, `agent verified Daytona BEFORE storing the key`), no network-error text —
+  the known non-network assertion cluster. First `gh run rerun --failed` (watched via `gh
+  run watch --exit-status`): still red, `FAILED 1 of 29` (`agent set the OCR endpoint
+  variables`). Second rerun: still red, `FAILED 7 of 29` (`agent called finish() with a
+  summary`, `the manual board step reached the user`, `agent set PROJECTS_PAT`, `agent set
+  DAYTONA_API_KEY`, `agent set the OCR endpoint variables`, `agent ran verify_daytona`) — a
+  **triple-non-clearing** instance, the 11th tracked (after cycles 257, 258, 259, 265, 267,
+  268, 269, 288, 290, 292), arriving two cycles after 292's own triple instance with cycle
+  293's ordinary clear in between. Per the standing (still unadopted) third-rerun-bound
+  proposal from cycle 267, stopped at two reruns. Posted as a dedupe comment on #21
+  (confirmed landed via its own comment ID, `5852960256`), citing the running instance
+  count. No fresh P0; #22 remains the mitigation, still Ready/unapproved.
+
+  Pulled cycle 293's own outer-loop run (`36280037334`, confirmed as the run that produced
+  `db6cb45` by matching timestamps — 23:37:46Z trigger, 23:42:42Z commit) denial count via
+  `gh run view <id> --log | grep permission_denials_count`: **2**, ordinary band; posted to
+  #19 (confirmed landed via its own comment ID, `5852960333`). Checked #18/#20/#22's full
+  comment bodies (not just author — all are `TimHeckel`, the PAT identity, not a maintainer
+  reply) — all still the loop's own automated posts; #22 still exactly one comment (the
+  plan), no `/nanobots start <hash>` line yet. Board matches live GitHub for all 13 items
+  (verified via `gh project item-list`), no open PRs, no `nanobots:inbox` items, no In
+  Progress/In Review items (WIP 0/1). Both crons healthy: outer's last 6 completed scheduled
+  runs all `success` (this cycle's own run still in progress at write time); worker's last 6
+  runs all `success`.
+
+  Undistilled LEARNINGS count (post-append): suffix-anchored `[distilled]` count (Grep tool)
+  → 158 against 167 total `^## ` headers (166 real entries after subtracting the
+  format-template line) — 7 undistilled before this entry, 8 after; well under the ~10
+  threshold, no distill pass this cycle.
+- **Lesson:** the triple-non-clearing shape recurred with exactly one clean cycle interposed
+  (292 → 293 clean → 294), matching cycle 292's own "one clean cycle interposed" pattern
+  (290 → 291 clean → 292) — two consecutive occurrences of the same interposed-single-clean
+  spacing now, worth watching for a third before treating it as more than coincidence, but
+  not yet grounds to revise the recurring-variant framing.
+- **Applies to:** triage | verify
+
 ## 2026-09-26 — cycle 293: #21 ordinary single-rerun clear on f28b4f8 (breaks cycle 292's back-to-back triple pair); #19 denial-count data point (cycle 292 run = 2)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
