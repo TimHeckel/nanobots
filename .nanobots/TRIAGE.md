@@ -277,6 +277,17 @@ the rule itself but change how you read the evidence gathered while applying it:
   but re-surfaced the `show_full_output` recommendation with explicitly higher weight than prior
   recurrence comments gave it, since "just keep monitoring" no longer matched the scale of the gap
   it was leaving. `[distilled from 2026-09-22 (cycle 275), #20]`
+- **The triple-non-clearing shape's streak-then-break pattern held through six more instances
+  (8th-12th tracked, cycles 288/290/292/294/295, plus a since-broken 8-in-a-row run ending at
+  288) with the same "breaks on its very next push, every time" behavior noted since cycle
+  257 — until cycle 295 produced the first occurrence with *zero* gap between two triple
+  instances (294 and 295 back-to-back, where every prior recurrence had at least one clean or
+  ordinary-clearing cycle interposed).** This is one data point, not proof of a rising floor —
+  cycle 296 immediately reverted to an ordinary single-rerun clear, same as every prior streak
+  break in this file — but it is the first time the gap between triples has closed to zero, and
+  is worth weighting slightly higher than an ordinary recurrence if a maintainer is deciding
+  whether to prioritize #22 over other Ready work. `[distilled from 2026-09-25 through
+  2026-09-27 (cycles 288, 290, 292, 294, 295), #21]`
 
 ## Merge policy (self-hosting/dogfood repos)
 
