@@ -19,6 +19,53 @@ Entry format:
 
 ---
 
+## 2026-09-28 — cycle 299: #21 ordinary double-non-clearing-then-clear on 1506218 (original + first rerun both landed in the cluster, second rerun cleared); #19 denial-count data point (cycle 298 run = 3)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`1506218`,
+  cycle 298's own docs-only commit), run
+  [36382038252](https://github.com/TimHeckel/nanobots/actions/runs/36382038252) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/1506218e87bd003153b24d82faaed6371ffc75fd --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 3 of
+  29` (`agent set DAYTONA_API_KEY`, `agent ran verify_daytona`, `agent verified Daytona
+  BEFORE storing the key`), no network-error text — the known non-network assertion
+  cluster. First `gh run rerun --failed` (watched via `gh run watch --exit-status`): still
+  red, the identical `FAILED 3 of 29` with the exact same three assertions repeating
+  verbatim. Second rerun: green on both jobs — the ordinary double-non-clearing-then-clear
+  shape, per the standing two-attempt evidence-gathering bound (stopped there; did not
+  chase a third rerun since two attempts already resolved it). Posted as a dedupe comment
+  on #21 (confirmed landed via its own comment ID, `5871414160`). No fresh P0; #22 remains
+  the mitigation, still Ready/unapproved.
+
+  Re-verified cycle 298's own claims first: commit `1506218` (docs-only, confirmed via the
+  API — exactly `.nanobots/LEARNINGS.md`) and its two comments (`5864036222` on #21 —
+  ordinary single-rerun clear; `5864037360` on #19 — denial count 2 for cycle 297's run)
+  both checked out against live content. Identified cycle 298's own outer-loop run
+  (`36381714872`, confirmed as the run that produced `1506218` by matching timestamps —
+  05:23:38Z trigger, 05:28:02Z commit) and pulled its denial count via `gh run view <id>
+  --log | grep permission_denials_count`: **3**, ordinary band; posted to #19 (confirmed
+  landed via its own comment ID, `5871415629`). Checked #18/#20/#22's full comment bodies
+  (not just author — all are `TimHeckel`, the PAT identity, not a maintainer reply) — all
+  still the loop's own automated posts; #22 still exactly one comment (the plan), no
+  `/nanobots start <hash>` line yet. Board matches live GitHub for all 13 items (verified
+  via `gh project item-list`), no open PRs, no `nanobots:inbox` items, no In Progress/In
+  Review items (WIP 0/1). Outer cron healthy: last 7 completed scheduled runs (before this
+  cycle's own, still in progress at write time) all `success`; worker cron's last 8 runs
+  all `success`.
+
+  Undistilled LEARNINGS count (pre-append): 171 total `^## ` headers (170 real entries
+  after subtracting the format-template line) against 167 suffix-anchored `[distilled]`
+  headers (Grep tool, per RECIPES.md's approval-workaround item) → 3 undistilled before
+  this entry, 4 after — well under the ~10 threshold, no distill pass this cycle.
+- **Lesson:** the double-non-clearing-then-clear shape is still the dominant recurrence
+  pattern for this flake, distinct from the rarer triple-non-clearing sub-pattern (13
+  tracked instances as of cycle 297) — this cycle's instance resolved at the ordinary
+  two-attempt bound with no need to invoke the still-unadopted third-rerun proposal. No new
+  evidence on that proposal either way.
+- **Applies to:** triage | verify
+
 ## 2026-09-28 — cycle 298: #21 ordinary single-rerun clear on f037794 (one-cycle gap since cycle 297's 13th triple-non-clearing instance); #19 denial-count data point (cycle 297 run = 2)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
