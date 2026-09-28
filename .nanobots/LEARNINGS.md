@@ -19,6 +19,50 @@ Entry format:
 
 ---
 
+## 2026-09-28 — cycle 298: #21 ordinary single-rerun clear on f037794 (one-cycle gap since cycle 297's 13th triple-non-clearing instance); #19 denial-count data point (cycle 297 run = 2)
+- **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
+  Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
+  maintainer replies on #18-22)
+- **What worked / what didn't:** Sync found `main` CI red on the current head (`f037794`,
+  cycle 297's own docs-only commit), run
+  [36351749129](https://github.com/TimHeckel/nanobots/actions/runs/36351749129) — only
+  `onboarding-agent` failed, `test` passed. Diff confirmed docs-only via `gh api
+  repos/TimHeckel/nanobots/commits/f037794347fc8964f23e113fb55207a43ecb3158 --jq
+  '.files[].filename'` → exactly `.nanobots/LEARNINGS.md`. Original attempt: `FAILED 1 of 29`
+  (`agent set PROJECTS_PAT`), no network-error text — the known non-network assertion cluster.
+  `gh run rerun --failed` (watched via `gh run watch --exit-status`) came back green on both
+  jobs on the very first rerun — the ordinary single-rerun-clears shape, matching cycle 296's
+  pattern and breaking cycle 297's 13th triple-non-clearing instance at a one-cycle gap (the
+  same gap length as the one that followed cycle 295's zero-gap back-to-back pair). Posted as
+  a dedupe comment on #21 (confirmed landed via its own comment ID, `5864036222`). No fresh
+  P0; #22 remains the mitigation, still Ready/unapproved.
+
+  Re-verified cycle 297's own claims first: commit `f037794` (docs-only, confirmed via the
+  API — exactly `.nanobots/LEARNINGS.md`) and its comments (#21's 13th-triple-instance
+  comment, #19's denial-count-6 comment) both checked out against live content. Identified
+  cycle 297's own outer-loop run (`36351365245`, confirmed as the run that produced
+  `f037794` by matching timestamps — 21:20:29Z trigger, 21:26:35Z commit) and pulled its
+  denial count via `gh run view <id> --log | grep permission_denials_count`: **2**, ordinary
+  band; posted to #19 (confirmed landed via its own comment ID, `5864037360`). Checked
+  #18/#20/#22's full comment bodies (not just author — all are `TimHeckel`, the PAT identity,
+  not a maintainer reply) — all still the loop's own automated posts; #22 still exactly one
+  comment (the plan), no `/nanobots start <hash>` line yet. Board matches live GitHub for all
+  13 items (verified via `gh project item-list`), no open PRs, no `nanobots:inbox` items, no
+  In Progress/In Review items (WIP 0/1). Outer cron healthy: last 7 completed scheduled runs
+  (before this cycle's own, still in progress at write time) all `success`; worker cron's
+  last 8 runs all `success`.
+
+  Undistilled LEARNINGS count (pre-append): 170 total `^## ` headers (169 real entries after
+  subtracting the format-template line) against 167 suffix-anchored `[distilled]` headers
+  (Grep tool, per RECIPES.md's approval-workaround item) → 2 undistilled before this entry, 3
+  after — well under the ~10 threshold, no distill pass this cycle.
+- **Lesson:** the one-cycle-gap pattern held again — a triple-non-clearing instance followed
+  by exactly one ordinary/clean cycle before the next Sync check, consistent with cycle 297's
+  own framing that the prior zero-gap pair (294/295) was an occasional variant rather than a
+  new floor. No new evidence either way on the third-rerun-bound proposal; it stays logged and
+  unadopted on #21.
+- **Applies to:** triage | verify
+
 ## 2026-09-27 — cycle 297: #21 triple-non-clearing recurrence on 0a04f410 (13th instance, one-cycle gap after 295's zero-gap pair); #19 denial-count data point (cycle 296 run = 6)
 - **Outcome:** n/a (Sync-time judgment call, not a dispatched item); board unchanged (8
   Done/4 Blocked/1 Ready, #22 still Ready with an approved plan but no `/nanobots start`, no
